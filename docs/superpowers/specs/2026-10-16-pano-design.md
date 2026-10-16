@@ -2,6 +2,8 @@
 
 **Date:** 2026-10-16 · **Status:** approved
 
+**Amended 2026-10-16:** sign-in is passwordless email codes, not email + password. Workers' free plan allows 10 ms of CPU per request, and password hashing (Better Auth's scrypt) needs far more, so every sign-in would fail with error 1102. Approved by the user before Phase 1 was planned.
+
 ## Context
 
 - **Why.** The BetterNews review found it isn't showcase material. Its best parts are worth reusing in a new app: the typed Hono client (`hc<AppType>`), TanStack Query optimistic updates, threaded comments, and voting with sorting kept in the URL.
@@ -173,7 +175,8 @@ Statuses: `open`, `under_review`, `planned`, `in_progress`, `shipped`, `closed`.
 ## Auth, security, language
 
 - **Better Auth**, mounted on Hono at `/api/auth/*` and created per request with the Hyperdrive-backed Drizzle client. It's Rezerve's config minus `nextCookies`:
-  - Email + password (minimum 8 characters) and GitHub sign-in.
+  - Passwordless email codes (Better Auth's email-OTP plugin): enter an email, get a 6-digit code. Codes are stored hashed and expire after 5 minutes, and the first sign-in creates the account. Code emails go out in the person's language through Brevo's HTTP API, and print in the terminal in local dev.
+  - GitHub or Google sign-in can be added later; neither is in v1.
   - Organization plugin for workspaces.
   - Rate limits stored in the database, and a 5-minute cookie cache.
 - **Security:**
@@ -222,7 +225,7 @@ Statuses: `open`, `under_review`, `planned`, `in_progress`, `shipped`, `closed`.
    - Write the Drizzle schema and first migration (with `pg_trgm`), and a CI skeleton.
    - *Done when* `vite dev` serves a page that calls a typed `/api/health`, and CI passes.
 1. **Auth and workspaces.**
-   - Better Auth with the organization plugin, session middleware and `/api/me`.
+   - Better Auth with email-code sign-in (code emails through Brevo) and the organization plugin, session middleware and `/api/me`.
    - Workspace creation and settings, boards, reserved slugs, and language switching.
    - *Done when* a new user can create a workspace and a board in both languages.
 2. **Posts and votes.**
@@ -278,7 +281,7 @@ Statuses: `open`, `under_review`, `planned`, `in_progress`, `shipped`, `closed`.
 ## Steps that need your accounts
 
 - **Database:** create the Neon project and database, then run `wrangler hyperdrive create` with its connection string. I'll give the exact commands.
-- **Secrets:** set the Worker secrets `BETTER_AUTH_SECRET`, `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` and `BREVO_API_KEY`.
+- **Secrets:** set the Worker secrets `BETTER_AUTH_SECRET` and `BREVO_API_KEY`, plus `MAIL_FROM`, a sender address Brevo has verified.
 - **Deploy:** connect the GitHub repo to Workers Builds, or approve a deploy from CI.
 - **Migrations:** run the production migrations.
 - Nothing gets pushed or deployed without asking you first.
