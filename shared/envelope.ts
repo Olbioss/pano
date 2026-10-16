@@ -10,7 +10,8 @@ export type ApiErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "RATE_LIMITED"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "WORKSPACE_LIMIT";
 
 export type SuccessResponse<T> = { success: true; data: T };
 

@@ -1,0 +1,148 @@
+import { APIError } from "better-auth/api";
+import { eq } from "drizzle-orm";
+import { Hono } from "hono";
+import type { SuccessResponse } from "@/shared/envelope";
+import type { Locale } from "@/shared/locale";
+import { createWorkspaceSchema, updateWorkspaceSchema } from "@/shared/schemas";
+import type { Auth } from "../auth";
+import type { Database } from "../db/client";
+import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
+import { organization, workspaceSettings } from "../db/schema";
+import type { AppEnv } from "../env";
+import { AppError } from "../lib/errors";
+import { validate } from "../lib/validate";
+import { requireUser } from "../middleware/session";
+import { requireTeam } from "../middleware/team";
+
+export type WorkspaceSummary = {
+  id: string;
+  slug: string;
+  name: string;
+  defaultLocale: Locale;
+};
+
+const slugTaken = () =>
+  new AppError(409, "CONFLICT", "That address is taken", {
+    slug: "SLUG_TAKEN",
+  });
+
+/** Better Auth's createOrganization, with its refusals turned into ours. */
+async function createOrganization(
+  auth: Auth,
+  headers: Headers,
+  name: string,
+  slug: string
+) {
+  try {
+    const org = await auth.api.createOrganization({
+      body: { name, slug },
+      headers,
+    });
+    if (!org) throw new Error("Better Auth returned no organization");
+    return org;
+  } catch (err) {
+    if (err instanceof APIError) {
+      const code = (err.body as { code?: string } | undefined)?.code;
+      if (code === "ORGANIZATION_ALREADY_EXISTS") throw slugTaken();
+      if (code === "YOU_HAVE_REACHED_THE_MAXIMUM_NUMBER_OF_ORGANIZATIONS") {
+        throw new AppError(409, "WORKSPACE_LIMIT", "One workspace per account");
+      }
+    }
+    // Two people claiming one address at once can both pass Better Auth's
+    // own check; the unique index on organization.slug settles it.
+    if (pgErrorCode(err) === UNIQUE_VIOLATION) throw slugTaken();
+    throw err;
+  }
+}
+
+async function findWorkspace(
+  db: Database,
+  slug: string
+): Promise<WorkspaceSummary> {
+  const [row] = await db
+    .select({
+      id: organization.id,
+      slug: organization.slug,
+      name: organization.name,
+      defaultLocale: workspaceSettings.defaultLocale,
+    })
+    .from(organization)
+    .leftJoin(
+      workspaceSettings,
+      eq(workspaceSettings.organizationId, organization.id)
+    )
+    .where(eq(organization.slug, slug))
+    .limit(1);
+  if (!row) throw new AppError(404, "NOT_FOUND", "Workspace not found");
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    defaultLocale: row.defaultLocale ?? "en",
+  };
+}
+
+export const workspaceRoutes = new Hono<AppEnv>()
+  .post(
+    "/",
+    requireUser,
+    validate("json", createWorkspaceSchema),
+    async (c) => {
+      const { name, slug, defaultLocale } = c.req.valid("json");
+      const org = await createOrganization(
+        c.var.auth,
+        c.req.raw.headers,
+        name,
+        slug
+      );
+      // Not in one transaction with Better Auth's insert: if this fails, the
+      // workspace reads as the defaults and PATCH writes the row later.
+      await c.var.db
+        .insert(workspaceSettings)
+        .values({ organizationId: org.id, defaultLocale })
+        .onConflictDoNothing();
+      return c.json<SuccessResponse<WorkspaceSummary>>(
+        {
+          success: true,
+          data: { id: org.id, slug: org.slug, name: org.name, defaultLocale },
+        },
+        201
+      );
+    }
+  )
+  .get("/:slug", async (c) => {
+    const workspace = await findWorkspace(c.var.db, c.req.param("slug"));
+    return c.json<SuccessResponse<WorkspaceSummary>>({
+      success: true,
+      data: workspace,
+    });
+  })
+  .patch(
+    "/:slug",
+    requireUser,
+    requireTeam,
+    validate("json", updateWorkspaceSchema),
+    async (c) => {
+      const { name, defaultLocale } = c.req.valid("json");
+      const { id, slug } = c.var.workspace;
+      if (name !== undefined) {
+        await c.var.db
+          .update(organization)
+          .set({ name })
+          .where(eq(organization.id, id));
+      }
+      if (defaultLocale !== undefined) {
+        await c.var.db
+          .insert(workspaceSettings)
+          .values({ organizationId: id, defaultLocale })
+          .onConflictDoUpdate({
+            target: workspaceSettings.organizationId,
+            set: { defaultLocale },
+          });
+      }
+      return c.json<SuccessResponse<WorkspaceSummary>>({
+        success: true,
+        data: await findWorkspace(c.var.db, slug),
+      });
+    }
+  );
