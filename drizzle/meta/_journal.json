@@ -22,6 +22,13 @@
       "when": 1792166725013,
       "tag": "0002_workspaces",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792166778331,
+      "tag": "0003_boards",
+      "breakpoints": true
     }
   ]
 }

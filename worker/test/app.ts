@@ -38,7 +38,11 @@ export function testApp(overrides: Partial<Bindings> = {}) {
   const app = createApp({ mailer: mail.mailer });
   const base = testEnv();
   const env: Bindings = { ...base.env, ...overrides };
-  const client = testClient(app, env, base.ctx);
+  // Browsers send Origin on every non-GET request, and csrf() refuses a
+  // body-less one (a DELETE) without it. The typed client does the same.
+  const client = testClient(app, env, base.ctx, {
+    headers: { origin: ORIGIN },
+  });
   const request = (path: string, init: RequestInit = {}) =>
     app.request(path, init, env, base.ctx);
   const post = (

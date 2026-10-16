@@ -1,13 +1,21 @@
 import { APIError } from "better-auth/api";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { z } from "zod";
 import type { SuccessResponse } from "@/shared/envelope";
 import type { Locale } from "@/shared/locale";
-import { createWorkspaceSchema, updateWorkspaceSchema } from "@/shared/schemas";
+import {
+  createBoardSchema,
+  createWorkspaceSchema,
+  renameBoardSchema,
+  reorderBoardsSchema,
+  updateWorkspaceSchema,
+} from "@/shared/schemas";
+import { slugify } from "@/shared/slug";
 import type { Auth } from "../auth";
 import type { Database } from "../db/client";
 import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
-import { organization, workspaceSettings } from "../db/schema";
+import { boards, organization, workspaceSettings } from "../db/schema";
 import type { AppEnv } from "../env";
 import { AppError } from "../lib/errors";
 import { validate } from "../lib/validate";
@@ -20,6 +28,36 @@ export type WorkspaceSummary = {
   name: string;
   defaultLocale: Locale;
 };
+
+export type Board = {
+  id: string;
+  slug: string;
+  name: string;
+  position: number;
+};
+export type WorkspaceView = WorkspaceSummary & { boards: Board[] };
+
+const boardColumns = {
+  id: boards.id,
+  slug: boards.slug,
+  name: boards.name,
+  position: boards.position,
+};
+
+const boardParamSchema = z.object({ slug: z.string(), boardId: z.uuid() });
+
+const boardNotFound = () => new AppError(404, "NOT_FOUND", "Board not found");
+
+async function listBoards(
+  db: Pick<Database, "select">,
+  workspaceId: string
+): Promise<Board[]> {
+  return db
+    .select(boardColumns)
+    .from(boards)
+    .where(eq(boards.organizationId, workspaceId))
+    .orderBy(asc(boards.position), asc(boards.createdAt));
+}
 
 const slugTaken = () =>
   new AppError(409, "CONFLICT", "That address is taken", {
@@ -112,9 +150,10 @@ export const workspaceRoutes = new Hono<AppEnv>()
   )
   .get("/:slug", async (c) => {
     const workspace = await findWorkspace(c.var.db, c.req.param("slug"));
-    return c.json<SuccessResponse<WorkspaceSummary>>({
+    const list = await listBoards(c.var.db, workspace.id);
+    return c.json<SuccessResponse<WorkspaceView>>({
       success: true,
-      data: workspace,
+      data: { ...workspace, boards: list },
     });
   })
   .patch(
@@ -144,5 +183,120 @@ export const workspaceRoutes = new Hono<AppEnv>()
         success: true,
         data: await findWorkspace(c.var.db, slug),
       });
+    }
+  )
+  .post(
+    "/:slug/boards",
+    requireUser,
+    requireTeam,
+    validate("json", createBoardSchema),
+    async (c) => {
+      const { name } = c.req.valid("json");
+      const workspaceId = c.var.workspace.id;
+      try {
+        const [board] = await c.var.db
+          .insert(boards)
+          .values({
+            organizationId: workspaceId,
+            slug: slugify(name),
+            name,
+            // New boards go last.
+            position: sql`(select coalesce(max(${boards.position}), -1) + 1 from ${boards} where ${boards.organizationId} = ${workspaceId})`,
+          })
+          .returning(boardColumns);
+        return c.json<SuccessResponse<Board>>(
+          { success: true, data: board! },
+          201
+        );
+      } catch (err) {
+        if (pgErrorCode(err) === UNIQUE_VIOLATION) {
+          throw new AppError(409, "CONFLICT", "A board with that name exists", {
+            name: "BOARD_EXISTS",
+          });
+        }
+        throw err;
+      }
+    }
+  )
+  .patch(
+    "/:slug/boards/:boardId",
+    requireUser,
+    requireTeam,
+    validate("param", boardParamSchema),
+    validate("json", renameBoardSchema),
+    async (c) => {
+      const { boardId } = c.req.valid("param");
+      const { name } = c.req.valid("json");
+      const [board] = await c.var.db
+        .update(boards)
+        .set({ name })
+        .where(
+          and(
+            eq(boards.id, boardId),
+            eq(boards.organizationId, c.var.workspace.id)
+          )
+        )
+        .returning(boardColumns);
+      if (!board) throw boardNotFound();
+      return c.json<SuccessResponse<Board>>({ success: true, data: board });
+    }
+  )
+  .delete(
+    "/:slug/boards/:boardId",
+    requireUser,
+    requireTeam,
+    validate("param", boardParamSchema),
+    async (c) => {
+      const { boardId } = c.req.valid("param");
+      const [deleted] = await c.var.db
+        .delete(boards)
+        .where(
+          and(
+            eq(boards.id, boardId),
+            eq(boards.organizationId, c.var.workspace.id)
+          )
+        )
+        .returning({ id: boards.id });
+      if (!deleted) throw boardNotFound();
+      return c.json<SuccessResponse<{ id: string }>>({
+        success: true,
+        data: deleted,
+      });
+    }
+  )
+  .put(
+    "/:slug/boards/order",
+    requireUser,
+    requireTeam,
+    validate("json", reorderBoardsSchema),
+    async (c) => {
+      const { ids } = c.req.valid("json");
+      const workspaceId = c.var.workspace.id;
+      const ordered = await c.var.db.transaction(async (tx) => {
+        // Lock the workspace's boards so two reorders can't interleave.
+        const current = await tx
+          .select({ id: boards.id })
+          .from(boards)
+          .where(eq(boards.organizationId, workspaceId))
+          .for("update");
+        const known = new Set(current.map((board) => board.id));
+        const listsEachOnce =
+          ids.length === known.size &&
+          new Set(ids).size === ids.length &&
+          ids.every((id) => known.has(id));
+        if (!listsEachOnce) {
+          throw new AppError(
+            400,
+            "BAD_REQUEST",
+            "The order must list every board once",
+            { ids: "ORDER_MISMATCH" }
+          );
+        }
+        for (const [position, id] of ids.entries()) {
+          await tx.update(boards).set({ position }).where(eq(boards.id, id));
+        }
+        return listBoards(tx, workspaceId);
+      });
+      return c.json<SuccessResponse<Board[]>>({ success: true, data: ordered });
     }
   );
