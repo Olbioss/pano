@@ -7,9 +7,9 @@ import type { Bindings } from "../env";
  * no test leaves a connection open.
  */
 export function testEnv(connectionString = process.env.TEST_DATABASE_URL) {
-  if (!connectionString) {
+  if (!connectionString)
     throw new Error("TEST_DATABASE_URL is not set (see .env.example)");
-  }
+
   const pending: Promise<unknown>[] = [];
   const ctx: ExecutionContext = {
     waitUntil: (promise) => {
