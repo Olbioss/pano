@@ -1,0 +1,10 @@
+{
+  "home": {
+    "title": "Pano",
+    "tagline": "Feedback boards and a public roadmap.",
+    "apiChecking": "Checking the API…",
+    "apiUp": "API is up",
+    "apiDown": "API unreachable",
+    "retry": "Check again"
+  }
+}

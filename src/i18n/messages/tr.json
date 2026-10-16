@@ -1,0 +1,10 @@
+{
+  "home": {
+    "title": "Pano",
+    "tagline": "Geri bildirim panoları ve herkese açık yol haritası.",
+    "apiChecking": "API kontrol ediliyor…",
+    "apiUp": "API çalışıyor",
+    "apiDown": "API'ye ulaşılamıyor",
+    "retry": "Tekrar kontrol et"
+  }
+}
