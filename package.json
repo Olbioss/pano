@@ -11,7 +11,9 @@
     "check:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",
@@ -21,6 +23,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
     "@types/node": "^26.6.5",
+    "drizzle-kit": "^0.31.11",
     "typescript": "~6.0.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.5",
