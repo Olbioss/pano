@@ -1,5 +1,6 @@
 import type { ExecutionContext } from "hono";
 import type { Bindings } from "../env";
+import { assertLocalDatabaseUrl } from "./local-db";
 
 /**
  * Bindings and an ExecutionContext for running the app under Node. `settle`
@@ -9,6 +10,7 @@ import type { Bindings } from "../env";
 export function testEnv(connectionString = process.env.TEST_DATABASE_URL) {
   if (!connectionString)
     throw new Error("TEST_DATABASE_URL is not set (see .env.example)");
+  assertLocalDatabaseUrl(connectionString);
 
   const pending: Promise<unknown>[] = [];
   const ctx: ExecutionContext = {
