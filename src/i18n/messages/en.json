@@ -2,9 +2,47 @@
   "home": {
     "title": "Pano",
     "tagline": "Feedback boards and a public roadmap.",
-    "apiChecking": "Checking the API…",
-    "apiUp": "API is up",
-    "apiDown": "API unreachable",
-    "retry": "Check again"
+    "signInCta": "Sign in to get started",
+    "signedInAs": "You're signed in as {email}."
+  },
+  "header": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "language": "Language"
+  },
+  "signin": {
+    "title": "Sign in to Pano",
+    "emailIntro": "Enter your email and we'll send you a 6-digit code. New here? The same code creates your account.",
+    "emailLabel": "Email",
+    "sendCode": "Send code",
+    "sendFailed": "We couldn't send a code. Try again in a moment.",
+    "tooManyCodes": "Too many codes requested. Wait a minute and try again.",
+    "codeSentTo": "We sent a code to {email}. It expires in 5 minutes.",
+    "codeLabel": "6-digit code",
+    "verify": "Sign in",
+    "codeInvalid": "That code didn't work. Check it, or request a new one.",
+    "tooManyAttempts": "Too many attempts. Wait a minute, then request a new code.",
+    "useAnotherEmail": "Use a different email"
+  },
+  "errors": {
+    "BAD_REQUEST": "Something in the form needs fixing.",
+    "UNAUTHORIZED": "Please sign in first.",
+    "FORBIDDEN": "Only the workspace team can do that.",
+    "NOT_FOUND": "We couldn't find that.",
+    "CONFLICT": "That's already taken.",
+    "RATE_LIMITED": "Too many requests. Wait a minute and try again.",
+    "INTERNAL_ERROR": "Something went wrong on our side. Try again.",
+    "WORKSPACE_LIMIT": "Each account can have one workspace for now.",
+    "NETWORK": "Couldn't reach Pano. Check your connection and try again."
+  },
+  "fieldErrors": {
+    "SLUG_FORMAT": "Use lowercase letters, numbers and single hyphens.",
+    "SLUG_RESERVED": "That address is reserved. Pick another.",
+    "SLUG_TAKEN": "That address is taken. Pick another.",
+    "NAME_NEEDS_LETTERS": "Use at least two letters or numbers.",
+    "BOARD_EXISTS": "This workspace already has a board with that name.",
+    "ORDER_MISMATCH": "The board list changed. Reload and try again.",
+    "NOTHING_TO_UPDATE": "Change something before saving.",
+    "CODE_FORMAT": "Enter the 6 digits from the email."
   }
 }

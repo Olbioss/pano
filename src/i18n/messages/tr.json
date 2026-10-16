@@ -2,9 +2,47 @@
   "home": {
     "title": "Pano",
     "tagline": "Geri bildirim panoları ve herkese açık yol haritası.",
-    "apiChecking": "API kontrol ediliyor…",
-    "apiUp": "API çalışıyor",
-    "apiDown": "API'ye ulaşılamıyor",
-    "retry": "Tekrar kontrol et"
+    "signInCta": "Başlamak için giriş yapın",
+    "signedInAs": "{email} olarak giriş yaptınız."
+  },
+  "header": {
+    "signIn": "Giriş yap",
+    "signOut": "Çıkış yap",
+    "language": "Dil"
+  },
+  "signin": {
+    "title": "Pano'ya giriş yapın",
+    "emailIntro": "E-posta adresinizi girin, size 6 haneli bir kod gönderelim. İlk kez mi geliyorsunuz? Aynı kod hesabınızı da oluşturur.",
+    "emailLabel": "E-posta",
+    "sendCode": "Kod gönder",
+    "sendFailed": "Kod gönderilemedi. Birazdan tekrar deneyin.",
+    "tooManyCodes": "Çok fazla kod istendi. Bir dakika bekleyip tekrar deneyin.",
+    "codeSentTo": "{email} adresine bir kod gönderdik. Kod 5 dakika geçerli.",
+    "codeLabel": "6 haneli kod",
+    "verify": "Giriş yap",
+    "codeInvalid": "Bu kod çalışmadı. Kodu kontrol edin ya da yeni bir kod isteyin.",
+    "tooManyAttempts": "Çok fazla deneme yapıldı. Bir dakika bekleyip yeni bir kod isteyin.",
+    "useAnotherEmail": "Başka bir e-posta kullan"
+  },
+  "errors": {
+    "BAD_REQUEST": "Formda düzeltilmesi gereken bir şey var.",
+    "UNAUTHORIZED": "Önce giriş yapın.",
+    "FORBIDDEN": "Bunu yalnızca çalışma alanının ekibi yapabilir.",
+    "NOT_FOUND": "Aradığınız şey bulunamadı.",
+    "CONFLICT": "Bu zaten kullanılıyor.",
+    "RATE_LIMITED": "Çok fazla istek gönderildi. Bir dakika bekleyip tekrar deneyin.",
+    "INTERNAL_ERROR": "Bizim tarafımızda bir sorun oluştu. Tekrar deneyin.",
+    "WORKSPACE_LIMIT": "Şimdilik her hesap bir çalışma alanı açabilir.",
+    "NETWORK": "Pano'ya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin."
+  },
+  "fieldErrors": {
+    "SLUG_FORMAT": "Küçük harf, rakam ve tek tire kullanın.",
+    "SLUG_RESERVED": "Bu adres ayrılmış. Başka bir adres seçin.",
+    "SLUG_TAKEN": "Bu adres kullanılıyor. Başka bir adres seçin.",
+    "NAME_NEEDS_LETTERS": "En az iki harf ya da rakam kullanın.",
+    "BOARD_EXISTS": "Bu çalışma alanında bu adla bir pano zaten var.",
+    "ORDER_MISMATCH": "Pano listesi değişti. Sayfayı yenileyip tekrar deneyin.",
+    "NOTHING_TO_UPDATE": "Kaydetmeden önce bir şeyi değiştirin.",
+    "CODE_FORMAT": "E-postadaki 6 haneyi girin."
   }
 }
