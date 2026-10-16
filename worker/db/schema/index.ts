@@ -1,2 +1,3 @@
-// Tables arrive with the features that need them, from Phase 1 on.
-export {};
+// Better Auth's tables are generated: after changing its plugins in
+// worker/auth.ts, run `bun run auth:generate`, then `bun run db:generate`.
+export * from "./auth";

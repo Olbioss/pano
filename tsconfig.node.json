@@ -3,7 +3,16 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "lib": ["ES2023"],
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@/shared/*": ["./shared/*"]
+    }
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "drizzle.config.ts", "test"]
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "drizzle.config.ts",
+    "auth.config.ts",
+    "test"
+  ]
 }

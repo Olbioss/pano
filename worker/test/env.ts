@@ -20,6 +20,10 @@ export function testEnv(connectionString = process.env.TEST_DATABASE_URL) {
     passThroughOnException: () => {},
     props: {},
   };
-  const env: Bindings = { HYPERDRIVE: { connectionString } };
+  const env: Bindings = {
+    HYPERDRIVE: { connectionString },
+    BETTER_AUTH_SECRET: "test-only-secret-test-only-secret-0123",
+    BETTER_AUTH_URL: "http://localhost",
+  };
   return { env, ctx, settle: () => Promise.allSettled(pending) };
 }

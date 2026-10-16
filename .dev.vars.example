@@ -1,2 +1,7 @@
-# Local Worker variables (none yet). Keep .dev.vars even when it's empty:
-# without it, the Vite plugin loads .env into the Worker instead.
+# Local Worker variables. Copy this file to .dev.vars and set
+# BETTER_AUTH_SECRET to the output of `openssl rand -base64 32`.
+# Keep .dev.vars even if you empty it: without it, the Vite plugin loads .env
+# into the Worker instead.
+BETTER_AUTH_SECRET=replace-me
+BETTER_AUTH_URL=http://localhost:5173
+ENVIRONMENT=development

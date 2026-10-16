@@ -17,6 +17,11 @@ export default async function setup() {
   const client = postgres(url, { max: 1, onnotice: () => {} });
   try {
     await migrate(drizzle({ client }), { migrationsFolder: "./drizzle" });
+    // Every run starts from empty tables. Tests use unique emails and slugs,
+    // so files within a run don't collide either.
+    await client.unsafe(
+      'TRUNCATE TABLE "user", "organization", "verification", "rate_limit" RESTART IDENTITY CASCADE'
+    );
   } finally {
     await client.end();
   }

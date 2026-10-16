@@ -26,6 +26,7 @@ createdb -h 127.0.0.1 pano
 createdb -h 127.0.0.1 pano_test
 cp .env.example .env            # tool-only variables (drizzle-kit, Vitest)
 cp .dev.vars.example .dev.vars  # Worker variables; the file must exist
+# then set BETTER_AUTH_SECRET in .dev.vars to: openssl rand -base64 32
 bun install
 bun run db:migrate
 bun run dev                     # http://localhost:5173
@@ -58,6 +59,10 @@ otherwise.
   the browser project typechecks it through `AppType` and tests run it under
   Node.
 - `worker/index.ts`: the Workers entry. Workers-only code goes here.
+- `worker/auth.ts`: Better Auth, with email-code sign-in and workspaces as
+  organizations. Its routes under `/api/auth/*` answer in Better Auth's JSON,
+  so the browser calls them through `authClient`. In local dev, sign-in codes
+  print in the terminal running `bun run dev`.
 - `shared/`: code both sides use, including the response envelope in
   `shared/envelope.ts`.
 - `src/`: the React app. It calls the API only through
