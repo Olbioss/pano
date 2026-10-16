@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pano",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  // postgres.js (and Better Auth, from Phase 1) need Node's APIs in the Worker.
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      // Placeholder until Phase 5 creates the real config with
+      // `wrangler hyperdrive create`. Local dev never uses the id.
+      "id": "00000000000000000000000000000000",
+      // Miniflare rejects a connection string without a password. Local
+      // Postgres uses trust auth, so this one is ignored.
+      "localConnectionString": "postgresql://olbios:local@127.0.0.1:5432/pano"
+    }
+  ]
+}

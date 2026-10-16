@@ -1,0 +1,2 @@
+# Local Worker variables (none yet). Keep .dev.vars even when it's empty:
+# without it, the Vite plugin loads .env into the Worker instead.
