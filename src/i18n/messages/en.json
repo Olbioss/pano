@@ -3,7 +3,8 @@
     "title": "Pano",
     "tagline": "Feedback boards and a public roadmap.",
     "signInCta": "Sign in to get started",
-    "signedInAs": "You're signed in as {email}."
+    "createWorkspace": "Create your workspace",
+    "openWorkspace": "Open {name}"
   },
   "header": {
     "signIn": "Sign in",
@@ -23,6 +24,44 @@
     "codeInvalid": "That code didn't work. Check it, or request a new one.",
     "tooManyAttempts": "Too many attempts. Wait a minute, then request a new code.",
     "useAnotherEmail": "Use a different email"
+  },
+  "newWorkspace": {
+    "title": "Create your workspace",
+    "intro": "A workspace holds your boards and roadmap. You can rename it later; the address stays.",
+    "nameLabel": "Name",
+    "slugLabel": "Address",
+    "slugHint": "Your workspace's address: {url}",
+    "localeLabel": "Default language",
+    "localeHint": "Visitors see this language unless they pick another.",
+    "submit": "Create workspace"
+  },
+  "languages": {
+    "en": "English",
+    "tr": "Türkçe"
+  },
+  "workspace": {
+    "requests": "Requests",
+    "settings": "Settings",
+    "boards": "Boards",
+    "noBoards": "No boards yet.",
+    "noRequestsYet": "No requests on {board} yet.",
+    "notFound": "There's no workspace at this address."
+  },
+  "settings": {
+    "workspaceSection": "Workspace",
+    "save": "Save",
+    "saved": "Saved",
+    "boardsSection": "Boards",
+    "boardsHint": "Boards group requests, for example features and bugs.",
+    "addBoard": "Add board",
+    "newBoardLabel": "New board name",
+    "rename": "Rename",
+    "renameLabel": "New name for {board}",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete",
+    "moveUp": "Move {board} up",
+    "moveDown": "Move {board} down",
+    "cancel": "Cancel"
   },
   "errors": {
     "BAD_REQUEST": "Something in the form needs fixing.",

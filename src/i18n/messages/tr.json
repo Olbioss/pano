@@ -3,7 +3,8 @@
     "title": "Pano",
     "tagline": "Geri bildirim panoları ve herkese açık yol haritası.",
     "signInCta": "Başlamak için giriş yapın",
-    "signedInAs": "{email} olarak giriş yaptınız."
+    "createWorkspace": "Çalışma alanınızı oluşturun",
+    "openWorkspace": "{name} çalışma alanını aç"
   },
   "header": {
     "signIn": "Giriş yap",
@@ -23,6 +24,44 @@
     "codeInvalid": "Bu kod çalışmadı. Kodu kontrol edin ya da yeni bir kod isteyin.",
     "tooManyAttempts": "Çok fazla deneme yapıldı. Bir dakika bekleyip yeni bir kod isteyin.",
     "useAnotherEmail": "Başka bir e-posta kullan"
+  },
+  "newWorkspace": {
+    "title": "Çalışma alanınızı oluşturun",
+    "intro": "Çalışma alanı panolarınızı ve yol haritanızı bir arada tutar. Adını sonra değiştirebilirsiniz; adresi aynı kalır.",
+    "nameLabel": "Ad",
+    "slugLabel": "Adres",
+    "slugHint": "Çalışma alanınızın adresi: {url}",
+    "localeLabel": "Varsayılan dil",
+    "localeHint": "Ziyaretçiler başka bir dil seçmedikçe bu dili görür.",
+    "submit": "Çalışma alanı oluştur"
+  },
+  "languages": {
+    "en": "English",
+    "tr": "Türkçe"
+  },
+  "workspace": {
+    "requests": "İstekler",
+    "settings": "Ayarlar",
+    "boards": "Panolar",
+    "noBoards": "Henüz pano yok.",
+    "noRequestsYet": "{board} panosunda henüz istek yok.",
+    "notFound": "Bu adreste bir çalışma alanı yok."
+  },
+  "settings": {
+    "workspaceSection": "Çalışma alanı",
+    "save": "Kaydet",
+    "saved": "Kaydedildi",
+    "boardsSection": "Panolar",
+    "boardsHint": "Panolar istekleri gruplar; örneğin özellikler ve hatalar.",
+    "addBoard": "Pano ekle",
+    "newBoardLabel": "Yeni pano adı",
+    "rename": "Yeniden adlandır",
+    "renameLabel": "{board} için yeni ad",
+    "delete": "Sil",
+    "confirmDelete": "Silmeyi onayla",
+    "moveUp": "{board} panosunu yukarı taşı",
+    "moveDown": "{board} panosunu aşağı taşı",
+    "cancel": "Vazgeç"
   },
   "errors": {
     "BAD_REQUEST": "Formda düzeltilmesi gereken bir şey var.",

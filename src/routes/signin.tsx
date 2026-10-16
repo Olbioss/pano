@@ -124,12 +124,16 @@ function CodeStep({ email, onBack }: { email: string; onBack: () => void }) {
         );
         return;
       }
-      await queryClient.invalidateQueries({
-        queryKey: meQueryOptions.queryKey,
+      const me = await queryClient.fetchQuery({
+        ...meQueryOptions,
+        staleTime: 0,
       });
       const redirect = safeRedirect(search.redirect);
+      const workspace = me.workspaces[0];
       if (redirect) router.history.push(redirect);
-      else await navigate({ to: "/" });
+      else if (workspace) {
+        await navigate({ to: "/$ws", params: { ws: workspace.slug } });
+      } else await navigate({ to: "/new-workspace" });
     },
   });
 

@@ -10,11 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WsRouteImport } from './routes/$ws'
+import { Route as NewWorkspaceRouteImport } from './routes/new-workspace'
 import { Route as SigninRouteImport } from './routes/signin'
+import { Route as WsIndexRouteImport } from './routes/$ws/index'
+import { Route as WsSettingsRouteImport } from './routes/$ws/settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WsRoute = WsRouteImport.update({
+  id: '/$ws',
+  path: '/$ws',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewWorkspaceRoute = NewWorkspaceRouteImport.update({
+  id: '/new-workspace',
+  path: '/new-workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SigninRoute = SigninRouteImport.update({
@@ -22,30 +36,61 @@ const SigninRoute = SigninRouteImport.update({
   path: '/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WsIndexRoute = WsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WsRoute,
+} as any)
+const WsSettingsRoute = WsSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => WsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$ws': typeof WsRouteWithChildren
+  '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
+  '/$ws/settings': typeof WsSettingsRoute
+  '/$ws/': typeof WsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
+  '/$ws/settings': typeof WsSettingsRoute
+  '/$ws': typeof WsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$ws': typeof WsRouteWithChildren
+  '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
+  '/$ws/settings': typeof WsSettingsRoute
+  '/$ws/': typeof WsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/signin'
+  fullPaths:
+    '/' | '/$ws' | '/new-workspace' | '/signin' | '/$ws/settings' | '/$ws/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/signin'
-  id: '__root__' | '/' | '/signin'
+  to: '/' | '/new-workspace' | '/signin' | '/$ws/settings' | '/$ws'
+  id:
+    | '__root__'
+    | '/'
+    | '/$ws'
+    | '/new-workspace'
+    | '/signin'
+    | '/$ws/settings'
+    | '/$ws/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  WsRoute: typeof WsRouteWithChildren
+  NewWorkspaceRoute: typeof NewWorkspaceRoute
   SigninRoute: typeof SigninRoute
 }
 
@@ -58,6 +103,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$ws': {
+      id: '/$ws'
+      path: '/$ws'
+      fullPath: '/$ws'
+      preLoaderRoute: typeof WsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/new-workspace': {
+      id: '/new-workspace'
+      path: '/new-workspace'
+      fullPath: '/new-workspace'
+      preLoaderRoute: typeof NewWorkspaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signin': {
       id: '/signin'
       path: '/signin'
@@ -65,11 +124,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SigninRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$ws/': {
+      id: '/$ws/'
+      path: '/'
+      fullPath: '/$ws/'
+      preLoaderRoute: typeof WsIndexRouteImport
+      parentRoute: typeof WsRoute
+    }
+    '/$ws/settings': {
+      id: '/$ws/settings'
+      path: '/settings'
+      fullPath: '/$ws/settings'
+      preLoaderRoute: typeof WsSettingsRouteImport
+      parentRoute: typeof WsRoute
+    }
   }
 }
 
+interface WsRouteChildren {
+  WsSettingsRoute: typeof WsSettingsRoute
+  WsIndexRoute: typeof WsIndexRoute
+}
+
+const WsRouteChildren: WsRouteChildren = {
+  WsSettingsRoute: WsSettingsRoute,
+  WsIndexRoute: WsIndexRoute,
+}
+
+const WsRouteWithChildren = WsRoute._addFileChildren(WsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  WsRoute: WsRouteWithChildren,
+  NewWorkspaceRoute: NewWorkspaceRoute,
   SigninRoute: SigninRoute,
 }
 export const routeTree = rootRouteImport

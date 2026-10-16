@@ -1,6 +1,7 @@
 import { hc } from "hono/client";
 import {
   type ApiErrorCode,
+  type ErrorResponse,
   isErrorResponse,
   type SuccessResponse,
 } from "@/shared/envelope";
@@ -31,17 +32,27 @@ export class ApiError extends Error {
 type JsonResponse<T> = {
   ok: boolean;
   status: number;
-  json(): Promise<SuccessResponse<T>>;
+  json(): Promise<SuccessResponse<T> | ErrorResponse>;
 };
+
+function isSuccess<T>(value: unknown): value is SuccessResponse<T> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { success?: unknown }).success === true &&
+    "data" in value
+  );
+}
 
 /**
  * Returns `data` from a successful response and throws ApiError otherwise, so
- * a failed request always reaches TanStack Query's onError. An error body
- * that isn't the envelope (a proxy's HTML page, say) still becomes ApiError.
+ * a failed request always reaches TanStack Query's onError. A body that isn't
+ * the envelope (a proxy's HTML page, a captive portal's 200) still becomes
+ * ApiError rather than a SyntaxError.
  */
 export async function unwrap<T>(res: JsonResponse<T>): Promise<T> {
-  if (res.ok) return (await res.json()).data;
   const body: unknown = await res.json().catch(() => null);
+  if (res.ok && isSuccess<T>(body)) return body.data;
   if (isErrorResponse(body)) {
     throw new ApiError(res.status, body.code, body.error, body.fields);
   }

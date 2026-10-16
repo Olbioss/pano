@@ -46,4 +46,14 @@ describe("unwrap", () => {
     );
     expect(error).toMatchObject({ status: 500, code: "INTERNAL_ERROR" });
   });
+
+  it("throws INTERNAL_ERROR when a successful response isn't JSON", async () => {
+    const res = new Response("<html>Wi-Fi login</html>", {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+    const error = await unwrap(res).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 200, code: "INTERNAL_ERROR" });
+  });
 });
