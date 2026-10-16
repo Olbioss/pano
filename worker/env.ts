@@ -7,6 +7,11 @@ import type { Database } from "./db/client";
  */
 export type Bindings = {
   HYPERDRIVE: { connectionString: string };
+  /** "production" on Cloudflare: turns on rate limits and requires Brevo. */
+  ENVIRONMENT?: string;
+  BREVO_API_KEY?: string;
+  /** The sender address Brevo has verified. */
+  MAIL_FROM?: string;
 };
 
 export type AppEnv = {

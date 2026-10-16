@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect } from "react";
 import { IntlProvider } from "use-intl";
-import { type Locale, localeFromLanguageTag } from "./locale";
+import { type Locale, localeFromLanguageTag } from "@/shared/locale";
 import en from "./messages/en.json";
 import tr from "./messages/tr.json";
 
