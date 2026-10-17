@@ -51,6 +51,7 @@ otherwise.
 | `bun run test` | Vitest; migrates `pano_test` first |
 | `bun run db:generate` / `db:migrate` | drizzle-kit against `DATABASE_URL` |
 | `bun run cf-typegen` | Regenerates `worker-configuration.d.ts` after `wrangler.jsonc` changes |
+| `bun run vote-drift` | BetterNews's vote toggle under 20 rapid clicks, next to Pano's votes (local test database) |
 
 ## Layout and rules
 
@@ -63,6 +64,15 @@ otherwise.
   organizations. Its routes under `/api/auth/*` answer in Better Auth's JSON,
   so the browser calls them through `authClient`. In local dev, sign-in codes
   print in the terminal running `bun run dev`.
+- `worker/services/`: the queries behind the routes. `votes.ts` locks the
+  post row and writes the state the person asked for, so the count moves
+  only by the rows that changed. `ranking.ts` (trending, top, new) and
+  `similar.ts` serve the feed and the submit form.
+- **Search** folds case and Turkish letters with the SQL function
+  `pano_fold` (migration `0005_search_fold.sql`), on the stored `tsvector`
+  and on the query alike, so results don't depend on the database's locale.
+- `worker/og.ts`: `/p/*` reaches the Worker before the assets layer and gets
+  the app shell with the post's link-preview meta tags.
 - `shared/`: code both sides use, including the response envelope in
   `shared/envelope.ts`.
 - `src/`: the React app. It calls the API only through
