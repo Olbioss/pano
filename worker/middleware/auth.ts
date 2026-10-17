@@ -9,10 +9,20 @@ import { type Mailer, mailerFor } from "../mail/mailer";
  */
 export const withAuth = (mailer?: Mailer) =>
   createMiddleware<AppEnv>(async (c, next) => {
+    const mail = { failed: false };
     const lazyMailer: Mailer = {
-      sendSignInCode: (message) =>
-        (mailer ?? mailerFor(c.env)).sendSignInCode(message),
+      async sendSignInCode(message) {
+        try {
+          await (mailer ?? mailerFor(c.env)).sendSignInCode(message);
+        } catch (err) {
+          // Better Auth logs the error but still answers 200, so remember it
+          // for the /auth route to report.
+          mail.failed = true;
+          throw err;
+        }
+      },
     };
+    c.set("mail", mail);
     c.set("auth", createAuth({ db: c.var.db, env: c.env, mailer: lazyMailer }));
     await next();
   });

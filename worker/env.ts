@@ -22,5 +22,10 @@ export type Bindings = {
 
 export type AppEnv = {
   Bindings: Bindings;
-  Variables: { db: Database; auth: Auth };
+  Variables: {
+    db: Database;
+    auth: Auth;
+    /** Set when this request's sign-in code email failed to send. */
+    mail: { failed: boolean };
+  };
 };

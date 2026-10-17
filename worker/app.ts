@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
+import type { ErrorResponse } from "@/shared/envelope";
 import type { AppEnv } from "./env";
 import { handleError, handleNotFound } from "./lib/errors";
 import type { Mailer } from "./mail/mailer";
@@ -31,7 +32,21 @@ export function createApp(deps: AppDeps = {}) {
     .all("/auth/organization/*", (c) => c.notFound())
     // Better Auth answers its own routes in its own JSON. The browser calls
     // them through Better Auth's client, not through `unwrap`.
-    .on(["GET", "POST"], "/auth/*", (c) => c.var.auth.handler(c.req.raw))
+    .on(["GET", "POST"], "/auth/*", async (c) => {
+      const res = await c.var.auth.handler(c.req.raw);
+      // A code that never left must not read as "check your inbox".
+      if (c.var.mail.failed) {
+        return c.json<ErrorResponse>(
+          {
+            success: false,
+            code: "INTERNAL_ERROR",
+            error: "The sign-in code couldn't be sent",
+          },
+          502
+        );
+      }
+      return res;
+    })
     .route("/health", healthRoutes)
     .route("/me", meRoutes)
     .route("/workspaces", workspaceRoutes);
