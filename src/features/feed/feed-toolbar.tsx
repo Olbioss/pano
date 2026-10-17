@@ -87,6 +87,7 @@ export function FeedToolbar({ boards, params, rawQuery, onChange }: Props) {
           id="feed-search"
           type="search"
           className="w-48"
+          maxLength={100}
           placeholder={t("searchPlaceholder")}
           value={rawQuery}
           onChange={(event) =>

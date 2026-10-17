@@ -58,7 +58,12 @@ export async function renderPostPage(
     const meta = postMeta(post);
     if (url.pathname !== meta.canonicalPath) {
       const current = new URL(`${meta.canonicalPath}${url.search}`, url);
-      return Response.redirect(current.toString(), 301);
+      // A 301 without caching rules is kept forever. Once the title changed
+      // back, a remembered old→new hop and the new→old one would loop.
+      return new Response(null, {
+        status: 301,
+        headers: { location: current.toString(), "cache-control": "no-store" },
+      });
     }
     const canonical = escapeAttribute(
       new URL(meta.canonicalPath, url).toString()

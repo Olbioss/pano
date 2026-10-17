@@ -134,4 +134,12 @@ describe("GET /api/workspaces/:slug/similar", () => {
     expect((await similar(t, ws.slug, "dark & | ! (")).status).toBe(200);
     await t.settle();
   });
+
+  it("treats a word starting with a minus sign as a plain word", async () => {
+    const t = testApp();
+    const { en } = await fixtures(t);
+    const { body } = await similar(t, en, "Balance shows -5 after refund");
+    expect(titles(body)).toEqual([]);
+    await t.settle();
+  });
 });

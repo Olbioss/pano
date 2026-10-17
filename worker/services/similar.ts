@@ -23,8 +23,14 @@ export async function findSimilar(
 ): Promise<PostSummary[]> {
   const folded = sql`pano_fold(${input.q})`;
   // "dark mode" becomes "dark or mode", so one misspelled word can't hide a
-  // match: "exprot csv" still finds "Export to CSV".
-  const anyWord = sql`websearch_to_tsquery(${posts.searchConfig}, regexp_replace(${folded}, '\\s+', ' or ', 'g'))`;
+  // match: "exprot csv" still finds "Export to CSV". Only letters and digits
+  // go in: websearch syntax would read "-5" as NOT 5 and match almost
+  // everything.
+  const words = input.q
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+    .join(" or ");
+  const anyWord = sql`websearch_to_tsquery(${posts.searchConfig}, pano_fold(${words}))`;
   const filters: SQL[] = [
     eq(posts.organizationId, input.workspaceId),
     isNull(posts.mergedIntoId),

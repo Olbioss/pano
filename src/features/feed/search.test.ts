@@ -39,4 +39,8 @@ describe("feed URL state", () => {
   it("drops a blank search", () => {
     expect(read({ q: "   " }).q).toBeUndefined();
   });
+
+  it("keeps the first 100 characters of a long search", () => {
+    expect(read({ q: "x".repeat(150) }).q).toBe("x".repeat(100));
+  });
 });
