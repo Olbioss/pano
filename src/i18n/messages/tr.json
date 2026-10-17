@@ -72,6 +72,7 @@
     "RATE_LIMITED": "Çok fazla istek gönderildi. Bir dakika bekleyip tekrar deneyin.",
     "INTERNAL_ERROR": "Bizim tarafımızda bir sorun oluştu. Tekrar deneyin.",
     "WORKSPACE_LIMIT": "Şimdilik her hesap bir çalışma alanı açabilir.",
+    "POST_MERGED": "Bu istek başka bir istekle birleştirildi.",
     "NETWORK": "Pano'ya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin."
   },
   "fieldErrors": {
@@ -80,6 +81,7 @@
     "SLUG_TAKEN": "Bu adres kullanılıyor. Başka bir adres seçin.",
     "NAME_NEEDS_LETTERS": "En az iki harf ya da rakam kullanın.",
     "BOARD_EXISTS": "Bu çalışma alanında bu adla bir pano zaten var.",
+    "BOARD_UNKNOWN": "Bu çalışma alanının panolarından birini seçin.",
     "ORDER_MISMATCH": "Pano listesi değişti. Sayfayı yenileyip tekrar deneyin.",
     "NOTHING_TO_UPDATE": "Kaydetmeden önce bir şeyi değiştirin.",
     "CODE_FORMAT": "E-postadaki 6 haneyi girin."

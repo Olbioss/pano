@@ -11,7 +11,8 @@ export type ApiErrorCode =
   | "CONFLICT"
   | "RATE_LIMITED"
   | "INTERNAL_ERROR"
-  | "WORKSPACE_LIMIT";
+  | "WORKSPACE_LIMIT"
+  | "POST_MERGED";
 
 export type SuccessResponse<T> = { success: true; data: T };
 

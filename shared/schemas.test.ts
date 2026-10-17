@@ -2,9 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   boardNameSchema,
   codeFormSchema,
+  createPostSchema,
   createWorkspaceSchema,
   displayNameSchema,
+  feedQuerySchema,
+  similarQuerySchema,
+  updatePostSchema,
   updateWorkspaceSchema,
+  voteSchema,
   workspaceSlugSchema,
 } from "./schemas";
 
@@ -93,5 +98,65 @@ describe("displayNameSchema", () => {
 
   it("refuses a name over 50 characters", () => {
     expect(displayNameSchema.safeParse("a".repeat(51)).success).toBe(false);
+  });
+});
+
+const BOARD = "0b3f5c1e-8f5a-4c3e-9a51-2b7d0c9e4f11";
+
+describe("createPostSchema", () => {
+  it("accepts a post with an empty body", () => {
+    const input = { boardId: BOARD, title: "Dark mode", body: "" };
+    expect(createPostSchema.safeParse(input).success).toBe(true);
+  });
+
+  it("refuses a title under 3 characters", () => {
+    const input = { boardId: BOARD, title: " ab ", body: "" };
+    expect(createPostSchema.safeParse(input).success).toBe(false);
+  });
+
+  it("refuses a body over 5000 characters", () => {
+    const input = {
+      boardId: BOARD,
+      title: "Dark mode",
+      body: "x".repeat(5001),
+    };
+    expect(createPostSchema.safeParse(input).success).toBe(false);
+  });
+});
+
+describe("updatePostSchema", () => {
+  it("needs at least one change", () => {
+    expect(messages(updatePostSchema.safeParse({}))).toEqual([
+      "NOTHING_TO_UPDATE",
+    ]);
+  });
+});
+
+describe("feedQuerySchema", () => {
+  it("fills in the defaults", () => {
+    expect(feedQuerySchema.parse({})).toEqual({
+      sort: "trending",
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it.each([{ page: "0" }, { limit: "51" }, { sort: "hot" }])(
+    "refuses %j",
+    (query) => {
+      expect(feedQuerySchema.safeParse(query).success).toBe(false);
+    }
+  );
+});
+
+describe("similarQuerySchema", () => {
+  it("refuses a one-letter query", () => {
+    expect(similarQuerySchema.safeParse({ q: "a" }).success).toBe(false);
+  });
+});
+
+describe("voteSchema", () => {
+  it("takes only true or false", () => {
+    expect(voteSchema.safeParse({ voted: "yes" }).success).toBe(false);
   });
 });

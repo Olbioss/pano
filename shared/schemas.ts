@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { FieldErrorKey } from "./field-errors";
 import { LOCALES } from "./locale";
 import { isReservedSlug, slugify } from "./slug";
+import { POST_STATUSES } from "./status";
 
 /** A field-error key as a zod issue message, checked at compile time. */
 const key = (error: FieldErrorKey) => ({ error });
@@ -69,4 +70,48 @@ export const codeFormSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{6}$/, key("CODE_FORMAT")),
+});
+
+export const postTitleSchema = z.string().trim().min(3).max(120);
+export const postBodySchema = z.string().trim().max(5000);
+
+export const createPostSchema = z.object({
+  boardId: z.uuid(),
+  title: postTitleSchema,
+  body: postBodySchema,
+});
+
+/** The edit form always sends both fields; the PATCH route accepts either. */
+export const postFormSchema = z.object({
+  title: postTitleSchema,
+  body: postBodySchema,
+});
+
+export const updatePostSchema = z
+  .object({
+    title: postTitleSchema.optional(),
+    body: postBodySchema.optional(),
+  })
+  .refine(
+    (update) => update.title !== undefined || update.body !== undefined,
+    key("NOTHING_TO_UPDATE")
+  );
+
+export const voteSchema = z.object({ voted: z.boolean() });
+
+export const FEED_SORTS = ["trending", "top", "new"] as const;
+export type FeedSort = (typeof FEED_SORTS)[number];
+
+export const feedQuerySchema = z.object({
+  board: z.string().max(40).optional(),
+  sort: z.enum(FEED_SORTS).default("trending"),
+  status: z.enum(POST_STATUSES).optional(),
+  q: z.string().trim().max(100).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export const similarQuerySchema = z.object({
+  q: z.string().trim().min(2).max(120),
+  board: z.string().max(40).optional(),
 });

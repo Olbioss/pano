@@ -72,6 +72,7 @@
     "RATE_LIMITED": "Too many requests. Wait a minute and try again.",
     "INTERNAL_ERROR": "Something went wrong on our side. Try again.",
     "WORKSPACE_LIMIT": "Each account can have one workspace for now.",
+    "POST_MERGED": "This request was merged into another one.",
     "NETWORK": "Couldn't reach Pano. Check your connection and try again."
   },
   "fieldErrors": {
@@ -80,6 +81,7 @@
     "SLUG_TAKEN": "That address is taken. Pick another.",
     "NAME_NEEDS_LETTERS": "Use at least two letters or numbers.",
     "BOARD_EXISTS": "This workspace already has a board with that name.",
+    "BOARD_UNKNOWN": "Pick one of this workspace's boards.",
     "ORDER_MISMATCH": "The board list changed. Reload and try again.",
     "NOTHING_TO_UPDATE": "Change something before saving.",
     "CODE_FORMAT": "Enter the 6 digits from the email."
