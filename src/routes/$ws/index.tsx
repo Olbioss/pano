@@ -1,47 +1,117 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useTranslations } from "use-intl";
-import { z } from "zod";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useNow, useTranslations } from "use-intl";
 import { Button } from "@/components/ui/button";
+import { FeedToolbar } from "@/features/feed/feed-toolbar";
+import {
+  type FeedSearch,
+  feedParams,
+  feedSearchSchema,
+} from "@/features/feed/search";
+import { PostCard } from "@/features/posts/post-card";
+import { feedQueryOptions } from "@/lib/posts";
+import { meQueryOptions } from "@/lib/session";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { workspaceQueryOptions } from "@/lib/workspaces";
 
 export const Route = createFileRoute("/$ws/")({
-  validateSearch: z.object({ board: z.string().optional().catch(undefined) }),
-  component: WorkspaceHome,
+  validateSearch: feedSearchSchema,
+  component: Feed,
 });
 
-function WorkspaceHome() {
+function Feed() {
   const { ws } = Route.useParams();
-  const { board } = Route.useSearch();
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const { data: workspace } = useSuspenseQuery(workspaceQueryOptions(ws));
-  const t = useTranslations("workspace");
+  const me = useQuery(meQueryOptions);
+  const t = useTranslations("feed");
+  const tWorkspace = useTranslations("workspace");
+  const now = useNow({ updateInterval: 60_000 });
+  const params = feedParams(search);
+  // The URL follows every keystroke; the request waits for a pause in typing.
+  const q = useDebouncedValue(params.q, 300);
+  const feed = useQuery(feedQueryOptions(ws, { ...params, q }));
+  const signedIn = Boolean(me.data?.user);
+
+  // A filter change goes back to the first page. Typing replaces the history
+  // entry instead of adding one per letter.
+  const update = (
+    next: Partial<FeedSearch>,
+    options: { replace?: boolean } = {}
+  ) =>
+    navigate({
+      search: (prev) => ({ ...prev, ...next, page: undefined }),
+      replace: options.replace,
+    });
+  const goToPage = (page: number) =>
+    navigate({
+      search: (prev) => ({ ...prev, page: page > 1 ? page : undefined }),
+    });
 
   if (workspace.boards.length === 0) {
-    return <p className="text-muted-foreground">{t("noBoards")}</p>;
+    return <p className="text-muted-foreground">{tWorkspace("noBoards")}</p>;
   }
-  const active =
-    workspace.boards.find((b) => b.slug === board) ?? workspace.boards[0];
 
+  const items = feed.data?.items ?? [];
   return (
     <section className="flex flex-col gap-4">
-      <nav className="flex flex-wrap gap-2" aria-label={t("boards")}>
-        {workspace.boards.map((b) => (
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <FeedToolbar
+          boards={workspace.boards}
+          params={params}
+          rawQuery={search.q ?? ""}
+          onChange={update}
+        />
+        <Button asChild size="sm">
+          <Link to="/$ws/new" params={{ ws }} search={{ board: params.board }}>
+            {t("newRequest")}
+          </Link>
+        </Button>
+      </div>
+      {feed.isPending ? (
+        <p className="text-muted-foreground text-sm">{t("loading")}</p>
+      ) : feed.isError ? (
+        <p className="text-destructive text-sm" role="alert">
+          {t("loadFailed")}
+        </p>
+      ) : items.length === 0 ? (
+        <p className="text-muted-foreground">
+          {params.q ? t("emptySearch") : t("empty")}
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {items.map((post) => (
+            <PostCard key={post.id} post={post} signedIn={signedIn} now={now} />
+          ))}
+        </ul>
+      )}
+      {(params.page > 1 || feed.data?.hasMore) && (
+        <nav
+          className="flex items-center justify-between"
+          aria-label={t("pages")}
+        >
           <Button
-            key={b.id}
-            asChild
+            variant="outline"
             size="sm"
-            variant={b.id === active?.id ? "secondary" : "ghost"}
+            disabled={params.page <= 1}
+            onClick={() => goToPage(params.page - 1)}
           >
-            <Link to="/$ws" params={{ ws }} search={{ board: b.slug }}>
-              {b.name}
-            </Link>
+            {t("previous")}
           </Button>
-        ))}
-      </nav>
-      {/* Requests and the feed arrive in Phase 2. */}
-      <p className="text-muted-foreground">
-        {t("noRequestsYet", { board: active?.name ?? "" })}
-      </p>
+          <span className="text-muted-foreground text-sm">
+            {t("page", { page: params.page })}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!feed.data?.hasMore}
+            onClick={() => goToPage(params.page + 1)}
+          >
+            {t("next")}
+          </Button>
+        </nav>
+      )}
     </section>
   );
 }

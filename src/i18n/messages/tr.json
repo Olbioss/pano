@@ -42,9 +42,7 @@
   "workspace": {
     "requests": "İstekler",
     "settings": "Ayarlar",
-    "boards": "Panolar",
     "noBoards": "Henüz pano yok.",
-    "noRequestsYet": "{board} panosunda henüz istek yok.",
     "notFound": "Bu adreste bir çalışma alanı yok."
   },
   "vote": {
@@ -83,6 +81,29 @@
     "similarHint": "Daha önce istenmiş mi? Yeniden göndermek yerine oy verin.",
     "submit": "İsteği gönder",
     "leaveConfirm": "Bu sayfadan ayrılsın mı? Taslağınız kaybolacak."
+  },
+  "feed": {
+    "boards": "Panolar",
+    "allBoards": "Tüm panolar",
+    "sortLabel": "Sıralama",
+    "sort": {
+      "trending": "Gündemde",
+      "top": "En çok oy alan",
+      "new": "En yeni"
+    },
+    "statusLabel": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "searchLabel": "İsteklerde ara",
+    "searchPlaceholder": "İsteklerde ara…",
+    "newRequest": "Yeni istek",
+    "loading": "Yükleniyor…",
+    "loadFailed": "İstekler yüklenemedi. Tekrar denemek için sayfayı yenileyin.",
+    "empty": "Burada henüz istek yok.",
+    "emptySearch": "Aramanızla eşleşen istek yok.",
+    "pages": "Sayfalar",
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "page": "Sayfa {page}"
   },
   "settings": {
     "workspaceSection": "Çalışma alanı",

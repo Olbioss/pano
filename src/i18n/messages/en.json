@@ -42,9 +42,7 @@
   "workspace": {
     "requests": "Requests",
     "settings": "Settings",
-    "boards": "Boards",
     "noBoards": "No boards yet.",
-    "noRequestsYet": "No requests on {board} yet.",
     "notFound": "There's no workspace at this address."
   },
   "vote": {
@@ -83,6 +81,29 @@
     "similarHint": "Already requested? Vote instead of posting it again.",
     "submit": "Post request",
     "leaveConfirm": "Leave this page? Your draft will be lost."
+  },
+  "feed": {
+    "boards": "Boards",
+    "allBoards": "All boards",
+    "sortLabel": "Sort",
+    "sort": {
+      "trending": "Trending",
+      "top": "Top",
+      "new": "New"
+    },
+    "statusLabel": "Status",
+    "allStatuses": "All statuses",
+    "searchLabel": "Search requests",
+    "searchPlaceholder": "Search requests…",
+    "newRequest": "New request",
+    "loading": "Loading…",
+    "loadFailed": "Couldn't load requests. Reload the page to try again.",
+    "empty": "No requests here yet.",
+    "emptySearch": "No requests match your search.",
+    "pages": "Pages",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page}"
   },
   "settings": {
     "workspaceSection": "Workspace",
