@@ -15,6 +15,7 @@ import { Route as NewWorkspaceRouteImport } from './routes/new-workspace'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as WsIndexRouteImport } from './routes/$ws/index'
 import { Route as WsSettingsRouteImport } from './routes/$ws/settings'
+import { Route as PRefRouteImport } from './routes/p/$ref'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const WsSettingsRoute = WsSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => WsRoute,
 } as any)
+const PRefRoute = PRefRouteImport.update({
+  id: '/p/$ref',
+  path: '/p/$ref',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
   '/$ws/settings': typeof WsSettingsRoute
+  '/p/$ref': typeof PRefRoute
   '/$ws/': typeof WsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
   '/$ws/settings': typeof WsSettingsRoute
+  '/p/$ref': typeof PRefRoute
   '/$ws': typeof WsIndexRoute
 }
 export interface FileRoutesById {
@@ -69,14 +77,21 @@ export interface FileRoutesById {
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
   '/$ws/settings': typeof WsSettingsRoute
+  '/p/$ref': typeof PRefRoute
   '/$ws/': typeof WsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/$ws' | '/new-workspace' | '/signin' | '/$ws/settings' | '/$ws/'
+    | '/'
+    | '/$ws'
+    | '/new-workspace'
+    | '/signin'
+    | '/$ws/settings'
+    | '/p/$ref'
+    | '/$ws/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/new-workspace' | '/signin' | '/$ws/settings' | '/$ws'
+  to: '/' | '/new-workspace' | '/signin' | '/$ws/settings' | '/p/$ref' | '/$ws'
   id:
     | '__root__'
     | '/'
@@ -84,6 +99,7 @@ export interface FileRouteTypes {
     | '/new-workspace'
     | '/signin'
     | '/$ws/settings'
+    | '/p/$ref'
     | '/$ws/'
   fileRoutesById: FileRoutesById
 }
@@ -92,6 +108,7 @@ export interface RootRouteChildren {
   WsRoute: typeof WsRouteWithChildren
   NewWorkspaceRoute: typeof NewWorkspaceRoute
   SigninRoute: typeof SigninRoute
+  PRefRoute: typeof PRefRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -138,6 +155,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WsSettingsRouteImport
       parentRoute: typeof WsRoute
     }
+    '/p/$ref': {
+      id: '/p/$ref'
+      path: '/p/$ref'
+      fullPath: '/p/$ref'
+      preLoaderRoute: typeof PRefRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -158,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   WsRoute: WsRouteWithChildren,
   NewWorkspaceRoute: NewWorkspaceRoute,
   SigninRoute: SigninRoute,
+  PRefRoute: PRefRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

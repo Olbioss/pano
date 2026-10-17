@@ -51,6 +51,26 @@
     "voteFor": "Vote for {title}",
     "signInToVote": "Sign in to vote"
   },
+  "statuses": {
+    "open": "Open",
+    "under_review": "Under review",
+    "planned": "Planned",
+    "in_progress": "In progress",
+    "shipped": "Shipped",
+    "closed": "Closed"
+  },
+  "post": {
+    "anonymous": "Anonymous",
+    "titleLabel": "Title",
+    "bodyLabel": "Details (optional)",
+    "bodyHint": "Markdown works: **bold**, lists, links.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "notFound": "This request doesn't exist or was deleted."
+  },
   "settings": {
     "workspaceSection": "Workspace",
     "save": "Save",

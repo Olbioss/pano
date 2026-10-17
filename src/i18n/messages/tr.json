@@ -51,6 +51,26 @@
     "voteFor": "{title} için oy ver",
     "signInToVote": "Oy vermek için giriş yapın"
   },
+  "statuses": {
+    "open": "Açık",
+    "under_review": "İnceleniyor",
+    "planned": "Planlandı",
+    "in_progress": "Yapılıyor",
+    "shipped": "Yayında",
+    "closed": "Kapatıldı"
+  },
+  "post": {
+    "anonymous": "Anonim",
+    "titleLabel": "Başlık",
+    "bodyLabel": "Ayrıntılar (isteğe bağlı)",
+    "bodyHint": "Markdown kullanabilirsiniz: **kalın**, listeler, bağlantılar.",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "confirmDelete": "Silmeyi onayla",
+    "save": "Kaydet",
+    "cancel": "Vazgeç",
+    "notFound": "Bu istek yok ya da silinmiş."
+  },
   "settings": {
     "workspaceSection": "Çalışma alanı",
     "save": "Kaydet",
