@@ -1,6 +1,7 @@
 import { createServer, type Server, type Socket } from "node:net";
 import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { testDb } from "../test/db";
 import { createDb } from "./client";
 
 // Accepts TCP connections and never answers: a database host that's up at the
@@ -36,5 +37,18 @@ describe("createDb", () => {
     await expect(db.execute(sql`select 1`)).rejects.toThrow();
     expect(Date.now() - started).toBeLessThan(3000);
     await close();
+  });
+
+  it("keeps Postgres notices out of the logs", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const { db, close } = testDb();
+    try {
+      // A search for nothing but stopwords makes Postgres send a NOTICE.
+      await db.execute(sql`select websearch_to_tsquery('english', 'the')`);
+      expect(log).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore();
+      await close();
+    }
   });
 });

@@ -24,6 +24,9 @@ export function createDb(
     max: 5,
     fetch_types: false,
     connect_timeout: connectTimeoutSeconds,
+    // Notices aren't errors (a search for "the" sends one), and postgres.js
+    // would print every one of them with console.log.
+    onnotice: () => {},
   });
   return {
     db: drizzle({ client, schema }),

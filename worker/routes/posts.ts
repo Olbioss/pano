@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { SuccessResponse } from "@/shared/envelope";
-import type { PostDetail, VoteResult } from "@/shared/posts";
+import type { FeedPage, PostDetail, VoteResult } from "@/shared/posts";
 import {
   createPostSchema,
+  feedQuerySchema,
   updatePostSchema,
   voteSchema,
 } from "@/shared/schemas";
@@ -21,6 +22,7 @@ import {
   requireCanEdit,
   updatePost,
 } from "../services/posts";
+import { listFeed } from "../services/ranking";
 import { setVote } from "../services/votes";
 import { findWorkspace } from "./workspaces";
 
@@ -34,37 +36,47 @@ async function postDetail(db: Database, id: number, viewerId: string | null) {
   return post;
 }
 
-/** Under /workspaces: posting into a workspace. */
-export const workspacePostRoutes = new Hono<AppEnv>().post(
-  "/:slug/posts",
-  requireUser,
-  validate("json", createPostSchema),
-  rateLimit("post", 5, 3600),
-  async (c) => {
-    const { boardId, title, body } = c.req.valid("json");
+/** Under /workspaces: a workspace's feed, and posting into it. */
+export const workspacePostRoutes = new Hono<AppEnv>()
+  .get("/:slug/posts", validate("query", feedQuerySchema), async (c) => {
     const workspace = await findWorkspace(c.var.db, c.req.param("slug"));
-    if (!(await boardInWorkspace(c.var.db, boardId, workspace.id))) {
-      throw new AppError(
-        400,
-        "BAD_REQUEST",
-        "That board isn't in this workspace",
-        { boardId: "BOARD_UNKNOWN" }
+    const page = await listFeed(c.var.db, {
+      ...c.req.valid("query"),
+      workspaceId: workspace.id,
+      viewerId: await readViewerId(c),
+    });
+    return c.json<SuccessResponse<FeedPage>>({ success: true, data: page });
+  })
+  .post(
+    "/:slug/posts",
+    requireUser,
+    validate("json", createPostSchema),
+    rateLimit("post", 5, 3600),
+    async (c) => {
+      const { boardId, title, body } = c.req.valid("json");
+      const workspace = await findWorkspace(c.var.db, c.req.param("slug"));
+      if (!(await boardInWorkspace(c.var.db, boardId, workspace.id))) {
+        throw new AppError(
+          400,
+          "BAD_REQUEST",
+          "That board isn't in this workspace",
+          { boardId: "BOARD_UNKNOWN" }
+        );
+      }
+      const id = await createPost(c.var.db, {
+        workspaceId: workspace.id,
+        locale: workspace.defaultLocale,
+        boardId,
+        authorId: c.var.user.id,
+        title,
+        body,
+      });
+      return c.json<SuccessResponse<PostDetail>>(
+        { success: true, data: await postDetail(c.var.db, id, c.var.user.id) },
+        201
       );
     }
-    const id = await createPost(c.var.db, {
-      workspaceId: workspace.id,
-      locale: workspace.defaultLocale,
-      boardId,
-      authorId: c.var.user.id,
-      title,
-      body,
-    });
-    return c.json<SuccessResponse<PostDetail>>(
-      { success: true, data: await postDetail(c.var.db, id, c.var.user.id) },
-      201
-    );
-  }
-);
+  );
 
 /** Under /posts: one post, and changing or deleting it. */
 export const postRoutes = new Hono<AppEnv>()
