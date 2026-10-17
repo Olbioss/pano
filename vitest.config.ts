@@ -14,7 +14,11 @@ export default defineConfig(({ mode }) => ({
     // the tests however they're started (bun run, bunx, the editor, CI).
     env: loadEnv(mode, process.cwd(), ""),
     environment: "node",
-    include: ["worker/**/*.test.ts", "shared/**/*.test.ts", "src/**/*.test.ts"],
+    include: [
+      "worker/**/*.test.ts",
+      "shared/**/*.test.ts",
+      "src/**/*.test.{ts,tsx}",
+    ],
     globalSetup: ["./test/global-setup.ts"],
     // The integration tests share one Postgres. Running files in parallel
     // makes them contend for it and fail intermittently.

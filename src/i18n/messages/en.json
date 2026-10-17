@@ -47,6 +47,10 @@
     "noRequestsYet": "No requests on {board} yet.",
     "notFound": "There's no workspace at this address."
   },
+  "vote": {
+    "voteFor": "Vote for {title}",
+    "signInToVote": "Sign in to vote"
+  },
   "settings": {
     "workspaceSection": "Workspace",
     "save": "Save",

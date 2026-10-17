@@ -47,6 +47,10 @@
     "noRequestsYet": "{board} panosunda henüz istek yok.",
     "notFound": "Bu adreste bir çalışma alanı yok."
   },
+  "vote": {
+    "voteFor": "{title} için oy ver",
+    "signInToVote": "Oy vermek için giriş yapın"
+  },
   "settings": {
     "workspaceSection": "Çalışma alanı",
     "save": "Kaydet",

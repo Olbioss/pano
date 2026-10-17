@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+import { Toaster } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 
 export const Route = createRootRouteWithContext<{
@@ -11,6 +12,7 @@ export const Route = createRootRouteWithContext<{
       <div className="flex-1">
         <Outlet />
       </div>
+      <Toaster position="bottom-center" richColors />
     </div>
   ),
 });
