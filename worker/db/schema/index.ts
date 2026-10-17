@@ -2,4 +2,5 @@
 // worker/auth.ts, run `bun run auth:generate`, then `bun run db:generate`.
 export * from "./auth";
 export * from "./boards";
+export * from "./rate-limits";
 export * from "./workspaces";

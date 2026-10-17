@@ -29,6 +29,13 @@
       "when": 1792166778331,
       "tag": "0003_boards",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792242290076,
+      "tag": "0004_rate_limits",
+      "breakpoints": true
     }
   ]
 }
