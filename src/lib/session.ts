@@ -7,3 +7,8 @@ export const meQueryOptions = queryOptions({
   queryFn: async () => unwrap(await api.me.$get()),
   staleTime: 60_000,
 });
+
+/** Sets the signed-in person's display name. */
+export async function updateMe(name: string) {
+  return unwrap(await api.me.$patch({ json: { name } }));
+}

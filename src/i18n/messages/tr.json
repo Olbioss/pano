@@ -71,6 +71,19 @@
     "cancel": "Vazgeç",
     "notFound": "Bu istek yok ya da silinmiş."
   },
+  "submit": {
+    "title": "Yeni istek",
+    "intro": "Tek bir fikri ya da sorunu anlatın. Önce benzer isteklere göz atın: oradaki bir oy da sayılır.",
+    "nameLabel": "Adınız",
+    "nameHint": "İsteğinizle birlikte gösterilir.",
+    "postingAs": "{name} olarak gönderiyorsunuz.",
+    "changeName": "Değiştir",
+    "boardLabel": "Pano",
+    "similarHeading": "Benzer istekler",
+    "similarHint": "Daha önce istenmiş mi? Yeniden göndermek yerine oy verin.",
+    "submit": "İsteği gönder",
+    "leaveConfirm": "Bu sayfadan ayrılsın mı? Taslağınız kaybolacak."
+  },
   "settings": {
     "workspaceSection": "Çalışma alanı",
     "save": "Kaydet",

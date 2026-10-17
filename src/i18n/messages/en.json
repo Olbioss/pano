@@ -71,6 +71,19 @@
     "cancel": "Cancel",
     "notFound": "This request doesn't exist or was deleted."
   },
+  "submit": {
+    "title": "New request",
+    "intro": "Describe one idea or problem. Look through similar requests first: a vote there counts too.",
+    "nameLabel": "Your name",
+    "nameHint": "Shown with your request.",
+    "postingAs": "Posting as {name}.",
+    "changeName": "Change",
+    "boardLabel": "Board",
+    "similarHeading": "Similar requests",
+    "similarHint": "Already requested? Vote instead of posting it again.",
+    "submit": "Post request",
+    "leaveConfirm": "Leave this page? Your draft will be lost."
+  },
   "settings": {
     "workspaceSection": "Workspace",
     "save": "Save",
