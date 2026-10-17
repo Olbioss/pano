@@ -1,8 +1,12 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { SuccessResponse } from "@/shared/envelope";
-import type { PostDetail } from "@/shared/posts";
-import { createPostSchema, updatePostSchema } from "@/shared/schemas";
+import type { PostDetail, VoteResult } from "@/shared/posts";
+import {
+  createPostSchema,
+  updatePostSchema,
+  voteSchema,
+} from "@/shared/schemas";
 import type { Database } from "../db/client";
 import type { AppEnv } from "../env";
 import { AppError } from "../lib/errors";
@@ -17,6 +21,7 @@ import {
   requireCanEdit,
   updatePost,
 } from "../services/posts";
+import { setVote } from "../services/votes";
 import { findWorkspace } from "./workspaces";
 
 const postParamSchema = z.object({
@@ -96,6 +101,25 @@ export const postRoutes = new Hono<AppEnv>()
       return c.json<SuccessResponse<{ id: number }>>({
         success: true,
         data: { id },
+      });
+    }
+  )
+  .put(
+    "/:id/vote",
+    requireUser,
+    validate("param", postParamSchema),
+    validate("json", voteSchema),
+    rateLimit("vote", 120, 3600),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const result = await setVote(c.var.db, {
+        postId: id,
+        userId: c.var.user.id,
+        voted: c.req.valid("json").voted,
+      });
+      return c.json<SuccessResponse<VoteResult>>({
+        success: true,
+        data: result,
       });
     }
   );

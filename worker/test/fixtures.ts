@@ -52,3 +52,15 @@ export async function submitPost(
   if (!body.success) throw new Error(`post failed: ${body.error}`);
   return body.data;
 }
+
+/** Votes through the API as `cookie`. */
+export const voteFor = (
+  t: TestApp,
+  cookie: string,
+  postId: number,
+  voted = true
+) =>
+  t.client.api.posts[":id"].vote.$put(
+    { param: { id: String(postId) }, json: { voted } },
+    { headers: { cookie } }
+  );
