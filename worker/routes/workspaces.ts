@@ -93,7 +93,7 @@ async function createOrganization(
   }
 }
 
-async function findWorkspace(
+export async function findWorkspace(
   db: Database,
   slug: string
 ): Promise<WorkspaceSummary> {

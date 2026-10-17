@@ -8,6 +8,7 @@ import { withAuth } from "./middleware/auth";
 import { withDb } from "./middleware/db";
 import { healthRoutes } from "./routes/health";
 import { meRoutes } from "./routes/me";
+import { postRoutes, workspacePostRoutes } from "./routes/posts";
 import { workspaceRoutes } from "./routes/workspaces";
 
 export type AppDeps = { mailer?: Mailer };
@@ -51,7 +52,9 @@ export function createApp(deps: AppDeps = {}) {
     })
     .route("/health", healthRoutes)
     .route("/me", meRoutes)
-    .route("/workspaces", workspaceRoutes);
+    .route("/workspaces", workspaceRoutes)
+    .route("/workspaces", workspacePostRoutes)
+    .route("/posts", postRoutes);
 
   app.onError(handleError);
   app.notFound(handleNotFound);

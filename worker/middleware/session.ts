@@ -39,3 +39,8 @@ export const requireUser = createMiddleware<UserEnv>(async (c, next) => {
   c.set("user", { id, name, email });
   await next();
 });
+
+/** The signed-in person's id, or null: for routes anyone may call. */
+export async function readViewerId(c: Parameters<typeof readSession>[0]) {
+  return (await readSession(c))?.user.id ?? null;
+}
