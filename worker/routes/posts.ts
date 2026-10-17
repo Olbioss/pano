@@ -1,10 +1,16 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { SuccessResponse } from "@/shared/envelope";
-import type { FeedPage, PostDetail, VoteResult } from "@/shared/posts";
+import type {
+  FeedPage,
+  PostDetail,
+  PostSummary,
+  VoteResult,
+} from "@/shared/posts";
 import {
   createPostSchema,
   feedQuerySchema,
+  similarQuerySchema,
   updatePostSchema,
   voteSchema,
 } from "@/shared/schemas";
@@ -23,6 +29,7 @@ import {
   updatePost,
 } from "../services/posts";
 import { listFeed } from "../services/ranking";
+import { findSimilar } from "../services/similar";
 import { setVote } from "../services/votes";
 import { findWorkspace } from "./workspaces";
 
@@ -36,7 +43,7 @@ async function postDetail(db: Database, id: number, viewerId: string | null) {
   return post;
 }
 
-/** Under /workspaces: a workspace's feed, and posting into it. */
+/** Under /workspaces: a workspace's feed, posting into it, and similar requests. */
 export const workspacePostRoutes = new Hono<AppEnv>()
   .get("/:slug/posts", validate("query", feedQuerySchema), async (c) => {
     const workspace = await findWorkspace(c.var.db, c.req.param("slug"));
@@ -76,7 +83,21 @@ export const workspacePostRoutes = new Hono<AppEnv>()
         201
       );
     }
-  );
+  )
+  .get("/:slug/similar", validate("query", similarQuerySchema), async (c) => {
+    const workspace = await findWorkspace(c.var.db, c.req.param("slug"));
+    const { q, board } = c.req.valid("query");
+    const items = await findSimilar(c.var.db, {
+      workspaceId: workspace.id,
+      q,
+      boardSlug: board,
+      viewerId: await readViewerId(c),
+    });
+    return c.json<SuccessResponse<PostSummary[]>>({
+      success: true,
+      data: items,
+    });
+  });
 
 /** Under /posts: one post, and changing or deleting it. */
 export const postRoutes = new Hono<AppEnv>()
