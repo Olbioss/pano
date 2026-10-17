@@ -25,6 +25,10 @@ export function createApp(deps: AppDeps = {}) {
     .use(csrf())
     .use(withDb)
     .use(withAuth(deps.mailer))
+    // Workspaces are made and changed through /workspaces, which enforces
+    // Pano's address rules; the server calls the organization plugin through
+    // auth.api. Its HTTP routes would skip those rules, so they don't exist.
+    .all("/auth/organization/*", (c) => c.notFound())
     // Better Auth answers its own routes in its own JSON. The browser calls
     // them through Better Auth's client, not through `unwrap`.
     .on(["GET", "POST"], "/auth/*", (c) => c.var.auth.handler(c.req.raw))

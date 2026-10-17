@@ -197,3 +197,42 @@ describe("PATCH /api/workspaces/:slug", () => {
     await t.settle();
   });
 });
+
+describe("Better Auth's organization routes", () => {
+  // Workspaces are made and changed through /api/workspaces, which enforces
+  // Pano's address rules. Better Auth's own HTTP routes would skip them.
+  it("can't be used to take a reserved address", async () => {
+    const t = testApp();
+    const { cookie } = await t.signIn();
+    const res = await t.post(
+      "/api/auth/organization/create",
+      { name: "Sneaky", slug: "settings" },
+      { cookie }
+    );
+    expect(res.status).toBe(404);
+    const taken = await t.client.api.workspaces[":slug"].$get({
+      param: { slug: "settings" },
+    });
+    expect(taken.status).toBe(404);
+    await t.settle();
+  });
+
+  it("can't be used to change a workspace's address", async () => {
+    const t = testApp();
+    const { cookie } = await t.signIn();
+    const slug = uniqueSlug();
+    const created = await createWorkspace(t, cookie, slug);
+    const { data } = (await created.json()) as { data: { id: string } };
+    const res = await t.post(
+      "/api/auth/organization/update",
+      { organizationId: data.id, data: { slug: "admin" } },
+      { cookie }
+    );
+    expect(res.status).toBe(404);
+    const after = await t.client.api.workspaces[":slug"].$get({
+      param: { slug },
+    });
+    expect(after.status).toBe(200);
+    await t.settle();
+  });
+});
