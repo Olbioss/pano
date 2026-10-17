@@ -26,6 +26,18 @@ export function cookieFrom(res: Response) {
     .join("; ");
 }
 
+/** `cookie` with whatever `res` set replaced, the way a browser keeps them. */
+export function updateCookie(cookie: string, res: { headers: Headers }) {
+  const jar = new Map<string, string>();
+  const add = (pair: string) => {
+    const at = pair.indexOf("=");
+    if (at > 0) jar.set(pair.slice(0, at), pair.slice(at + 1));
+  };
+  for (const pair of cookie.split("; ")) add(pair);
+  for (const set of res.headers.getSetCookie()) add(set.split(";")[0] ?? "");
+  return [...jar].map(([name, value]) => `${name}=${value}`).join("; ");
+}
+
 export const uniqueEmail = (prefix = "user") =>
   `${prefix}-${crypto.randomUUID().slice(0, 8)}@example.com`;
 

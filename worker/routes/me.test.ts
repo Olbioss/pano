@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../app";
 import { createDb } from "../db/client";
 import { session, user } from "../db/schema";
-import { cookieFrom, ORIGIN, testApp, uniqueEmail } from "../test/app";
+import {
+  cookieFrom,
+  ORIGIN,
+  testApp,
+  uniqueEmail,
+  updateCookie,
+} from "../test/app";
 import { testEnv } from "../test/env";
 
 /** Just the session token: what a browser sends once the cache cookie expired. */
@@ -39,7 +45,7 @@ describe("email-code sign-in", () => {
     expect(await me.json()).toEqual({
       success: true,
       data: {
-        user: { id: expect.any(String), email, name: email.split("@")[0] },
+        user: { id: expect.any(String), email, name: "" },
         workspaces: [],
       },
     });
@@ -172,6 +178,96 @@ describe("session cookies", () => {
       .getSetCookie()
       .find((part) => part.startsWith("better-auth.session_token="));
     expect(token).toMatch(/Max-Age=604800/);
+    await t.settle();
+  });
+});
+
+describe("display names", () => {
+  async function signInNamed(t: ReturnType<typeof testApp>, name: string) {
+    const email = uniqueEmail();
+    await t.sendCode(email);
+    const res = await t.post("/api/auth/sign-in/email-otp", {
+      email,
+      otp: t.lastCode(email),
+      name,
+    });
+    return cookieFrom(res);
+  }
+
+  const nameOf = async (t: ReturnType<typeof testApp>, cookie: string) => {
+    const res = await t.client.api.me.$get(undefined, { headers: { cookie } });
+    const body = (await res.json()) as { data: { user: { name: string } } };
+    return body.data.user.name;
+  };
+
+  it("starts a new account without a name", async () => {
+    const t = testApp();
+    const { cookie } = await t.signIn();
+    expect(await nameOf(t, cookie)).toBe("");
+    await t.settle();
+  });
+
+  it("keeps a real name sent at sign-in, tidied up", async () => {
+    const t = testApp();
+    const cookie = await signInNamed(t, "  Ayşe   Yılmaz ");
+    expect(await nameOf(t, cookie)).toBe("Ayşe Yılmaz");
+    await t.settle();
+  });
+
+  it("drops a blank name sent at sign-in", async () => {
+    const t = testApp();
+    const cookie = await signInNamed(t, "   ");
+    expect(await nameOf(t, cookie)).toBe("");
+    await t.settle();
+  });
+
+  it("renames the person, and the session shows it at once", async () => {
+    const t = testApp();
+    const { cookie } = await t.signIn();
+    const res = await t.client.api.me.$patch(
+      { json: { name: "Ayşe" } },
+      { headers: { cookie } }
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      success: true,
+      data: { user: { name: "Ayşe" } },
+    });
+    expect(await nameOf(t, updateCookie(cookie, res))).toBe("Ayşe");
+    await t.settle();
+  });
+
+  it("refuses a name without two letters or digits", async () => {
+    const t = testApp();
+    const { cookie } = await t.signIn();
+    const res = await t.client.api.me.$patch(
+      { json: { name: "!!" } },
+      { headers: { cookie } }
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      code: "BAD_REQUEST",
+      fields: { name: "NAME_NEEDS_LETTERS" },
+    });
+    await t.settle();
+  });
+
+  it("needs a signed-in user to rename", async () => {
+    const t = testApp();
+    const res = await t.client.api.me.$patch({ json: { name: "Ayşe" } });
+    expect(res.status).toBe(401);
+    await t.settle();
+  });
+
+  it("closes Better Auth's own update-user route", async () => {
+    const t = testApp();
+    const { cookie } = await t.signIn();
+    const res = await t.request("/api/auth/update-user", {
+      method: "POST",
+      headers: { cookie, origin: ORIGIN, "content-type": "application/json" },
+      body: JSON.stringify({ name: "x".repeat(500) }),
+    });
+    expect(res.status).toBe(404);
     await t.settle();
   });
 });

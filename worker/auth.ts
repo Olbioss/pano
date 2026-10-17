@@ -4,6 +4,7 @@ import { emailOTP, organization } from "better-auth/plugins";
 import type { Database } from "./db/client";
 import * as schema from "./db/schema";
 import type { Bindings } from "./env";
+import { cleanDisplayName } from "./lib/display-name";
 import { localeFromHeaders } from "./lib/request-locale";
 import type { Mailer } from "./mail/mailer";
 
@@ -28,11 +29,17 @@ export function createAuth({ db, env, mailer }: AuthDeps) {
     databaseHooks: {
       user: {
         create: {
-          // Code sign-in creates accounts with an empty name. Posts and
-          // comments need something to show, so start from the email.
+          // Sign-in may carry a name for a new account. Keep it only if it's
+          // a usable name; otherwise start empty, and the submit form asks.
+          // (Phase 1 used the email's local part, which leaked it publicly.)
           async before(user) {
-            const local = user.email.split("@")[0] ?? user.email;
-            return { data: { ...user, name: user.name || local } };
+            return { data: { ...user, name: cleanDisplayName(user.name) } };
+          },
+        },
+        update: {
+          async before(user) {
+            if (user.name === undefined) return;
+            return { data: { ...user, name: cleanDisplayName(user.name) } };
           },
         },
       },

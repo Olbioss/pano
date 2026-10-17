@@ -19,6 +19,21 @@ export const workspaceSlugSchema = z
 export const workspaceNameSchema = z.string().trim().min(2).max(60);
 export const localeSchema = z.enum(LOCALES);
 
+const LETTER_OR_DIGIT = /[\p{L}\p{N}]/gu;
+
+/** How a person appears next to their posts and comments. */
+export const displayNameSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(50)
+  .refine(
+    (name) => (name.match(LETTER_OR_DIGIT)?.length ?? 0) >= 2,
+    key("NAME_NEEDS_LETTERS")
+  );
+
+export const updateMeSchema = z.object({ name: displayNameSchema });
+
 export const createWorkspaceSchema = z.object({
   name: workspaceNameSchema,
   slug: workspaceSlugSchema,

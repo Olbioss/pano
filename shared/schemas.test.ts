@@ -3,6 +3,7 @@ import {
   boardNameSchema,
   codeFormSchema,
   createWorkspaceSchema,
+  displayNameSchema,
   updateWorkspaceSchema,
   workspaceSlugSchema,
 } from "./schemas";
@@ -76,5 +77,21 @@ describe("codeFormSchema", () => {
 
   it("accepts six digits", () => {
     expect(codeFormSchema.safeParse({ code: "048213" }).success).toBe(true);
+  });
+});
+
+describe("displayNameSchema", () => {
+  it.each(["Al", "Ayşe Yılmaz"])("accepts %s", (name) => {
+    expect(displayNameSchema.safeParse(name).success).toBe(true);
+  });
+
+  it("refuses a name with fewer than two letters or digits", () => {
+    expect(messages(displayNameSchema.safeParse("!!"))).toEqual([
+      "NAME_NEEDS_LETTERS",
+    ]);
+  });
+
+  it("refuses a name over 50 characters", () => {
+    expect(displayNameSchema.safeParse("a".repeat(51)).success).toBe(false);
   });
 });

@@ -30,6 +30,8 @@ export function createApp(deps: AppDeps = {}) {
     // Pano's address rules; the server calls the organization plugin through
     // auth.api. Its HTTP routes would skip those rules, so they don't exist.
     .all("/auth/organization/*", (c) => c.notFound())
+    // Names change through PATCH /me, which validates them.
+    .all("/auth/update-user", (c) => c.notFound())
     // Better Auth answers its own routes in its own JSON. The browser calls
     // them through Better Auth's client, not through `unwrap`.
     .on(["GET", "POST"], "/auth/*", async (c) => {
