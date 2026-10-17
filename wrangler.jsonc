@@ -6,8 +6,11 @@
   // postgres.js (and Better Auth, from Phase 1) need Node's APIs in the Worker.
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
+    // og.ts reads the app shell through this binding.
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api", "/api/*"]
+    // /p/* gets the shell with link-preview tags, so it skips the assets layer.
+    "run_worker_first": ["/api", "/api/*", "/p/*"]
   },
   "observability": { "enabled": true },
   "upload_source_maps": true,

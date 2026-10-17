@@ -179,3 +179,19 @@ export async function updatePost(
 export async function deletePost(db: Database, id: number) {
   await db.delete(posts).where(eq(posts.id, id));
 }
+
+/** The few fields a link preview needs. */
+export async function findPostMeta(db: Database, id: number) {
+  const [row] = await db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      body: posts.body,
+      workspaceName: organization.name,
+    })
+    .from(posts)
+    .innerJoin(organization, eq(organization.id, posts.organizationId))
+    .where(eq(posts.id, id))
+    .limit(1);
+  return row ?? null;
+}

@@ -1,5 +1,6 @@
 import app from "./app";
 import type { Bindings } from "./env";
+import { renderPostPage } from "./og";
 
 // The app types its bindings structurally (see env.ts), so tests can build
 // them by hand. This line ties them back to what wrangler.jsonc and .dev.vars
@@ -8,6 +9,14 @@ import type { Bindings } from "./env";
 type Assert<T extends true> = T;
 export type BindingsMatchWrangler = Assert<Env extends Bindings ? true : false>;
 
-// The Workers entry point. Cron triggers and link-preview rewriting join this
-// file in later phases; the API itself lives in app.ts.
-export default app;
+// The Workers entry point. /p/* gets the app shell with the post's link
+// preview; every other path run_worker_first sends here is the API. Cron
+// triggers join this file in Phase 4.
+export default {
+  fetch(request, env, ctx) {
+    if (new URL(request.url).pathname.startsWith("/p/")) {
+      return renderPostPage(request, env, ctx);
+    }
+    return app.fetch(request, env, ctx);
+  },
+} satisfies ExportedHandler<Env>;
