@@ -16,6 +16,7 @@ import {
 import { POST_STATUSES } from "../../../shared/status";
 import { organization, user } from "./auth";
 import { boards } from "./boards";
+import { comments } from "./comments";
 
 /** Postgres text-search types Drizzle has no builder for. */
 const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
@@ -44,6 +45,13 @@ export const posts = pgTable(
     body: text("body").notNull().default(""),
     status: text("status", { enum: POST_STATUSES }).notNull().default("open"),
     voteCount: integer("vote_count").notNull().default(0),
+    // Comments that aren't deleted, moved in the same transaction as they are.
+    commentCount: integer("comment_count").notNull().default(0),
+    // The team's pinned comment. Deleting that comment unpins it.
+    pinnedCommentId: bigint("pinned_comment_id", { mode: "number" }).references(
+      (): AnyPgColumn => comments.id,
+      { onDelete: "set null" }
+    ),
     // Set by a team merge (Phase 4). Votes refuse merged posts.
     mergedIntoId: bigint("merged_into_id", { mode: "number" }).references(
       (): AnyPgColumn => posts.id,
@@ -74,6 +82,7 @@ export const posts = pgTable(
       sql`pano_fold(${table.title}) gin_trgm_ops`
     ),
     check("posts_vote_count_check", sql`${table.voteCount} >= 0`),
+    check("posts_comment_count_check", sql`${table.commentCount} >= 0`),
     check(
       "posts_status_check",
       sql`${table.status} in ('open', 'under_review', 'planned', 'in_progress', 'shipped', 'closed')`
