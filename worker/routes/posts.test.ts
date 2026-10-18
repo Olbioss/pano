@@ -260,6 +260,19 @@ describe("PATCH and DELETE /api/posts/:id", () => {
     await t.settle();
   });
 
+  it("refuses an edit or a delete from another workspace's team", async () => {
+    const t = testApp();
+    const { post } = await postByMember(t);
+    const { owner: outsider } = await setupWorkspace(t);
+    const edited = await edit(t, outsider.cookie, post.id, {
+      title: "Hijacked",
+    });
+    expect(edited.status).toBe(403);
+    expect((await remove(t, outsider.cookie, post.id)).status).toBe(403);
+    expect((await getPost(t, post.id)).status).toBe(200);
+    await t.settle();
+  });
+
   it("lets the author delete their post", async () => {
     const t = testApp();
     const { author, post } = await postByMember(t);

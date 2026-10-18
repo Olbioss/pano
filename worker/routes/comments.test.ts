@@ -755,3 +755,49 @@ describe("DELETE /api/comments/:id", () => {
     await t.settle();
   });
 });
+
+describe("someone on another workspace's team", () => {
+  /** A post here with a member's comment, and the owner of another workspace. */
+  async function withOutsider(t: TestApp) {
+    const { post } = await postByOwner(t);
+    const writer = await t.signIn();
+    const { comment } = await commentOn(t, writer.cookie, post.id, "Mine");
+    const { owner: outsider } = await setupWorkspace(t);
+    return { post, comment, outsider };
+  }
+
+  it("gets no Team badge here", async () => {
+    const t = testApp();
+    const { post, outsider } = await withOutsider(t);
+    const { comment } = await commentOn(
+      t,
+      outsider.cookie,
+      post.id,
+      "Hello from elsewhere"
+    );
+    expect(comment.official).toBe(false);
+    await t.settle();
+  });
+
+  it("can't delete someone else's comment here, and isn't offered to", async () => {
+    const t = testApp();
+    const { post, comment, outsider } = await withOutsider(t);
+    const { items } = await readThread(t, post.id, {}, outsider.cookie);
+    expect(items.find((c) => c.id === comment.id)?.canDelete).toBe(false);
+    expect((await remove(t, outsider.cookie, comment.id)).status).toBe(403);
+    expect(await tally(post.id)).toEqual({ commentCount: 1, rows: 1 });
+    await t.settle();
+  });
+
+  it("can't pin here", async () => {
+    const t = testApp();
+    const { post, comment, outsider } = await withOutsider(t);
+    const res = await pin(t, outsider.cookie, post.id, comment.id);
+    expect(res.status).toBe(403);
+    expect(await readPost(t, post.id, outsider.cookie)).toMatchObject({
+      isTeam: false,
+      pinned: null,
+    });
+    await t.settle();
+  });
+});
