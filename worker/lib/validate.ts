@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import type { ValidationTargets } from "hono";
-import type { ZodType } from "zod";
+import { type ZodType, z } from "zod";
 import type { ErrorResponse } from "@/shared/envelope";
 
 /**
@@ -28,3 +28,8 @@ export const validate = <
       400
     );
   });
+
+/** A numeric `:id` in the path, as a safe positive integer. */
+export const idParamSchema = z.object({
+  id: z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+});

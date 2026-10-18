@@ -7,7 +7,6 @@ import type { PostStatus } from "@/shared/status";
 import type { Database } from "../db/client";
 import {
   boards,
-  member,
   organization,
   posts,
   user as users,
@@ -16,6 +15,7 @@ import {
 } from "../db/schema";
 import { AppError } from "../lib/errors";
 import { searchConfigFor } from "./search";
+import { onTeam } from "./team";
 
 /**
  * What every post view selects. Queries using it join `boards` (inner) and
@@ -28,6 +28,7 @@ export function postColumns(viewerId: string | null) {
     body: posts.body,
     status: posts.status,
     voteCount: posts.voteCount,
+    commentCount: posts.commentCount,
     createdAt: posts.createdAt,
     boardSlug: boards.slug,
     boardName: boards.name,
@@ -45,6 +46,7 @@ export type PostRow = {
   body: string;
   status: PostStatus;
   voteCount: number;
+  commentCount: number;
   createdAt: Date;
   boardSlug: string;
   boardName: string;
@@ -61,15 +63,13 @@ export function toSummary(row: PostRow): PostSummary {
     excerpt: excerpt(row.body),
     status: row.status,
     voteCount: row.voteCount,
+    commentCount: row.commentCount,
     voted: row.voted,
     board: { slug: row.boardSlug, name: row.boardName },
     author: row.authorId === null ? null : { name: row.authorName ?? "" },
     createdAt: row.createdAt.toISOString(),
   };
 }
-
-const onTeam = (userId: string) =>
-  sql<boolean>`exists (select 1 from ${member} where ${member.organizationId} = ${posts.organizationId} and ${member.userId} = ${userId})`;
 
 export async function findPostDetail(
   db: Database,

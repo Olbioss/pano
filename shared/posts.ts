@@ -10,6 +10,8 @@ export type PostSummary = {
   excerpt: string;
   status: PostStatus;
   voteCount: number;
+  /** Comments that aren't deleted. */
+  commentCount: number;
   /** Whether the person asking has voted; always false when signed out. */
   voted: boolean;
   board: { slug: string; name: string };

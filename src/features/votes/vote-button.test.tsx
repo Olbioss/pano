@@ -35,6 +35,7 @@ const summary: PostSummary = {
   excerpt: "",
   status: "open",
   voteCount: 3,
+  commentCount: 0,
   voted: false,
   board: { slug: "features", name: "Features" },
   author: { name: "Ayşe" },

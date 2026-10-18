@@ -64,3 +64,23 @@ export const voteFor = (
     { param: { id: String(postId) }, json: { voted } },
     { headers: { cookie } }
   );
+
+/** Comments through the API as `cookie`; returns the comment and the new count. */
+export async function commentOn(
+  t: TestApp,
+  cookie: string,
+  postId: number,
+  body: string,
+  parentId?: number
+) {
+  const res = await t.client.api.posts[":id"].comments.$post(
+    {
+      param: { id: String(postId) },
+      json: parentId === undefined ? { body } : { body, parentId },
+    },
+    { headers: { cookie } }
+  );
+  const json = await res.json();
+  if (!json.success) throw new Error(`comment failed: ${json.error}`);
+  return json.data;
+}

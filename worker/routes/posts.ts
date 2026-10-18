@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { z } from "zod";
 import type { SuccessResponse } from "@/shared/envelope";
 import type {
   FeedPage,
@@ -17,7 +16,7 @@ import {
 import type { Database } from "../db/client";
 import type { AppEnv } from "../env";
 import { AppError } from "../lib/errors";
-import { validate } from "../lib/validate";
+import { idParamSchema, validate } from "../lib/validate";
 import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
 import {
@@ -32,10 +31,6 @@ import { listFeed } from "../services/ranking";
 import { findSimilar } from "../services/similar";
 import { setVote } from "../services/votes";
 import { findWorkspace } from "./workspaces";
-
-const postParamSchema = z.object({
-  id: z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-});
 
 async function postDetail(db: Database, id: number, viewerId: string | null) {
   const post = await findPostDetail(db, id, viewerId);
@@ -101,7 +96,7 @@ export const workspacePostRoutes = new Hono<AppEnv>()
 
 /** Under /posts: one post, and changing or deleting it. */
 export const postRoutes = new Hono<AppEnv>()
-  .get("/:id", validate("param", postParamSchema), async (c) => {
+  .get("/:id", validate("param", idParamSchema), async (c) => {
     const { id } = c.req.valid("param");
     return c.json<SuccessResponse<PostDetail>>({
       success: true,
@@ -111,7 +106,7 @@ export const postRoutes = new Hono<AppEnv>()
   .patch(
     "/:id",
     requireUser,
-    validate("param", postParamSchema),
+    validate("param", idParamSchema),
     validate("json", updatePostSchema),
     async (c) => {
       const { id } = c.req.valid("param");
@@ -123,24 +118,19 @@ export const postRoutes = new Hono<AppEnv>()
       });
     }
   )
-  .delete(
-    "/:id",
-    requireUser,
-    validate("param", postParamSchema),
-    async (c) => {
-      const { id } = c.req.valid("param");
-      await requireCanEdit(c.var.db, id, c.var.user.id);
-      await deletePost(c.var.db, id);
-      return c.json<SuccessResponse<{ id: number }>>({
-        success: true,
-        data: { id },
-      });
-    }
-  )
+  .delete("/:id", requireUser, validate("param", idParamSchema), async (c) => {
+    const { id } = c.req.valid("param");
+    await requireCanEdit(c.var.db, id, c.var.user.id);
+    await deletePost(c.var.db, id);
+    return c.json<SuccessResponse<{ id: number }>>({
+      success: true,
+      data: { id },
+    });
+  })
   .put(
     "/:id/vote",
     requireUser,
-    validate("param", postParamSchema),
+    validate("param", idParamSchema),
     validate("json", voteSchema),
     rateLimit("vote", 120, 3600),
     async (c) => {
