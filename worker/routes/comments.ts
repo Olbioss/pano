@@ -12,6 +12,7 @@ import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
 import {
   createComment,
+  deleteComment,
   listComments,
   listReplies,
   setPin,
@@ -73,17 +74,31 @@ export const postCommentRoutes = new Hono<AppEnv>()
     }
   );
 
-/** Under /comments: one comment's replies. */
-export const commentRoutes = new Hono<AppEnv>().get(
-  "/:id/replies",
-  validate("param", idParamSchema),
-  validate("query", commentPageQuerySchema),
-  async (c) => {
-    const page = await listReplies(c.var.db, {
+/** Under /comments: one comment's replies, and deleting it. */
+export const commentRoutes = new Hono<AppEnv>()
+  .get(
+    "/:id/replies",
+    validate("param", idParamSchema),
+    validate("query", commentPageQuerySchema),
+    async (c) => {
+      const page = await listReplies(c.var.db, {
+        commentId: c.req.valid("param").id,
+        ...c.req.valid("query"),
+        viewerId: await readViewerId(c),
+      });
+      return c.json<SuccessResponse<CommentPage>>({
+        success: true,
+        data: page,
+      });
+    }
+  )
+  .delete("/:id", requireUser, validate("param", idParamSchema), async (c) => {
+    const result = await deleteComment(c.var.db, {
       commentId: c.req.valid("param").id,
-      ...c.req.valid("query"),
-      viewerId: await readViewerId(c),
+      userId: c.var.user.id,
     });
-    return c.json<SuccessResponse<CommentPage>>({ success: true, data: page });
-  }
-);
+    return c.json<SuccessResponse<CommentChange>>({
+      success: true,
+      data: result,
+    });
+  });

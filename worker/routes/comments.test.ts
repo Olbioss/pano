@@ -106,6 +106,12 @@ async function readPost(t: TestApp, postId: number, cookie?: string) {
   return body.data;
 }
 
+const remove = (t: TestApp, cookie: string | undefined, commentId: number) =>
+  t.client.api.comments[":id"].$delete(
+    { param: { id: String(commentId) } },
+    cookie ? { headers: { cookie } } : undefined
+  );
+
 describe("POST /api/posts/:id/comments", () => {
   it("adds a comment and counts it", async () => {
     const t = testApp();
@@ -602,6 +608,98 @@ describe("PUT /api/posts/:id/pin", () => {
     const owner = await t.signIn();
     const res = await pin(t, owner.cookie, 999_999_999, null);
     expect(res.status).toBe(404);
+    await t.settle();
+  });
+});
+
+describe("DELETE /api/comments/:id", () => {
+  it("lets the author delete a comment, keeping its place", async () => {
+    const t = testApp();
+    const { post } = await postByOwner(t);
+    const writer = await t.signIn();
+    const { comment } = await commentOn(t, writer.cookie, post.id, "Oops");
+    const res = await remove(t, writer.cookie, comment.id);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      success: true,
+      data: {
+        comment: { id: comment.id, deleted: true, body: "", author: null },
+        commentCount: 0,
+      },
+    });
+    const [row] = await db
+      .select({ body: comments.body, deletedAt: comments.deletedAt })
+      .from(comments)
+      .where(eq(comments.id, comment.id));
+    expect(row?.body).toBe("");
+    expect(row?.deletedAt).toBeInstanceOf(Date);
+    expect(await tally(post.id)).toEqual({ commentCount: 0, rows: 0 });
+    await t.settle();
+  });
+
+  it("lets the team delete anyone's comment", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const writer = await t.signIn();
+    const { comment } = await commentOn(t, writer.cookie, post.id, "Spam");
+    const res = await remove(t, owner.cookie, comment.id);
+    expect(res.status).toBe(200);
+    expect(await tally(post.id)).toEqual({ commentCount: 0, rows: 0 });
+    await t.settle();
+  });
+
+  it("refuses everyone else", async () => {
+    const t = testApp();
+    const { post } = await postByOwner(t);
+    const writer = await t.signIn();
+    const other = await t.signIn();
+    const { comment } = await commentOn(t, writer.cookie, post.id, "Mine");
+    expect((await remove(t, other.cookie, comment.id)).status).toBe(403);
+    expect((await remove(t, undefined, comment.id)).status).toBe(401);
+    expect(await tally(post.id)).toEqual({ commentCount: 1, rows: 1 });
+    await t.settle();
+  });
+
+  it("changes nothing the second time", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    await commentOn(t, owner.cookie, post.id, "Keep");
+    const { comment } = await commentOn(t, owner.cookie, post.id, "Drop");
+    await remove(t, owner.cookie, comment.id);
+    const again = await remove(t, owner.cookie, comment.id);
+    expect(again.status).toBe(200);
+    expect(await again.json()).toMatchObject({ data: { commentCount: 1 } });
+    expect(await tally(post.id)).toEqual({ commentCount: 1, rows: 1 });
+    await t.settle();
+  });
+
+  it("moves the count once when the same delete arrives five times at once", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    await commentOn(t, owner.cookie, post.id, "Keep");
+    const { comment } = await commentOn(t, owner.cookie, post.id, "Drop");
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, () => remove(t, owner.cookie, comment.id))
+    );
+    expect(responses.map((res) => res.status)).toEqual(Array(5).fill(200));
+    expect(await tally(post.id)).toEqual({ commentCount: 1, rows: 1 });
+    await t.settle();
+  });
+
+  it("unpins a deleted comment", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const { comment } = await commentOn(t, owner.cookie, post.id, "Pinned");
+    await pin(t, owner.cookie, post.id, comment.id);
+    await remove(t, owner.cookie, comment.id);
+    expect((await readPost(t, post.id)).pinned).toBeNull();
+    await t.settle();
+  });
+
+  it("answers 404 for a comment that doesn't exist", async () => {
+    const t = testApp();
+    const owner = await t.signIn();
+    expect((await remove(t, owner.cookie, 999_999_999)).status).toBe(404);
     await t.settle();
   });
 });

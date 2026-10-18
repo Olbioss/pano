@@ -386,3 +386,81 @@ export async function setPin(
     ? null
     : findComment(db, input.commentId, { id: input.userId, isTeam: true });
 }
+
+/**
+ * Deletes a comment as its author or as the team. The row stays, so its
+ * replies keep their place, but its words go. Only the first delete changes
+ * the row, so repeating one, or racing it against itself, uncounts it once.
+ * A deleted comment can't stay pinned.
+ */
+export async function deleteComment(
+  db: Database,
+  input: { commentId: number; userId: string }
+): Promise<CommentChange> {
+  const [target] = await db
+    .select({ postId: comments.postId })
+    .from(comments)
+    .where(eq(comments.id, input.commentId))
+    .limit(1);
+  if (!target) throw new AppError(404, "NOT_FOUND", "Comment not found");
+  const saved = await db.transaction(async (tx) => {
+    // Post first, like every comment write, so writes queue in one order.
+    const [post] = await tx
+      .select({
+        commentCount: posts.commentCount,
+        pinnedCommentId: posts.pinnedCommentId,
+        isTeam: onTeam(input.userId),
+      })
+      .from(posts)
+      .where(eq(posts.id, target.postId))
+      .for("update");
+    const [comment] = await tx
+      .select({ authorId: comments.authorId })
+      .from(comments)
+      .where(
+        and(
+          eq(comments.id, input.commentId),
+          eq(comments.postId, target.postId)
+        )
+      )
+      .limit(1);
+    if (!post || !comment) {
+      throw new AppError(404, "NOT_FOUND", "Comment not found");
+    }
+    if (comment.authorId !== input.userId && !post.isTeam) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Only the author or the workspace team can do that"
+      );
+    }
+    const changed = await tx
+      .update(comments)
+      .set({ deletedAt: sql`now()`, body: "" })
+      .where(and(eq(comments.id, input.commentId), isNull(comments.deletedAt)))
+      .returning({ id: comments.id });
+    if (changed.length === 0) {
+      return { commentCount: post.commentCount, isTeam: post.isTeam };
+    }
+    const [counted] = await tx
+      .update(posts)
+      .set({
+        commentCount: sql`${posts.commentCount} - 1`,
+        ...(post.pinnedCommentId === input.commentId
+          ? { pinnedCommentId: null }
+          : {}),
+      })
+      .where(eq(posts.id, target.postId))
+      .returning({ commentCount: posts.commentCount });
+    return {
+      commentCount: counted?.commentCount ?? post.commentCount,
+      isTeam: post.isTeam,
+    };
+  });
+  const comment = await findComment(db, input.commentId, {
+    id: input.userId,
+    isTeam: saved.isTeam,
+  });
+  if (!comment) throw new AppError(404, "NOT_FOUND", "Comment not found");
+  return { comment, commentCount: saved.commentCount };
+}
