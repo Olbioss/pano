@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { useFormatter } from "use-intl";
+import { MessageSquare } from "lucide-react";
+import { useFormatter, useTranslations } from "use-intl";
 import { StatusBadge } from "@/components/status-badge";
 import { SignInToVote, VoteButton } from "@/features/votes/vote-button";
 import type { PostSummary } from "@/shared/posts";
@@ -9,6 +10,7 @@ type Props = { post: PostSummary; signedIn: boolean; now: Date };
 
 export function PostCard({ post, signedIn, now }: Props) {
   const format = useFormatter();
+  const tComments = useTranslations("comments");
   return (
     <li className="flex gap-4 rounded-lg border p-4">
       {signedIn ? (
@@ -43,6 +45,14 @@ export function PostCard({ post, signedIn, now }: Props) {
           <time dateTime={post.createdAt}>
             {format.relativeTime(new Date(post.createdAt), now)}
           </time>
+          <span aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1">
+            <MessageSquare aria-hidden="true" className="size-3.5" />
+            <span aria-hidden="true">{post.commentCount}</span>
+            <span className="sr-only">
+              {tComments("count", { count: post.commentCount })}
+            </span>
+          </span>
         </div>
       </div>
     </li>

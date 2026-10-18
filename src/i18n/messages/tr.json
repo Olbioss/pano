@@ -69,6 +69,23 @@
     "cancel": "Vazgeç",
     "notFound": "Bu istek yok ya da silinmiş."
   },
+  "comments": {
+    "heading": "{count, plural, =0 {Yorumlar} other {# yorum}}",
+    "count": "{count, plural, =0 {Yorum yok} other {# yorum}}",
+    "listLabel": "Yorumlar",
+    "loading": "Yorumlar yükleniyor…",
+    "loadFailed": "Yorumlar yüklenemedi. Tekrar denemek için sayfayı yenileyin.",
+    "empty": "Henüz yorum yok.",
+    "olderComments": "Daha eski yorumları göster",
+    "earlierReplies": "Önceki {count} yanıtı göster",
+    "moreReplies": "Önceki yanıtları göster",
+    "hideReplies": "Yanıtları gizle",
+    "showReplies": "Yanıtları göster",
+    "deleted": "Yorum silindi",
+    "team": "Ekip",
+    "pinned": "Sabitlendi",
+    "pinnedByTeam": "Ekip tarafından sabitlendi"
+  },
   "submit": {
     "title": "Yeni istek",
     "intro": "Tek bir fikri ya da sorunu anlatın. Önce benzer isteklere göz atın: oradaki bir oy da sayılır.",

@@ -17,11 +17,13 @@ import { useFormatter, useNow, useTranslations } from "use-intl";
 import { Markdown } from "@/components/markdown";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
+import { CommentThread } from "@/features/comments/comment-thread";
 import { AuthorName } from "@/features/posts/author-name";
 import { PostEditor } from "@/features/posts/post-editor";
 import { SignInToVote, VoteButton } from "@/features/votes/vote-button";
 import { useLocaleControls } from "@/i18n/provider";
 import { ApiError } from "@/lib/api";
+import { threadQueryOptions } from "@/lib/comments";
 import { apiErrorKey } from "@/lib/error-text";
 import { postKeys } from "@/lib/keys";
 import { deletePost, postQueryOptions } from "@/lib/posts";
@@ -48,6 +50,8 @@ export const Route = createFileRoute("/p/$ref")({
         replace: true,
       });
     }
+    // Comments start loading with the post instead of after it renders.
+    void context.queryClient.prefetchInfiniteQuery(threadQueryOptions(id));
   },
   component: PostPage,
   notFoundComponent: PostNotFound,
@@ -115,6 +119,7 @@ function PostPage() {
           )}
         </div>
       </article>
+      <CommentThread post={post} />
     </main>
   );
 }

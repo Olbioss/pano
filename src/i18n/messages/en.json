@@ -69,6 +69,23 @@
     "cancel": "Cancel",
     "notFound": "This request doesn't exist or was deleted."
   },
+  "comments": {
+    "heading": "{count, plural, =0 {Comments} one {# comment} other {# comments}}",
+    "count": "{count, plural, =0 {No comments} one {# comment} other {# comments}}",
+    "listLabel": "Comments",
+    "loading": "Loading comments…",
+    "loadFailed": "Couldn't load comments. Reload the page to try again.",
+    "empty": "No comments yet.",
+    "olderComments": "Show older comments",
+    "earlierReplies": "{count, plural, one {Show # earlier reply} other {Show # earlier replies}}",
+    "moreReplies": "Show earlier replies",
+    "hideReplies": "Hide replies",
+    "showReplies": "Show replies",
+    "deleted": "Comment deleted",
+    "team": "Team",
+    "pinned": "Pinned",
+    "pinnedByTeam": "Pinned by the team"
+  },
   "submit": {
     "title": "New request",
     "intro": "Describe one idea or problem. Look through similar requests first: a vote there counts too.",
