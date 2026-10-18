@@ -66,8 +66,10 @@ otherwise.
   print in the terminal running `bun run dev`.
 - `worker/services/`: the queries behind the routes. `votes.ts` locks the
   post row and writes the state the person asked for, so the count moves
-  only by the rows that changed. `ranking.ts` (trending, top, new) and
-  `similar.ts` serve the feed and the submit form.
+  only by the rows that changed. `comments.ts` takes the same lock and
+  moves `comment_count` and `reply_count` in the comment's own transaction.
+  Deleting a comment is soft, so its replies keep their place. `ranking.ts`
+  (trending, top, new) and `similar.ts` serve the feed and the submit form.
 - **Search** folds case and Turkish letters with the SQL function
   `pano_fold` (migration `0005_search_fold.sql`), on the stored `tsvector`
   and on the query alike, so results don't depend on the database's locale.
@@ -77,5 +79,8 @@ otherwise.
   `shared/envelope.ts`.
 - `src/`: the React app. It calls the API only through
   `unwrap(await api.….$get())` from `src/lib/api.ts`.
+- `src/features/comments/`: the thread under each post. A new comment shows
+  at once as a greyed-out draft. It gives way to the server's copy, or
+  disappears again, with its text back in the box, if saving fails.
 - **Aliases:** `@/shared/*` works everywhere. `@/*` means `src/` and is used
   only there. Worker files import each other relatively.
