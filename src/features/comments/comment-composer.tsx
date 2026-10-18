@@ -64,15 +64,21 @@ export function CommentComposer({ parent, onClose }: Props) {
         official: post.isTeam,
       });
       formApi.setFieldValue("body", "");
-      add.mutate(draft, {
-        onSuccess: () => onClose?.(),
-        // Back into the box, unless a new comment is already being typed.
-        onError: () => {
-          if (formApi.getFieldValue("body") === "") {
-            formApi.setFieldValue("body", value.body);
-          }
+      add.mutate(
+        {
+          draft,
+          // If saving fails, the text goes back in the box at once, after
+          // anything typed since, so nothing typed is lost.
+          restore: () => {
+            const typed = formApi.getFieldValue("body");
+            formApi.setFieldValue(
+              "body",
+              typed === "" ? value.body : `${typed}\n\n${value.body}`
+            );
+          },
         },
-      });
+        { onSuccess: () => onClose?.() }
+      );
     },
   });
 

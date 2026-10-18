@@ -44,7 +44,7 @@ export function CommentThread({ post }: { post: PostDetail }) {
         )}
         {thread.isPending ? (
           <p className="text-muted-foreground text-sm">{t("loading")}</p>
-        ) : thread.isError ? (
+        ) : thread.isError && !thread.data ? (
           <p className="text-destructive text-sm" role="alert">
             {t("loadFailed")}
           </p>

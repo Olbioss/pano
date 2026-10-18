@@ -30,15 +30,18 @@ function useCommentChange(postId: number) {
   const fail = (error: unknown) => {
     toast.error(tErrors(apiErrorKey(error)));
   };
-  const resync = async () => {
+  // Not awaited: the change settles at once, so nothing waits on the
+  // refetch, and a change that starts meanwhile cancels it anyway.
+  const resync = () => {
     if (!isLast()) return;
-    await Promise.all([
-      qc.invalidateQueries({ queryKey: commentKeys.post(postId) }),
-      qc.invalidateQueries({ queryKey: postKeys.all }),
-    ]);
+    void qc.invalidateQueries({ queryKey: commentKeys.post(postId) });
+    void qc.invalidateQueries({ queryKey: postKeys.all });
   };
   return { qc, mutationKey, isLast, fail, resync };
 }
+
+/** A comment to add, and how to put its text back if saving fails. */
+export type NewComment = { draft: CommentView; restore?: () => void };
 
 /**
  * Adds a comment or a reply. The draft (from draftComment) shows at once,
@@ -48,21 +51,26 @@ export function useAddComment(postId: number) {
   const { qc, mutationKey, isLast, fail, resync } = useCommentChange(postId);
   return useMutation({
     mutationKey,
-    mutationFn: (draft: CommentView) =>
+    // Offline, fail at once and give the text back, instead of waiting.
+    networkMode: "always",
+    mutationFn: ({ draft }: NewComment) =>
       addComment(
         postId,
         draft.parentId === null
           ? { body: draft.body }
           : { body: draft.body, parentId: draft.parentId }
       ),
-    onMutate: async (draft) => ({
+    onMutate: async ({ draft }) => ({
       rollback: await optimisticAddComment(qc, draft),
     }),
-    onError: (error, _draft, context) => {
+    onError: (error, { restore }, context) => {
       context?.rollback();
+      // Here, not in mutate()'s callbacks: those run only for the latest
+      // send, only while its box is shown, and only after onSettled.
+      restore?.();
       fail(error);
     },
-    onSuccess: (result, draft) => {
+    onSuccess: (result, { draft }) => {
       replaceDraft(qc, draft.id, result.comment);
       if (isLast()) writeCommentCount(qc, postId, result.commentCount);
     },
@@ -75,6 +83,7 @@ export function useDeleteComment(postId: number) {
   const { qc, mutationKey, isLast, fail, resync } = useCommentChange(postId);
   return useMutation({
     mutationKey,
+    networkMode: "always",
     mutationFn: (comment: CommentView) => removeComment(comment.id),
     onMutate: async (comment) => ({
       rollback: await optimisticDeleteComment(qc, comment),
@@ -95,6 +104,7 @@ export function usePinComment(postId: number) {
   const { qc, mutationKey, isLast, fail, resync } = useCommentChange(postId);
   return useMutation({
     mutationKey,
+    networkMode: "always",
     scope: { id: `pin:${postId}` },
     mutationFn: (comment: CommentView | null) =>
       pinComment(postId, comment?.id ?? null),

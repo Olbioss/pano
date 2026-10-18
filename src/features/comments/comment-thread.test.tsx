@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import {
+  onlineManager,
   QueryClient,
   QueryClientProvider,
   useQuery,
@@ -15,7 +16,7 @@ import {
 import { IntlProvider } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "@/i18n/messages/en.json";
-import { type FeedParams, postKeys } from "@/lib/keys";
+import { commentKeys, type FeedParams, postKeys } from "@/lib/keys";
 import { postQueryOptions } from "@/lib/posts";
 import type { CommentView } from "@/shared/comments";
 import type { FeedPage, PostDetail, PostSummary } from "@/shared/posts";
@@ -28,6 +29,7 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   toastError.mockReset();
+  onlineManager.setOnline(true);
 });
 
 const comment = (
@@ -139,6 +141,21 @@ function fakeServer({
     name: viewerName,
     nextId: 100,
     received: [] as unknown[],
+    /** Extra waits, in ms, on every read and on every write. */
+    readDelay: 0,
+    writeDelay: 0,
+    /** Every read but /api/me answers 500. */
+    failReads: false,
+    /** How many of the next writes answer 500. */
+    failNext: 0,
+    /** Every request fails the way fetch does without a connection. */
+    offline: false,
+  };
+  const writeFails = () => {
+    if (failWrites) return true;
+    if (state.failNext === 0) return false;
+    state.failNext -= 1;
+    return true;
   };
   const find = (id: number) =>
     [...state.top, ...[...state.replies.values()].flat()].find(
@@ -168,7 +185,12 @@ function fakeServer({
       const method = init?.method ?? "GET";
       const body =
         typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      if (state.offline) throw new TypeError("Failed to fetch");
+      const extra = method === "GET" ? state.readDelay : state.writeDelay;
+      await new Promise((resolve) => setTimeout(resolve, 20 + extra));
+      if (state.failReads && method === "GET" && url.pathname !== "/api/me") {
+        return failed();
+      }
       if (url.pathname === "/api/me") {
         if (method === "PATCH") {
           state.received.push(body);
@@ -199,7 +221,7 @@ function fakeServer({
       }
       if (url.pathname === "/api/posts/7/comments" && method === "POST") {
         state.received.push(body);
-        if (failWrites) return failed();
+        if (writeFails()) return failed();
         const saved = comment(state.nextId++, body.body, {
           parentId: body.parentId ?? null,
           depth: body.parentId ? 1 : 0,
@@ -229,7 +251,7 @@ function fakeServer({
       const target = one ? find(Number(one[1])) : undefined;
       if (target && method === "DELETE") {
         state.received.push({ deleted: target.id });
-        if (failWrites) return failed();
+        if (writeFails()) return failed();
         Object.assign(target, {
           deleted: true,
           body: "",
@@ -246,7 +268,7 @@ function fakeServer({
       }
       if (url.pathname === "/api/posts/7/pin" && method === "PUT") {
         state.received.push(body);
-        if (failWrites) return failed();
+        if (writeFails()) return failed();
         state.pinnedId = body.commentId;
         return ok({ pinned: pinnedView() });
       }
@@ -534,5 +556,100 @@ describe("changing the thread", () => {
     await waitFor(() =>
       expect(screen.queryByLabelText("Your name")).toBeNull()
     );
+  });
+});
+
+describe("when requests fail", () => {
+  it("puts a failed comment's text back at once, without waiting on reads", async () => {
+    const server = fakeServer({ failWrites: true });
+    renderThread();
+    await screen.findByText("Comment A");
+    server.readDelay = 3000;
+    const box = (await screen.findByLabelText(
+      "Add a comment"
+    )) as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: "Count me in" } });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    await waitFor(() => expect(box.value).toBe("Count me in"), {
+      timeout: 1000,
+    });
+  });
+
+  it("gives a failed comment its text back while another is still sending", async () => {
+    const server = fakeServer();
+    server.failNext = 1;
+    server.writeDelay = 200;
+    renderThread();
+    await screen.findByText("Comment A");
+    const box = (await screen.findByLabelText(
+      "Add a comment"
+    )) as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: "First thought" } });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    await waitFor(() => expect(box.value).toBe(""));
+    fireEvent.change(box, { target: { value: "Second thought" } });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(box.value).toBe("First thought"));
+    const list = screen.getByRole("list", { name: "Comments" });
+    expect(
+      await within(list).findByText("Second thought", { selector: "p" })
+    ).toBeTruthy();
+    expect(
+      within(list).queryByText("First thought", { selector: "p" })
+    ).toBeNull();
+  });
+
+  it("fails a comment at once when offline, instead of holding it", async () => {
+    const server = fakeServer();
+    renderThread();
+    await screen.findByText("Comment A");
+    onlineManager.setOnline(false);
+    server.offline = true;
+    const box = (await screen.findByLabelText(
+      "Add a comment"
+    )) as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: "Count me in" } });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        "Couldn't reach Pano. Check your connection and try again."
+      )
+    );
+    const list = screen.getByRole("list", { name: "Comments" });
+    await waitFor(() =>
+      expect(within(list).queryByText("Count me in")).toBeNull()
+    );
+    await waitFor(() => expect(box.value).toBe("Count me in"));
+    expect(screen.getByRole("heading", { name: "6 comments" })).toBeTruthy();
+  });
+
+  it("keeps the comments it has when reading them again fails", async () => {
+    const server = fakeServer();
+    const { qc } = renderThread();
+    await screen.findByText("Comment A");
+    server.failReads = true;
+    await qc.invalidateQueries({ queryKey: commentKeys.post(7) });
+    await waitFor(() =>
+      expect(qc.getQueryState(commentKeys.thread(7))?.status).toBe("error")
+    );
+    expect(screen.getByText("Comment A")).toBeTruthy();
+    expect(screen.queryByText(/Couldn't load comments/)).toBeNull();
+  });
+
+  it("keeps the comments it has when older ones fail to load", async () => {
+    const server = fakeServer();
+    const { qc } = renderThread();
+    const older = await screen.findByRole("button", {
+      name: "Show older comments",
+    });
+    server.failReads = true;
+    fireEvent.click(older);
+    await waitFor(() =>
+      expect(qc.getQueryState(commentKeys.thread(7))?.status).toBe("error")
+    );
+    expect(screen.getByText("Comment A")).toBeTruthy();
+    expect(screen.queryByText(/Couldn't load comments/)).toBeNull();
   });
 });
