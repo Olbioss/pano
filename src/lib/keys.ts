@@ -27,3 +27,19 @@ export const postKeys = {
 
 /** Every vote on one post shares this key, so they can be counted. */
 export const voteKey = (postId: number) => ["vote", postId] as const;
+
+/**
+ * Query keys for comments. A post's thread and every reply page under it
+ * share the post's prefix, so one call reaches all of them.
+ */
+export const commentKeys = {
+  all: ["comments"] as const,
+  post: (postId: number) => ["comments", postId] as const,
+  thread: (postId: number) => ["comments", postId, "thread"] as const,
+  replies: (postId: number, commentId: number) =>
+    ["comments", postId, "replies", commentId] as const,
+};
+
+/** Every change to one post's comments shares this key, so they can be counted. */
+export const commentMutationKey = (postId: number) =>
+  ["comment", postId] as const;
