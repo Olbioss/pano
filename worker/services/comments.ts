@@ -331,3 +331,58 @@ export async function listReplies(
     hasMore: page.hasMore,
   };
 }
+
+/**
+ * Pins one of the post's comments above its thread, or unpins with null.
+ * Only the team may, and only a comment of this post that isn't deleted.
+ */
+export async function setPin(
+  db: Database,
+  input: { postId: number; userId: string; commentId: number | null }
+): Promise<CommentView | null> {
+  await db.transaction(async (tx) => {
+    // The same lock a delete takes, so a comment can't be pinned while it's
+    // being deleted.
+    const [post] = await tx
+      .select({ isTeam: onTeam(input.userId) })
+      .from(posts)
+      .where(eq(posts.id, input.postId))
+      .for("update");
+    if (!post) throw new AppError(404, "NOT_FOUND", "Post not found");
+    if (!post.isTeam) {
+      throw new AppError(
+        403,
+        "FORBIDDEN",
+        "Only the workspace team can do that"
+      );
+    }
+    if (input.commentId !== null) {
+      const [comment] = await tx
+        .select({ id: comments.id })
+        .from(comments)
+        .where(
+          and(
+            eq(comments.id, input.commentId),
+            eq(comments.postId, input.postId),
+            isNull(comments.deletedAt)
+          )
+        )
+        .limit(1);
+      if (!comment) {
+        throw new AppError(
+          400,
+          "BAD_REQUEST",
+          "That comment isn't on this post",
+          { commentId: "COMMENT_UNKNOWN" }
+        );
+      }
+    }
+    await tx
+      .update(posts)
+      .set({ pinnedCommentId: input.commentId })
+      .where(eq(posts.id, input.postId));
+  });
+  return input.commentId === null
+    ? null
+    : findComment(db, input.commentId, { id: input.userId, isTeam: true });
+}

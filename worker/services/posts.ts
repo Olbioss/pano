@@ -14,6 +14,7 @@ import {
   workspaceSettings,
 } from "../db/schema";
 import { AppError } from "../lib/errors";
+import { findComment } from "./comments";
 import { searchConfigFor } from "./search";
 import { onTeam } from "./team";
 
@@ -83,6 +84,7 @@ export async function findPostDetail(
       workspaceName: organization.name,
       defaultLocale: workspaceSettings.defaultLocale,
       onTeam: viewerId ? onTeam(viewerId) : sql<boolean>`false`,
+      pinnedCommentId: posts.pinnedCommentId,
     })
     .from(posts)
     .innerJoin(boards, eq(boards.id, posts.boardId))
@@ -95,6 +97,7 @@ export async function findPostDetail(
     .where(eq(posts.id, id))
     .limit(1);
   if (!row) return null;
+  const viewer = { id: viewerId, isTeam: row.onTeam };
   return {
     ...toSummary(row),
     body: row.body,
@@ -104,6 +107,11 @@ export async function findPostDetail(
       defaultLocale: row.defaultLocale ?? "en",
     },
     canEdit: viewerId !== null && (row.authorId === viewerId || row.onTeam),
+    isTeam: row.onTeam,
+    pinned:
+      row.pinnedCommentId === null
+        ? null
+        : await findComment(db, row.pinnedCommentId, viewer),
   };
 }
 

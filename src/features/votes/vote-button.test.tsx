@@ -46,6 +46,8 @@ const detail: PostDetail = {
   body: "",
   workspace: { slug: "acme", name: "Acme", defaultLocale: "en" },
   canEdit: false,
+  isTeam: false,
+  pinned: null,
 };
 const feedParams: FeedParams = { sort: "trending", page: 1 };
 

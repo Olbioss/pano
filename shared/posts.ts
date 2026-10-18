@@ -1,3 +1,4 @@
+import type { CommentView } from "./comments";
 import type { Locale } from "./locale";
 import type { PostStatus } from "./status";
 
@@ -25,6 +26,10 @@ export type PostDetail = PostSummary & {
   workspace: { slug: string; name: string; defaultLocale: Locale };
   /** The person asking wrote it or is on the workspace's team. */
   canEdit: boolean;
+  /** The person asking is on the workspace's team: they pin, and delete any comment. */
+  isTeam: boolean;
+  /** The comment the team pinned above the thread. */
+  pinned: CommentView | null;
 };
 
 export type FeedPage = { items: PostSummary[]; page: number; hasMore: boolean };

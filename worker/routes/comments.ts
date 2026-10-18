@@ -1,14 +1,23 @@
 import { Hono } from "hono";
-import type { CommentChange, CommentPage } from "@/shared/comments";
+import type { CommentChange, CommentPage, PinResult } from "@/shared/comments";
 import type { SuccessResponse } from "@/shared/envelope";
-import { commentPageQuerySchema, createCommentSchema } from "@/shared/schemas";
+import {
+  commentPageQuerySchema,
+  createCommentSchema,
+  pinSchema,
+} from "@/shared/schemas";
 import type { AppEnv } from "../env";
 import { idParamSchema, validate } from "../lib/validate";
 import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
-import { createComment, listComments, listReplies } from "../services/comments";
+import {
+  createComment,
+  listComments,
+  listReplies,
+  setPin,
+} from "../services/comments";
 
-/** Under /posts: a post's thread, and commenting on it. */
+/** Under /posts: a post's thread, commenting on it, and pinning. */
 export const postCommentRoutes = new Hono<AppEnv>()
   .get(
     "/:id/comments",
@@ -44,6 +53,23 @@ export const postCommentRoutes = new Hono<AppEnv>()
         { success: true, data: result },
         201
       );
+    }
+  )
+  .put(
+    "/:id/pin",
+    requireUser,
+    validate("param", idParamSchema),
+    validate("json", pinSchema),
+    async (c) => {
+      const pinned = await setPin(c.var.db, {
+        postId: c.req.valid("param").id,
+        userId: c.var.user.id,
+        commentId: c.req.valid("json").commentId,
+      });
+      return c.json<SuccessResponse<PinResult>>({
+        success: true,
+        data: { pinned },
+      });
     }
   );
 

@@ -85,6 +85,27 @@ async function readReplies(
 
 const bodies = (list: { body: string }[]) => list.map((item) => item.body);
 
+const pin = (
+  t: TestApp,
+  cookie: string | undefined,
+  postId: number,
+  commentId: number | null
+) =>
+  t.client.api.posts[":id"].pin.$put(
+    { param: { id: String(postId) }, json: { commentId } },
+    cookie ? { headers: { cookie } } : undefined
+  );
+
+async function readPost(t: TestApp, postId: number, cookie?: string) {
+  const res = await t.client.api.posts[":id"].$get(
+    { param: { id: String(postId) } },
+    cookie ? { headers: { cookie } } : undefined
+  );
+  const body = await res.json();
+  if (!body.success) throw new Error(`post failed: ${body.error}`);
+  return body.data;
+}
+
 describe("POST /api/posts/:id/comments", () => {
   it("adds a comment and counts it", async () => {
     const t = testApp();
@@ -492,6 +513,94 @@ describe("GET /api/comments/:id/replies", () => {
       param: { id: "999999999" },
       query: {},
     });
+    expect(res.status).toBe(404);
+    await t.settle();
+  });
+});
+
+describe("PUT /api/posts/:id/pin", () => {
+  it("lets the team pin a comment, shown with the post", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const reader = await t.signIn();
+    const { comment } = await commentOn(
+      t,
+      reader.cookie,
+      post.id,
+      "Use the system setting."
+    );
+    const res = await pin(t, owner.cookie, post.id, comment.id);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      success: true,
+      data: { pinned: { id: comment.id, body: "Use the system setting." } },
+    });
+    expect(await readPost(t, post.id, reader.cookie)).toMatchObject({
+      isTeam: false,
+      pinned: { id: comment.id, canDelete: true },
+    });
+    expect(await readPost(t, post.id, owner.cookie)).toMatchObject({
+      isTeam: true,
+      pinned: { id: comment.id },
+    });
+    expect(await readPost(t, post.id)).toMatchObject({
+      isTeam: false,
+      pinned: { id: comment.id, canDelete: false },
+    });
+    await t.settle();
+  });
+
+  it("unpins with null", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const { comment } = await commentOn(t, owner.cookie, post.id, "Pinned");
+    await pin(t, owner.cookie, post.id, comment.id);
+    const res = await pin(t, owner.cookie, post.id, null);
+    expect(await res.json()).toEqual({ success: true, data: { pinned: null } });
+    expect((await readPost(t, post.id)).pinned).toBeNull();
+    await t.settle();
+  });
+
+  it("is only for the team", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const { comment } = await commentOn(t, owner.cookie, post.id, "Hello");
+    const reader = await t.signIn();
+    const asReader = await pin(t, reader.cookie, post.id, comment.id);
+    expect(asReader.status).toBe(403);
+    const signedOut = await pin(t, undefined, post.id, comment.id);
+    expect(signedOut.status).toBe(401);
+    expect((await readPost(t, post.id)).pinned).toBeNull();
+    await t.settle();
+  });
+
+  it("refuses a comment from another post, or a deleted one", async () => {
+    const t = testApp();
+    const { owner, slug, boards, post } = await postByOwner(t);
+    const other = await submitPost(t, owner.cookie, slug, {
+      boardId: boards[0]!.id,
+      title: "Export to CSV",
+    });
+    const elsewhere = await commentOn(t, owner.cookie, other.id, "Over there");
+    const gone = await commentOn(t, owner.cookie, post.id, "Gone");
+    await db
+      .update(comments)
+      .set({ deletedAt: new Date(), body: "" })
+      .where(eq(comments.id, gone.comment.id));
+    for (const commentId of [elsewhere.comment.id, gone.comment.id]) {
+      const res = await pin(t, owner.cookie, post.id, commentId);
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({
+        fields: { commentId: "COMMENT_UNKNOWN" },
+      });
+    }
+    await t.settle();
+  });
+
+  it("answers 404 for a post that doesn't exist", async () => {
+    const t = testApp();
+    const owner = await t.signIn();
+    const res = await pin(t, owner.cookie, 999_999_999, null);
     expect(res.status).toBe(404);
     await t.settle();
   });
