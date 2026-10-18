@@ -52,6 +52,39 @@ async function replyCountOf(commentId: number) {
   return row?.replyCount;
 }
 
+type PageQuery = { before?: string; limit?: string };
+
+async function readThread(
+  t: TestApp,
+  postId: number,
+  query: PageQuery = {},
+  cookie?: string
+) {
+  const res = await t.client.api.posts[":id"].comments.$get(
+    { param: { id: String(postId) }, query },
+    cookie ? { headers: { cookie } } : undefined
+  );
+  const body = await res.json();
+  if (!body.success) throw new Error(`thread failed: ${body.error}`);
+  return body.data;
+}
+
+async function readReplies(
+  t: TestApp,
+  commentId: number,
+  query: PageQuery = {}
+) {
+  const res = await t.client.api.comments[":id"].replies.$get({
+    param: { id: String(commentId) },
+    query,
+  });
+  const body = await res.json();
+  if (!body.success) throw new Error(`replies failed: ${body.error}`);
+  return body.data;
+}
+
+const bodies = (list: { body: string }[]) => list.map((item) => item.body);
+
 describe("POST /api/posts/:id/comments", () => {
   it("adds a comment and counts it", async () => {
     const t = testApp();
@@ -301,4 +334,165 @@ describe("POST /api/posts/:id/comments", () => {
     expect(await replyCountOf(parent.comment.id)).toBe(10);
     await t.settle();
   }, 30_000);
+});
+
+describe("GET /api/posts/:id/comments", () => {
+  it("lists top-level comments newest first, a page at a time", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    for (let i = 1; i <= 3; i++) {
+      await commentOn(t, owner.cookie, post.id, `Comment ${i}`);
+    }
+    const first = await readThread(t, post.id, { limit: "2" });
+    expect(bodies(first.items)).toEqual(["Comment 3", "Comment 2"]);
+    expect(first.hasMore).toBe(true);
+    const second = await readThread(t, post.id, {
+      limit: "2",
+      before: String(first.items[1]!.id),
+    });
+    expect(bodies(second.items)).toEqual(["Comment 1"]);
+    expect(second.hasMore).toBe(false);
+    await t.settle();
+  });
+
+  it("neither repeats nor skips a comment that arrives between pages", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    for (let i = 1; i <= 3; i++) {
+      await commentOn(t, owner.cookie, post.id, `Comment ${i}`);
+    }
+    const first = await readThread(t, post.id, { limit: "2" });
+    await commentOn(t, owner.cookie, post.id, "Comment 4");
+    const second = await readThread(t, post.id, {
+      limit: "2",
+      before: String(first.items.at(-1)!.id),
+    });
+    expect(bodies(second.items)).toEqual(["Comment 1"]);
+    await t.settle();
+  });
+
+  it("brings each comment's latest two replies, oldest first", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const top = await commentOn(t, owner.cookie, post.id, "Top");
+    for (let i = 1; i <= 3; i++) {
+      await commentOn(t, owner.cookie, post.id, `Reply ${i}`, top.comment.id);
+    }
+    const { items } = await readThread(t, post.id);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ body: "Top", replyCount: 3 });
+    expect(bodies(items[0]!.replies)).toEqual(["Reply 2", "Reply 3"]);
+    expect(items[0]!.replies[0]!.replies).toEqual([]);
+    await t.settle();
+  });
+
+  it("shows a deleted comment as a placeholder that keeps its replies", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const reader = await t.signIn();
+    const top = await commentOn(t, reader.cookie, post.id, "Oops");
+    await commentOn(t, owner.cookie, post.id, "Still here", top.comment.id);
+    await db
+      .update(comments)
+      .set({ deletedAt: new Date(), body: "" })
+      .where(eq(comments.id, top.comment.id));
+    const { items } = await readThread(t, post.id, {}, reader.cookie);
+    expect(items[0]).toMatchObject({
+      deleted: true,
+      body: "",
+      author: null,
+      official: false,
+      canDelete: false,
+      replyCount: 1,
+    });
+    expect(bodies(items[0]!.replies)).toEqual(["Still here"]);
+    await t.settle();
+  });
+
+  it("lets only the author and the team delete", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const writer = await t.signIn();
+    const other = await t.signIn();
+    await commentOn(t, writer.cookie, post.id, "Mine");
+    const canDelete = async (cookie?: string) =>
+      (await readThread(t, post.id, {}, cookie)).items[0]!.canDelete;
+    expect(await canDelete(writer.cookie)).toBe(true);
+    expect(await canDelete(owner.cookie)).toBe(true);
+    expect(await canDelete(other.cookie)).toBe(false);
+    expect(await canDelete()).toBe(false);
+    await t.settle();
+  });
+
+  it("answers 404 for an unknown post, and 400 for a bad page", async () => {
+    const t = testApp();
+    const { post } = await postByOwner(t);
+    const missing = await t.client.api.posts[":id"].comments.$get({
+      param: { id: "999999999" },
+      query: {},
+    });
+    expect(missing.status).toBe(404);
+    for (const query of [{ before: "abc" }, { limit: "0" }]) {
+      const res = await t.client.api.posts[":id"].comments.$get({
+        param: { id: String(post.id) },
+        query,
+      });
+      expect(res.status).toBe(400);
+    }
+    await t.settle();
+  });
+});
+
+describe("GET /api/comments/:id/replies", () => {
+  it("pages back through replies: newest page first, each oldest first", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const top = await commentOn(t, owner.cookie, post.id, "Top");
+    for (let i = 1; i <= 5; i++) {
+      await commentOn(t, owner.cookie, post.id, `Reply ${i}`, top.comment.id);
+    }
+    const newest = await readReplies(t, top.comment.id, { limit: "2" });
+    expect(bodies(newest.items)).toEqual(["Reply 4", "Reply 5"]);
+    expect(newest.hasMore).toBe(true);
+    const earlier = await readReplies(t, top.comment.id, {
+      limit: "2",
+      before: String(newest.items[0]!.id),
+    });
+    expect(bodies(earlier.items)).toEqual(["Reply 2", "Reply 3"]);
+    const earliest = await readReplies(t, top.comment.id, {
+      limit: "2",
+      before: String(earlier.items[0]!.id),
+    });
+    expect(bodies(earliest.items)).toEqual(["Reply 1"]);
+    expect(earliest.hasMore).toBe(false);
+    await t.settle();
+  });
+
+  it("brings each reply's latest replies", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const top = await commentOn(t, owner.cookie, post.id, "Top");
+    const reply = await commentOn(
+      t,
+      owner.cookie,
+      post.id,
+      "Reply",
+      top.comment.id
+    );
+    await commentOn(t, owner.cookie, post.id, "Deeper", reply.comment.id);
+    const { items } = await readReplies(t, top.comment.id);
+    expect(items[0]).toMatchObject({ body: "Reply", replyCount: 1 });
+    expect(bodies(items[0]!.replies)).toEqual(["Deeper"]);
+    await t.settle();
+  });
+
+  it("answers 404 for a comment that doesn't exist", async () => {
+    const t = testApp();
+    const res = await t.client.api.comments[":id"].replies.$get({
+      param: { id: "999999999" },
+      query: {},
+    });
+    expect(res.status).toBe(404);
+    await t.settle();
+  });
 });

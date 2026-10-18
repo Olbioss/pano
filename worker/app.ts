@@ -6,7 +6,7 @@ import { handleError, handleNotFound } from "./lib/errors";
 import type { Mailer } from "./mail/mailer";
 import { withAuth } from "./middleware/auth";
 import { withDb } from "./middleware/db";
-import { postCommentRoutes } from "./routes/comments";
+import { commentRoutes, postCommentRoutes } from "./routes/comments";
 import { healthRoutes } from "./routes/health";
 import { meRoutes } from "./routes/me";
 import { postRoutes, workspacePostRoutes } from "./routes/posts";
@@ -56,7 +56,8 @@ export function createApp(deps: AppDeps = {}) {
     .route("/workspaces", workspaceRoutes)
     .route("/workspaces", workspacePostRoutes)
     .route("/posts", postRoutes)
-    .route("/posts", postCommentRoutes);
+    .route("/posts", postCommentRoutes)
+    .route("/comments", commentRoutes);
 
   app.onError(handleError);
   app.notFound(handleNotFound);

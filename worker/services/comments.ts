@@ -1,6 +1,7 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import {
   type CommentChange,
+  type CommentPage,
   type CommentView,
   replyDepth,
   replyParentId,
@@ -178,4 +179,155 @@ export async function createComment(
   });
   if (!comment) throw new Error("the new comment is missing");
   return { comment, commentCount: saved.commentCount };
+}
+
+/** How many of each comment's latest replies come with it. */
+const PREVIEW_REPLIES = 2;
+
+/** The viewer of a post's comments, or null when the post doesn't exist. */
+async function viewerOf(
+  db: Database,
+  postId: number,
+  viewerId: string | null
+): Promise<Viewer | null> {
+  const [post] = await db
+    .select({ isTeam: viewerId ? onTeam(viewerId) : sql<boolean>`false` })
+    .from(posts)
+    .where(eq(posts.id, postId))
+    .limit(1);
+  return post ? { id: viewerId, isTeam: post.isTeam } : null;
+}
+
+/**
+ * Up to `limit` comments under `parentId` (null: the top level), newest
+ * first, all older than the comment `before`. Ids follow insertion order,
+ * so a comment added meanwhile never shifts a later page.
+ */
+async function pageOf(
+  db: Database,
+  input: {
+    postId: number;
+    parentId: number | null;
+    before?: number;
+    limit: number;
+  }
+) {
+  const rows = await db
+    .select(commentColumns)
+    .from(comments)
+    .leftJoin(users, eq(users.id, comments.authorId))
+    .where(
+      and(
+        eq(comments.postId, input.postId),
+        input.parentId === null
+          ? isNull(comments.parentId)
+          : eq(comments.parentId, input.parentId),
+        input.before === undefined ? undefined : lt(comments.id, input.before)
+      )
+    )
+    .orderBy(desc(comments.id))
+    .limit(input.limit + 1);
+  return {
+    rows: rows.slice(0, input.limit),
+    hasMore: rows.length > input.limit,
+  };
+}
+
+/** The latest replies of each of `parentIds`, oldest first, in one query. */
+async function latestReplies(
+  db: Database,
+  postId: number,
+  parentIds: number[]
+) {
+  if (parentIds.length === 0) return [];
+  const ranked = db
+    .select({
+      id: comments.id,
+      rank: sql<number>`row_number() over (partition by ${comments.parentId} order by ${comments.id} desc)`.as(
+        "rank"
+      ),
+    })
+    .from(comments)
+    .where(
+      and(eq(comments.postId, postId), inArray(comments.parentId, parentIds))
+    )
+    .as("ranked");
+  return db
+    .select(commentColumns)
+    .from(comments)
+    .innerJoin(ranked, eq(ranked.id, comments.id))
+    .leftJoin(users, eq(users.id, comments.authorId))
+    .where(lte(ranked.rank, PREVIEW_REPLIES))
+    .orderBy(asc(comments.id));
+}
+
+/** The rows as views, each carrying its latest replies. */
+async function withReplies(
+  db: Database,
+  postId: number,
+  rows: CommentRow[],
+  viewer: Viewer
+) {
+  const parents = rows.filter((row) => row.replyCount > 0).map((row) => row.id);
+  const replies = await latestReplies(db, postId, parents);
+  return rows.map((row) =>
+    toView(
+      row,
+      viewer,
+      replies
+        .filter((reply) => reply.parentId === row.id)
+        .map((reply) => toView(reply, viewer))
+    )
+  );
+}
+
+export async function listComments(
+  db: Database,
+  input: {
+    postId: number;
+    before?: number;
+    limit: number;
+    viewerId: string | null;
+  }
+): Promise<CommentPage> {
+  const viewer = await viewerOf(db, input.postId, input.viewerId);
+  if (!viewer) throw new AppError(404, "NOT_FOUND", "Post not found");
+  const page = await pageOf(db, { ...input, parentId: null });
+  return {
+    items: await withReplies(db, input.postId, page.rows, viewer),
+    hasMore: page.hasMore,
+  };
+}
+
+export async function listReplies(
+  db: Database,
+  input: {
+    commentId: number;
+    before?: number;
+    limit: number;
+    viewerId: string | null;
+  }
+): Promise<CommentPage> {
+  const [parent] = await db
+    .select({ postId: comments.postId })
+    .from(comments)
+    .where(eq(comments.id, input.commentId))
+    .limit(1);
+  const viewer = parent
+    ? await viewerOf(db, parent.postId, input.viewerId)
+    : null;
+  if (!parent || !viewer) {
+    throw new AppError(404, "NOT_FOUND", "Comment not found");
+  }
+  const page = await pageOf(db, {
+    postId: parent.postId,
+    parentId: input.commentId,
+    before: input.before,
+    limit: input.limit,
+  });
+  // The query brings the newest first; a page of replies reads oldest first.
+  return {
+    items: await withReplies(db, parent.postId, page.rows.reverse(), viewer),
+    hasMore: page.hasMore,
+  };
 }
