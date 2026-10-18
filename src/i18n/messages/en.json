@@ -84,7 +84,21 @@
     "deleted": "Comment deleted",
     "team": "Team",
     "pinned": "Pinned",
-    "pinnedByTeam": "Pinned by the team"
+    "pinnedByTeam": "Pinned by the team",
+    "addLabel": "Add a comment",
+    "replyLabel": "Your reply",
+    "bodyHint": "Markdown works: **bold**, lists, links.",
+    "nameLabel": "Your name",
+    "nameHint": "Shown with your comments.",
+    "submit": "Comment",
+    "submitReply": "Post reply",
+    "cancel": "Cancel",
+    "reply": "Reply",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "signInToComment": "Sign in to comment"
   },
   "submit": {
     "title": "New request",

@@ -1,19 +1,31 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { useTranslations } from "use-intl";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { threadQueryOptions } from "@/lib/comments";
+import { meQueryOptions } from "@/lib/session";
 import type { CommentView } from "@/shared/comments";
 import type { PostDetail } from "@/shared/posts";
+import { CommentComposer, SignInToComment } from "./comment-composer";
 import { CommentByline, CommentItem } from "./comment-item";
-import { ThreadContext } from "./thread-context";
+import { ThreadContext, useThread } from "./thread-context";
+import { usePinComment } from "./use-comment-actions";
 
-/** A post's comments: the pinned one, then the thread, newest first. */
+/**
+ * A post's comments: the pinned one, the comment box, then the thread,
+ * newest first.
+ */
 export function CommentThread({ post }: { post: PostDetail }) {
   const t = useTranslations("comments");
+  const me = useQuery(meQueryOptions);
   const thread = useInfiniteQuery(threadQueryOptions(post.id));
-  const state = useMemo(() => ({ post }), [post]);
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const viewerName = me.data?.user ? me.data.user.name : null;
+  const state = useMemo(
+    () => ({ post, viewerName, replyingTo, setReplyingTo }),
+    [post, viewerName, replyingTo]
+  );
   const items = thread.data?.pages.flatMap((page) => page.items) ?? [];
   return (
     <ThreadContext value={state}>
@@ -25,6 +37,11 @@ export function CommentThread({ post }: { post: PostDetail }) {
           {t("heading", { count: post.commentCount })}
         </h2>
         {post.pinned && <PinnedComment comment={post.pinned} />}
+        {viewerName !== null ? (
+          <CommentComposer parent={null} />
+        ) : me.isPending ? null : (
+          <SignInToComment />
+        )}
         {thread.isPending ? (
           <p className="text-muted-foreground text-sm">{t("loading")}</p>
         ) : thread.isError ? (
@@ -57,9 +74,11 @@ export function CommentThread({ post }: { post: PostDetail }) {
   );
 }
 
-/** The team's pinned comment, above the thread. */
+/** The team's pinned comment, above the thread. The team can unpin it here. */
 function PinnedComment({ comment }: { comment: CommentView }) {
   const t = useTranslations("comments");
+  const { post } = useThread();
+  const pin = usePinComment(post.id);
   return (
     <section
       aria-label={t("pinnedByTeam")}
@@ -70,6 +89,17 @@ function PinnedComment({ comment }: { comment: CommentView }) {
         <CommentByline comment={comment} />
       </div>
       <Markdown>{comment.body}</Markdown>
+      {post.isTeam && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="self-start"
+          onClick={() => pin.mutate(null)}
+        >
+          {t("unpin")}
+        </Button>
+      )}
     </section>
   );
 }

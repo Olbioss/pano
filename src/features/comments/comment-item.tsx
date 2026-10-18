@@ -9,12 +9,17 @@ import { repliesQueryOptions } from "@/lib/comments";
 import { cn } from "@/lib/utils";
 import type { CommentView } from "@/shared/comments";
 import { isDraft } from "./comment-cache";
+import { CommentComposer } from "./comment-composer";
 import { useThread } from "./thread-context";
+import { useDeleteComment, usePinComment } from "./use-comment-actions";
 
-/** One comment: who wrote it and when, its words, and its replies. */
+/**
+ * One comment: who wrote it and when, its words, what the person reading
+ * can do with it, and its replies.
+ */
 export function CommentItem({ comment }: { comment: CommentView }) {
   const t = useTranslations("comments");
-  const { post } = useThread();
+  const { post, replyingTo, setReplyingTo } = useThread();
   const [showReplies, setShowReplies] = useState(true);
   const draft = isDraft(comment);
   return (
@@ -49,8 +54,71 @@ export function CommentItem({ comment }: { comment: CommentView }) {
       ) : (
         <Markdown>{comment.body}</Markdown>
       )}
+      {!draft && !comment.deleted && <CommentActions comment={comment} />}
+      {replyingTo === comment.id && (
+        <CommentComposer parent={comment} onClose={() => setReplyingTo(null)} />
+      )}
       {showReplies && <Replies comment={comment} />}
     </li>
+  );
+}
+
+/** Reply for anyone signed in, Pin for the team, Delete for its author and the team. */
+function CommentActions({ comment }: { comment: CommentView }) {
+  const t = useTranslations("comments");
+  const { post, viewerName, replyingTo, setReplyingTo } = useThread();
+  const remove = useDeleteComment(post.id);
+  const pin = usePinComment(post.id);
+  const [confirming, setConfirming] = useState(false);
+  const pinned = post.pinned?.id === comment.id;
+  const replying = replyingTo === comment.id;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {viewerName !== null && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          aria-expanded={replying}
+          onClick={() => setReplyingTo(replying ? null : comment.id)}
+        >
+          {t("reply")}
+        </Button>
+      )}
+      {post.isTeam && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          onClick={() => pin.mutate(pinned ? null : comment)}
+        >
+          {pinned ? t("unpin") : t("pin")}
+        </Button>
+      )}
+      {comment.canDelete &&
+        (confirming ? (
+          <Button
+            type="button"
+            variant="destructive"
+            size="xs"
+            onClick={() => {
+              setConfirming(false);
+              remove.mutate(comment);
+            }}
+          >
+            {t("confirmDelete")}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            onClick={() => setConfirming(true)}
+          >
+            {t("delete")}
+          </Button>
+        ))}
+    </div>
   );
 }
 

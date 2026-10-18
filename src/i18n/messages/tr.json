@@ -84,7 +84,21 @@
     "deleted": "Yorum silindi",
     "team": "Ekip",
     "pinned": "Sabitlendi",
-    "pinnedByTeam": "Ekip tarafından sabitlendi"
+    "pinnedByTeam": "Ekip tarafından sabitlendi",
+    "addLabel": "Yorum ekleyin",
+    "replyLabel": "Yanıtınız",
+    "bodyHint": "Markdown kullanabilirsiniz: **kalın**, listeler, bağlantılar.",
+    "nameLabel": "Adınız",
+    "nameHint": "Yorumlarınızla birlikte gösterilir.",
+    "submit": "Yorum yap",
+    "submitReply": "Yanıtı gönder",
+    "cancel": "Vazgeç",
+    "reply": "Yanıtla",
+    "delete": "Sil",
+    "confirmDelete": "Silmeyi onayla",
+    "pin": "Sabitle",
+    "unpin": "Sabitlemeyi kaldır",
+    "signInToComment": "Yorum yapmak için giriş yapın"
   },
   "submit": {
     "title": "Yeni istek",

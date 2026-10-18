@@ -18,12 +18,16 @@ import en from "@/i18n/messages/en.json";
 import { type FeedParams, postKeys } from "@/lib/keys";
 import { postQueryOptions } from "@/lib/posts";
 import type { CommentView } from "@/shared/comments";
-import type { PostDetail, PostSummary } from "@/shared/posts";
+import type { FeedPage, PostDetail, PostSummary } from "@/shared/posts";
 import { CommentThread } from "./comment-thread";
+
+const toastError = vi.hoisted(() => vi.fn());
+vi.mock("sonner", () => ({ toast: { error: toastError } }));
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  toastError.mockReset();
 });
 
 const comment = (
@@ -103,20 +107,38 @@ function startingThread() {
   };
 }
 
-type ServerOptions = { top?: CommentView[]; pinnedId?: number | null };
+type ServerOptions = {
+  top?: CommentView[];
+  pinnedId?: number | null;
+  /** Every write answers 500. */
+  failWrites?: boolean;
+  /** The signed-in person is on the workspace's team. */
+  isTeam?: boolean;
+  /** The signed-in person's name: "" until they pick one. */
+  viewerName?: string;
+};
 
 /**
  * A stand-in for the API that keeps the thread in memory. It answers after
- * 20 ms, pages top-level comments three at a time, and lists each comment's
- * latest two replies with it.
+ * 20 ms, pages top-level comments three at a time, lists each comment's
+ * latest two replies with it, and records every write in `received`.
  */
-function fakeServer({ top, pinnedId = null }: ServerOptions = {}) {
+function fakeServer({
+  top,
+  pinnedId = null,
+  failWrites = false,
+  isTeam = false,
+  viewerName = "Bora",
+}: ServerOptions = {}) {
   const start = startingThread();
   const state = {
     top: top ?? start.top,
     replies: start.replies,
     pinnedId,
     commentCount: 6,
+    name: viewerName,
+    nextId: 100,
+    received: [] as unknown[],
   };
   const find = (id: number) =>
     [...state.top, ...[...state.replies.values()].flat()].find(
@@ -128,27 +150,41 @@ function fakeServer({ top, pinnedId = null }: ServerOptions = {}) {
       .slice(-2)
       .map((reply) => ({ ...reply, replies: [] })),
   });
+  const pinnedView = () => {
+    const pinned = state.pinnedId === null ? undefined : find(state.pinnedId);
+    return pinned ? { ...pinned, replies: [] } : null;
+  };
   const ok = (data: unknown, status = 200) =>
     Response.json({ success: true, data }, { status });
+  const failed = () =>
+    Response.json(
+      { success: false, code: "INTERNAL_ERROR", error: "boom" },
+      { status: 500 }
+    );
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input), "http://localhost");
       const method = init?.method ?? "GET";
+      const body =
+        typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
       await new Promise((resolve) => setTimeout(resolve, 20));
       if (url.pathname === "/api/me") {
+        if (method === "PATCH") {
+          state.received.push(body);
+          state.name = body.name;
+        }
         return ok({
-          user: { id: "u1", name: "Bora", email: "bora@example.com" },
+          user: { id: "u1", name: state.name, email: "bora@example.com" },
           workspaces: [],
         });
       }
       if (url.pathname === "/api/posts/7" && method === "GET") {
-        const pinned =
-          state.pinnedId === null ? undefined : find(state.pinnedId);
         return ok({
           ...detail,
           commentCount: state.commentCount,
-          pinned: pinned ? { ...pinned, replies: [] } : null,
+          isTeam,
+          pinned: pinnedView(),
         });
       }
       if (url.pathname === "/api/posts/7/comments" && method === "GET") {
@@ -161,12 +197,58 @@ function fakeServer({ top, pinnedId = null }: ServerOptions = {}) {
           hasMore: older.length > 3,
         });
       }
+      if (url.pathname === "/api/posts/7/comments" && method === "POST") {
+        state.received.push(body);
+        if (failWrites) return failed();
+        const saved = comment(state.nextId++, body.body, {
+          parentId: body.parentId ?? null,
+          depth: body.parentId ? 1 : 0,
+          author: { name: state.name },
+          official: isTeam,
+          canDelete: true,
+        });
+        if (saved.parentId === null) {
+          state.top.unshift(saved);
+        } else {
+          const siblings = state.replies.get(saved.parentId) ?? [];
+          state.replies.set(saved.parentId, [...siblings, saved]);
+          const parent = find(saved.parentId);
+          if (parent) parent.replyCount += 1;
+        }
+        state.commentCount += 1;
+        return ok({ comment: saved, commentCount: state.commentCount }, 201);
+      }
       const replies = /^\/api\/comments\/(\d+)\/replies$/.exec(url.pathname);
       if (replies && method === "GET") {
         return ok({
           items: (state.replies.get(Number(replies[1])) ?? []).map(withLatest),
           hasMore: false,
         });
+      }
+      const one = /^\/api\/comments\/(\d+)$/.exec(url.pathname);
+      const target = one ? find(Number(one[1])) : undefined;
+      if (target && method === "DELETE") {
+        state.received.push({ deleted: target.id });
+        if (failWrites) return failed();
+        Object.assign(target, {
+          deleted: true,
+          body: "",
+          author: null,
+          official: false,
+          canDelete: false,
+        });
+        state.commentCount -= 1;
+        if (state.pinnedId === target.id) state.pinnedId = null;
+        return ok({
+          comment: { ...target, replies: [] },
+          commentCount: state.commentCount,
+        });
+      }
+      if (url.pathname === "/api/posts/7/pin" && method === "PUT") {
+        state.received.push(body);
+        if (failWrites) return failed();
+        state.pinnedId = body.commentId;
+        return ok({ pinned: pinnedView() });
       }
       return Response.json(
         { success: false, code: "NOT_FOUND", error: "Not found" },
@@ -212,6 +294,10 @@ async function itemOf(text: string) {
   if (!item) throw new Error(`"${text}" isn't in a comment`);
   return item;
 }
+
+const feedCount = (qc: QueryClient) =>
+  qc.getQueryData<FeedPage>(postKeys.feed("acme", feedParams))?.items[0]
+    ?.commentCount;
 
 describe("CommentThread", () => {
   it("shows comments with their latest replies, the Team badge and deleted placeholders", async () => {
@@ -283,5 +369,170 @@ describe("CommentThread", () => {
     expect(screen.queryByText("Reply 12")).toBeNull();
     fireEvent.click(within(item).getByRole("button", { name: "Show replies" }));
     expect(screen.getByText("Reply 12")).toBeTruthy();
+  });
+});
+
+describe("changing the thread", () => {
+  it("shows a new comment at once, greyed out, and keeps it once saved", async () => {
+    const server = fakeServer();
+    renderThread();
+    await screen.findByText("Comment A");
+    const box = (await screen.findByLabelText(
+      "Add a comment"
+    )) as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: "Count me in" } });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    const list = screen.getByRole("list", { name: "Comments" });
+    const draft = await within(list).findByText("Count me in");
+    expect(draft.closest("li")?.getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByRole("heading", { name: "7 comments" })).toBeTruthy();
+    expect(box.value).toBe("");
+    await waitFor(() =>
+      expect(
+        within(list)
+          .getByText("Count me in")
+          .closest("li")
+          ?.hasAttribute("aria-busy")
+      ).toBe(false)
+    );
+    expect(server.received).toEqual([{ body: "Count me in" }]);
+    expect(screen.getByRole("heading", { name: "7 comments" })).toBeTruthy();
+  });
+
+  it("removes a failed comment, puts its text back, and restores the counts", async () => {
+    fakeServer({ failWrites: true });
+    const { qc } = renderThread();
+    await screen.findByText("Comment A");
+    const box = (await screen.findByLabelText(
+      "Add a comment"
+    )) as HTMLTextAreaElement;
+    fireEvent.change(box, { target: { value: "Count me in" } });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    const list = screen.getByRole("list", { name: "Comments" });
+    expect(await within(list).findByText("Count me in")).toBeTruthy();
+    expect(feedCount(qc)).toBe(7);
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        "Something went wrong on our side. Try again."
+      )
+    );
+    await waitFor(() =>
+      expect(within(list).queryByText("Count me in")).toBeNull()
+    );
+    await waitFor(() => expect(box.value).toBe("Count me in"));
+    expect(screen.getByRole("heading", { name: "6 comments" })).toBeTruthy();
+    expect(feedCount(qc)).toBe(6);
+  });
+
+  it("posts a reply under its parent, and closes the reply box once saved", async () => {
+    const server = fakeServer();
+    renderThread();
+    const parent = await itemOf("Comment A");
+    const [reply] = await within(parent).findAllByRole("button", {
+      name: "Reply",
+    });
+    fireEvent.click(reply!);
+    const box = await screen.findByLabelText("Your reply");
+    fireEvent.change(box, { target: { value: "Same here" } });
+    fireEvent.click(screen.getByRole("button", { name: "Post reply" }));
+    // The box's own text matches too, until it empties: look for the comment.
+    const draft = await within(parent).findByText("Same here", {
+      selector: "p",
+    });
+    expect(draft.closest("li")?.getAttribute("aria-busy")).toBe("true");
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Your reply")).toBeNull()
+    );
+    expect(server.received).toEqual([{ body: "Same here", parentId: 10 }]);
+    expect(
+      within(parent).getByText("Same here", { selector: "p" })
+    ).toBeTruthy();
+  });
+
+  it("keeps one reply box open at a time", async () => {
+    fakeServer();
+    renderThread();
+    const first = await itemOf("Comment A");
+    const mine = await itemOf("My comment");
+    const [replyToFirst] = await within(first).findAllByRole("button", {
+      name: "Reply",
+    });
+    fireEvent.click(replyToFirst!);
+    fireEvent.click(within(mine).getByRole("button", { name: "Reply" }));
+    expect(screen.getAllByLabelText("Your reply")).toHaveLength(1);
+    expect(within(mine).getByLabelText("Your reply")).toBeTruthy();
+  });
+
+  it("deletes a comment after a confirm, keeping its place", async () => {
+    const server = fakeServer();
+    renderThread();
+    const mine = await itemOf("My comment");
+    fireEvent.click(
+      await within(mine).findByRole("button", { name: "Delete" })
+    );
+    fireEvent.click(
+      within(mine).getByRole("button", { name: "Confirm delete" })
+    );
+    expect(await within(mine).findByText("Comment deleted")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "5 comments" })).toBeTruthy();
+    await waitFor(() => expect(server.received).toEqual([{ deleted: 8 }]));
+  });
+
+  it("puts a comment back when deleting it fails", async () => {
+    fakeServer({ failWrites: true });
+    renderThread();
+    const mine = await itemOf("My comment");
+    fireEvent.click(
+      await within(mine).findByRole("button", { name: "Delete" })
+    );
+    fireEvent.click(
+      within(mine).getByRole("button", { name: "Confirm delete" })
+    );
+    expect(await within(mine).findByText("Comment deleted")).toBeTruthy();
+    await waitFor(() => expect(toastError).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(within(mine).getByText("My comment")).toBeTruthy()
+    );
+    expect(screen.getByRole("heading", { name: "6 comments" })).toBeTruthy();
+  });
+
+  it("pins a comment above the thread, and unpins it", async () => {
+    const server = fakeServer({ isTeam: true });
+    renderThread({ isTeam: true });
+    const mine = await itemOf("My comment");
+    fireEvent.click(await within(mine).findByRole("button", { name: "Pin" }));
+    const pinned = await screen.findByRole("region", {
+      name: "Pinned by the team",
+    });
+    expect(within(pinned).getByText("My comment")).toBeTruthy();
+    await waitFor(() => expect(server.pinnedId).toBe(8));
+    fireEvent.click(within(pinned).getByRole("button", { name: "Unpin" }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("region", { name: "Pinned by the team" })
+      ).toBeNull()
+    );
+    await waitFor(() => expect(server.pinnedId).toBeNull());
+  });
+
+  it("asks for a name first when the account has none", async () => {
+    const server = fakeServer({ viewerName: "" });
+    renderThread();
+    await screen.findByText("Comment A");
+    fireEvent.change(await screen.findByLabelText("Your name"), {
+      target: { value: "Deniz" },
+    });
+    fireEvent.change(screen.getByLabelText("Add a comment"), {
+      target: { value: "Hello" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    const list = screen.getByRole("list", { name: "Comments" });
+    const draft = await within(list).findByText("Hello");
+    const item = draft.closest("li");
+    expect(item && within(item).getByText("Deniz")).toBeTruthy();
+    expect(server.received[0]).toEqual({ name: "Deniz" });
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Your name")).toBeNull()
+    );
   });
 });
