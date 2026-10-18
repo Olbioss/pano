@@ -261,22 +261,27 @@ async function latestReplies(
     .orderBy(asc(comments.id));
 }
 
-/** The rows as views, each carrying its latest replies. */
+/**
+ * The rows as views, each carrying its latest replies, and those replies
+ * theirs, down to the deepest level: a reply someone just wrote under a
+ * shown comment is its newest, so it stays shown when the thread is read
+ * again. One query per level; depth-3 comments have no replies, so it ends.
+ */
 async function withReplies(
   db: Database,
   postId: number,
   rows: CommentRow[],
   viewer: Viewer
-) {
+): Promise<CommentView[]> {
   const parents = rows.filter((row) => row.replyCount > 0).map((row) => row.id);
   const replies = await latestReplies(db, postId, parents);
+  const shown =
+    replies.length === 0 ? [] : await withReplies(db, postId, replies, viewer);
   return rows.map((row) =>
     toView(
       row,
       viewer,
-      replies
-        .filter((reply) => reply.parentId === row.id)
-        .map((reply) => toView(reply, viewer))
+      shown.filter((reply) => reply.parentId === row.id)
     )
   );
 }

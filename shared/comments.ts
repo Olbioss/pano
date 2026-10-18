@@ -19,7 +19,7 @@ export type CommentView = {
   replyCount: number;
   /**
    * The latest replies, oldest first: up to two on each comment a page
-   * lists, none on the replies inside them.
+   * lists, and on each of those replies in turn, down to the deepest level.
    */
   replies: CommentView[];
   /** The person asking may delete it: they wrote it, or they're on the team. */

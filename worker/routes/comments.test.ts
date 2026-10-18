@@ -413,6 +413,33 @@ describe("GET /api/posts/:id/comments", () => {
     await t.settle();
   });
 
+  it("brings the latest replies at every level, so a new reply stays in view", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const top = await commentOn(t, owner.cookie, post.id, "Top");
+    const reply = await commentOn(
+      t,
+      owner.cookie,
+      post.id,
+      "Reply",
+      top.comment.id
+    );
+    const deeper = await commentOn(
+      t,
+      owner.cookie,
+      post.id,
+      "Deeper",
+      reply.comment.id
+    );
+    await commentOn(t, owner.cookie, post.id, "Deepest", deeper.comment.id);
+    const { items } = await readThread(t, post.id);
+    const shownReply = items[0]!.replies[0]!;
+    expect(shownReply).toMatchObject({ body: "Reply", replyCount: 1 });
+    expect(bodies(shownReply.replies)).toEqual(["Deeper"]);
+    expect(bodies(shownReply.replies[0]!.replies)).toEqual(["Deepest"]);
+    await t.settle();
+  });
+
   it("shows a deleted comment as a placeholder that keeps its replies", async () => {
     const t = testApp();
     const { owner, post } = await postByOwner(t);
@@ -510,6 +537,31 @@ describe("GET /api/comments/:id/replies", () => {
     const { items } = await readReplies(t, top.comment.id);
     expect(items[0]).toMatchObject({ body: "Reply", replyCount: 1 });
     expect(bodies(items[0]!.replies)).toEqual(["Deeper"]);
+    await t.settle();
+  });
+
+  it("brings the latest replies at every level below each reply", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const top = await commentOn(t, owner.cookie, post.id, "Top");
+    const reply = await commentOn(
+      t,
+      owner.cookie,
+      post.id,
+      "Reply",
+      top.comment.id
+    );
+    const deeper = await commentOn(
+      t,
+      owner.cookie,
+      post.id,
+      "Deeper",
+      reply.comment.id
+    );
+    await commentOn(t, owner.cookie, post.id, "Deepest", deeper.comment.id);
+    const { items } = await readReplies(t, top.comment.id);
+    expect(bodies(items[0]!.replies)).toEqual(["Deeper"]);
+    expect(bodies(items[0]!.replies[0]!.replies)).toEqual(["Deepest"]);
     await t.settle();
   });
 
