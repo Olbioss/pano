@@ -142,6 +142,7 @@
     "BOARD_UNKNOWN": "Pick one of this workspace's boards.",
     "ORDER_MISMATCH": "The board list changed. Reload and try again.",
     "NOTHING_TO_UPDATE": "Change something before saving.",
-    "CODE_FORMAT": "Enter the 6 digits from the email."
+    "CODE_FORMAT": "Enter the 6 digits from the email.",
+    "COMMENT_UNKNOWN": "That comment isn't on this request. Reload and try again."
   }
 }

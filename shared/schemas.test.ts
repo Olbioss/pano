@@ -2,10 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   boardNameSchema,
   codeFormSchema,
+  commentBodySchema,
+  commentPageQuerySchema,
+  createCommentSchema,
   createPostSchema,
   createWorkspaceSchema,
   displayNameSchema,
   feedQuerySchema,
+  pinSchema,
   similarQuerySchema,
   updatePostSchema,
   updateWorkspaceSchema,
@@ -158,5 +162,52 @@ describe("similarQuerySchema", () => {
 describe("voteSchema", () => {
   it("takes only true or false", () => {
     expect(voteSchema.safeParse({ voted: "yes" }).success).toBe(false);
+  });
+});
+
+describe("commentBodySchema", () => {
+  it("trims a comment", () => {
+    expect(commentBodySchema.parse("  Same here.  ")).toBe("Same here.");
+  });
+
+  it.each([
+    ["an empty comment", ""],
+    ["a comment of spaces", "   \n "],
+    ["a comment over 3000 characters", "x".repeat(3001)],
+    ["a comment with a NUL character", "a\u0000b"],
+  ])("refuses %s", (_label, body) => {
+    expect(commentBodySchema.safeParse(body).success).toBe(false);
+  });
+});
+
+describe("createCommentSchema", () => {
+  it("takes a reply's parent as a positive id", () => {
+    const reply = { body: "Yes", parentId: 4 };
+    expect(createCommentSchema.safeParse(reply).success).toBe(true);
+    const bad = { body: "Yes", parentId: 0 };
+    expect(createCommentSchema.safeParse(bad).success).toBe(false);
+  });
+});
+
+describe("commentPageQuerySchema", () => {
+  it("fills in the page size", () => {
+    expect(commentPageQuerySchema.parse({})).toEqual({ limit: 20 });
+  });
+
+  it.each([
+    { before: "abc" },
+    { before: "0" },
+    { limit: "0" },
+    { limit: "51" },
+  ])("refuses %j", (query) => {
+    expect(commentPageQuerySchema.safeParse(query).success).toBe(false);
+  });
+});
+
+describe("pinSchema", () => {
+  it("takes a comment id, or null to unpin", () => {
+    expect(pinSchema.safeParse({ commentId: 3 }).success).toBe(true);
+    expect(pinSchema.safeParse({ commentId: null }).success).toBe(true);
+    expect(pinSchema.safeParse({}).success).toBe(false);
   });
 });

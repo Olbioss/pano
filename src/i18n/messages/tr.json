@@ -142,6 +142,7 @@
     "BOARD_UNKNOWN": "Bu çalışma alanının panolarından birini seçin.",
     "ORDER_MISMATCH": "Pano listesi değişti. Sayfayı yenileyip tekrar deneyin.",
     "NOTHING_TO_UPDATE": "Kaydetmeden önce bir şeyi değiştirin.",
-    "CODE_FORMAT": "E-postadaki 6 haneyi girin."
+    "CODE_FORMAT": "E-postadaki 6 haneyi girin.",
+    "COMMENT_UNKNOWN": "Bu yorum bu istekte yok. Sayfayı yenileyip tekrar deneyin."
   }
 }

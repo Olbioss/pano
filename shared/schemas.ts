@@ -115,3 +115,31 @@ export const similarQuerySchema = z.object({
   q: z.string().trim().min(2).max(120),
   board: z.string().max(40).optional(),
 });
+
+export const commentBodySchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(3000)
+  // Postgres text can't hold NUL; caught here it's a 400, not a 500.
+  .refine((body) => !body.includes("\u0000"));
+
+const idSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+
+export const createCommentSchema = z.object({
+  body: commentBodySchema,
+  parentId: idSchema.optional(),
+});
+
+/** Keyset paging: the page of comments before the id `before`. */
+export const commentPageQuerySchema = z.object({
+  before: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(Number.MAX_SAFE_INTEGER)
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export const pinSchema = z.object({ commentId: idSchema.nullable() });

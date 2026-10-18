@@ -13,6 +13,7 @@ export const FIELD_ERROR_KEYS = [
   "ORDER_MISMATCH",
   "NOTHING_TO_UPDATE",
   "CODE_FORMAT",
+  "COMMENT_UNKNOWN",
 ] as const;
 
 export type FieldErrorKey = (typeof FIELD_ERROR_KEYS)[number];
