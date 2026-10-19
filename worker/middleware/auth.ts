@@ -1,16 +1,16 @@
 import { createMiddleware } from "hono/factory";
 import { createAuth } from "../auth";
 import type { AppEnv } from "../env";
-import { type Mailer, mailerFor } from "../mail/mailer";
+import { type CodeMailer, mailerFor } from "../mail/mailer";
 
 /**
  * Builds Better Auth for this request. The mailer is picked only when a code
  * is actually sent, so a missing Brevo key can't break unrelated routes.
  */
-export const withAuth = (mailer?: Mailer) =>
+export const withAuth = (mailer?: CodeMailer) =>
   createMiddleware<AppEnv>(async (c, next) => {
     const mail = { failed: false };
-    const lazyMailer: Mailer = {
+    const lazyMailer: CodeMailer = {
       async sendSignInCode(message) {
         try {
           await (mailer ?? mailerFor(c.env)).sendSignInCode(message);

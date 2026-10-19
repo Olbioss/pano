@@ -3,7 +3,7 @@ import { csrf } from "hono/csrf";
 import type { ErrorResponse } from "@/shared/envelope";
 import type { AppEnv } from "./env";
 import { handleError, handleNotFound } from "./lib/errors";
-import type { Mailer } from "./mail/mailer";
+import type { CodeMailer } from "./mail/mailer";
 import { withAuth } from "./middleware/auth";
 import { withDb } from "./middleware/db";
 import { commentRoutes, postCommentRoutes } from "./routes/comments";
@@ -13,7 +13,7 @@ import { postRoutes, workspacePostRoutes } from "./routes/posts";
 import { workspaceRoadmapRoutes } from "./routes/roadmap";
 import { workspaceRoutes } from "./routes/workspaces";
 
-export type AppDeps = { mailer?: Mailer };
+export type AppDeps = { mailer?: CodeMailer };
 
 /**
  * The whole API as one chained Hono app, so AppType carries every route.

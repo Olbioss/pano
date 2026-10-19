@@ -6,9 +6,9 @@ import * as schema from "./db/schema";
 import type { Bindings } from "./env";
 import { cleanDisplayName } from "./lib/display-name";
 import { localeFromHeaders } from "./lib/request-locale";
-import type { Mailer } from "./mail/mailer";
+import type { CodeMailer } from "./mail/mailer";
 
-export type AuthDeps = { db: Database; env: Bindings; mailer: Mailer };
+export type AuthDeps = { db: Database; env: Bindings; mailer: CodeMailer };
 
 /**
  * Better Auth for one request. It's built per request because it needs the

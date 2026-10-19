@@ -38,6 +38,24 @@ describe("brevoMailer", () => {
     expect(body.subject).toBe("111222 is your Pano sign-in code");
   });
 
+  it("sends a Shipped email through Brevo", async () => {
+    const send = vi.fn<SendFn>(accepted);
+    await brevoMailer("k", "hello@pano.example", send).sendShipped({
+      to: "ayse@example.com",
+      locale: "en",
+      title: "Dark mode",
+      url: "https://pano.example/p/7-dark-mode",
+      workspaceName: "Acme",
+      note: null,
+    });
+    const body = JSON.parse(String(send.mock.calls[0]![1].body));
+    expect(body).toMatchObject({
+      to: [{ email: "ayse@example.com" }],
+      subject: "Shipped: Dark mode",
+    });
+    expect(body.textContent).toContain("https://pano.example/p/7-dark-mode");
+  });
+
   it("fails when Brevo refuses the email", async () => {
     const send: SendFn = async () =>
       new Response('{"message":"unauthorized"}', { status: 401 });

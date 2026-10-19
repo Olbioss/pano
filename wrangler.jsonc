@@ -13,6 +13,8 @@
     "run_worker_first": ["/api", "/api/*", "/p/*"]
   },
   "observability": { "enabled": true },
+  // Every five minutes: send queued emails (worker/cron.ts).
+  "triggers": { "crons": ["*/5 * * * *"] },
   "upload_source_maps": true,
   "hyperdrive": [
     {

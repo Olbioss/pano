@@ -1,17 +1,26 @@
 import type { Locale } from "@/shared/locale";
 import type { Bindings } from "../env";
-import { signInCodeEmail } from "./templates";
+import { type ShippedNotice, shippedEmail, signInCodeEmail } from "./templates";
+
+export type { ShippedNotice } from "./templates";
 
 export type SignInCode = { to: string; code: string; locale: Locale };
 
 export interface Mailer {
   sendSignInCode(message: SignInCode): Promise<void>;
+  sendShipped(message: ShippedNotice): Promise<void>;
 }
 
-/** Local dev: the code goes to the terminal instead of an inbox. */
+/** What sign-in needs from a mailer. */
+export type CodeMailer = Pick<Mailer, "sendSignInCode">;
+
+/** Local dev: emails go to the terminal instead of an inbox. */
 export const consoleMailer: Mailer = {
   async sendSignInCode({ to, code }) {
     console.log(`[mail] sign-in code for ${to}: ${code}`);
+  },
+  async sendShipped({ to, title, url }) {
+    console.log(`[mail] shipped notice for ${to}: ${title} ${url}`);
   },
 };
 
@@ -23,30 +32,35 @@ export function brevoMailer(
   from: string,
   send: SendFn = (url, init) => fetch(url, init)
 ): Mailer {
+  async function deliver(
+    to: string,
+    { subject, text, html }: { subject: string; text: string; html: string }
+  ) {
+    const res = await send("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "content-type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: "Pano", email: from },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+        htmlContent: html,
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(
+        `Brevo refused the email: ${res.status} ${await res.text()}`
+      );
+    }
+  }
   return {
-    async sendSignInCode({ to, code, locale }) {
-      const { subject, text, html } = signInCodeEmail(code, locale);
-      const res = await send("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "api-key": apiKey,
-          "content-type": "application/json",
-          accept: "application/json",
-        },
-        body: JSON.stringify({
-          sender: { name: "Pano", email: from },
-          to: [{ email: to }],
-          subject,
-          textContent: text,
-          htmlContent: html,
-        }),
-      });
-      if (!res.ok) {
-        throw new Error(
-          `Brevo refused the email: ${res.status} ${await res.text()}`
-        );
-      }
-    },
+    sendSignInCode: ({ to, code, locale }) =>
+      deliver(to, signInCodeEmail(code, locale)),
+    sendShipped: (message) => deliver(message.to, shippedEmail(message)),
   };
 }
 
