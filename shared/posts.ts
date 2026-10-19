@@ -32,6 +32,8 @@ export type PostDetail = PostSummary & {
   pinned: CommentView | null;
   /** The person asking follows it; always false when signed out. */
   subscribed: boolean;
+  /** Its status changes, oldest first. */
+  timeline: StatusChangeView[];
 };
 
 export type FeedPage = { items: PostSummary[]; page: number; hasMore: boolean };

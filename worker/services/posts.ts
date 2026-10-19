@@ -17,6 +17,7 @@ import {
 import { AppError } from "../lib/errors";
 import { findComment } from "./comments";
 import { searchConfigFor } from "./search";
+import { findTimeline } from "./status";
 import { subscribe } from "./subscriptions";
 import { onTeam } from "./team";
 
@@ -114,6 +115,7 @@ export async function findPostDetail(
     canEdit: viewerId !== null && (row.authorId === viewerId || row.onTeam),
     isTeam: row.onTeam,
     subscribed: row.subscribed,
+    timeline: await findTimeline(db, row.id),
     pinned:
       row.pinnedCommentId === null
         ? null

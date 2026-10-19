@@ -8,6 +8,7 @@ import type {
   VoteResult,
 } from "@/shared/posts";
 import {
+  changeStatusSchema,
   createPostSchema,
   feedQuerySchema,
   similarQuerySchema,
@@ -31,6 +32,7 @@ import {
 } from "../services/posts";
 import { listFeed } from "../services/ranking";
 import { findSimilar } from "../services/similar";
+import { changeStatus } from "../services/status";
 import { setSubscription } from "../services/subscriptions";
 import { setVote } from "../services/votes";
 import { findWorkspace } from "./workspaces";
@@ -163,6 +165,24 @@ export const postRoutes = new Hono<AppEnv>()
       return c.json<SuccessResponse<SubscriptionResult>>({
         success: true,
         data: result,
+      });
+    }
+  )
+  .patch(
+    "/:id/status",
+    requireUser,
+    validate("param", idParamSchema),
+    validate("json", changeStatusSchema),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      await changeStatus(c.var.db, {
+        postId: id,
+        userId: c.var.user.id,
+        ...c.req.valid("json"),
+      });
+      return c.json<SuccessResponse<PostDetail>>({
+        success: true,
+        data: await postDetail(c.var.db, id, c.var.user.id),
       });
     }
   );
