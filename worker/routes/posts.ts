@@ -4,12 +4,14 @@ import type {
   FeedPage,
   PostDetail,
   PostSummary,
+  SubscriptionResult,
   VoteResult,
 } from "@/shared/posts";
 import {
   createPostSchema,
   feedQuerySchema,
   similarQuerySchema,
+  subscriptionSchema,
   updatePostSchema,
   voteSchema,
 } from "@/shared/schemas";
@@ -29,6 +31,7 @@ import {
 } from "../services/posts";
 import { listFeed } from "../services/ranking";
 import { findSimilar } from "../services/similar";
+import { setSubscription } from "../services/subscriptions";
 import { setVote } from "../services/votes";
 import { findWorkspace } from "./workspaces";
 
@@ -141,6 +144,23 @@ export const postRoutes = new Hono<AppEnv>()
         voted: c.req.valid("json").voted,
       });
       return c.json<SuccessResponse<VoteResult>>({
+        success: true,
+        data: result,
+      });
+    }
+  )
+  .put(
+    "/:id/subscription",
+    requireUser,
+    validate("param", idParamSchema),
+    validate("json", subscriptionSchema),
+    async (c) => {
+      const result = await setSubscription(c.var.db, {
+        postId: c.req.valid("param").id,
+        userId: c.var.user.id,
+        subscribed: c.req.valid("json").subscribed,
+      });
+      return c.json<SuccessResponse<SubscriptionResult>>({
         success: true,
         data: result,
       });

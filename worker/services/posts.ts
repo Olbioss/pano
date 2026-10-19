@@ -9,6 +9,7 @@ import {
   boards,
   organization,
   posts,
+  subscriptions,
   user as users,
   votes,
   workspaceSettings,
@@ -16,6 +17,7 @@ import {
 import { AppError } from "../lib/errors";
 import { findComment } from "./comments";
 import { searchConfigFor } from "./search";
+import { subscribe } from "./subscriptions";
 import { onTeam } from "./team";
 
 /**
@@ -85,6 +87,9 @@ export async function findPostDetail(
       defaultLocale: workspaceSettings.defaultLocale,
       onTeam: viewerId ? onTeam(viewerId) : sql<boolean>`false`,
       pinnedCommentId: posts.pinnedCommentId,
+      subscribed: viewerId
+        ? sql<boolean>`exists (select 1 from ${subscriptions} as s where s.post_id = ${posts}.id and s.user_id = ${viewerId})`
+        : sql<boolean>`false`,
     })
     .from(posts)
     .innerJoin(boards, eq(boards.id, posts.boardId))
@@ -108,6 +113,7 @@ export async function findPostDetail(
     },
     canEdit: viewerId !== null && (row.authorId === viewerId || row.onTeam),
     isTeam: row.onTeam,
+    subscribed: row.subscribed,
     pinned:
       row.pinnedCommentId === null
         ? null
@@ -128,7 +134,10 @@ export async function boardInWorkspace(
   return row !== undefined;
 }
 
-/** A new post, with its author's vote already counted. Returns its id. */
+/**
+ * A new post, with its author's vote counted and its author subscribed.
+ * Returns its id.
+ */
 export async function createPost(
   db: Database,
   input: {
@@ -155,6 +164,7 @@ export async function createPost(
       .returning({ id: posts.id });
     if (!post) throw new Error("the post insert returned nothing");
     await tx.insert(votes).values({ postId: post.id, userId: input.authorId });
+    await subscribe(tx, post.id, input.authorId);
     return post.id;
   });
 }

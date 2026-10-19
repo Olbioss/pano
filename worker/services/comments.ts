@@ -9,6 +9,7 @@ import {
 import type { Database } from "../db/client";
 import { comments, posts, user as users } from "../db/schema";
 import { AppError } from "../lib/errors";
+import { subscribe } from "./subscriptions";
 import { onTeam } from "./team";
 
 /** Who's reading: their id, and whether they're on the post's team. */
@@ -159,6 +160,7 @@ export async function createComment(
         isOfficial: post.isTeam,
       })
       .returning({ id: comments.id });
+    await subscribe(tx, input.postId, input.authorId);
     const [counted] = await tx
       .update(posts)
       .set({ commentCount: sql`${posts.commentCount} + 1` })

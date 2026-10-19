@@ -30,6 +30,8 @@ export type PostDetail = PostSummary & {
   isTeam: boolean;
   /** The comment the team pinned above the thread. */
   pinned: CommentView | null;
+  /** The person asking follows it; always false when signed out. */
+  subscribed: boolean;
 };
 
 export type FeedPage = { items: PostSummary[]; page: number; hasMore: boolean };

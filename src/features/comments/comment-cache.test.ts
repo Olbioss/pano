@@ -53,6 +53,7 @@ const detail: PostDetail = {
   canEdit: false,
   isTeam: false,
   pinned: null,
+  subscribed: false,
 };
 const feedParams: FeedParams = { sort: "trending", page: 1 };
 const feedKey = postKeys.feed("acme", feedParams);

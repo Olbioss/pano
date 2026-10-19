@@ -35,3 +35,6 @@ export function createDb(
 }
 
 export type Database = ReturnType<typeof createDb>["db"];
+
+/** A transaction's handle, for helpers that write inside one. */
+export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];

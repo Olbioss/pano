@@ -3,6 +3,7 @@ import type { VoteResult } from "@/shared/posts";
 import type { Database } from "../db/client";
 import { posts, votes } from "../db/schema";
 import { AppError } from "../lib/errors";
+import { subscribe } from "./subscriptions";
 
 /**
  * Sets one person's vote on a post to `voted` and returns the new count.
@@ -46,6 +47,8 @@ export async function setVote(
     if (changed.length === 0) {
       return { voted: input.voted, voteCount: post.voteCount };
     }
+    // A new vote follows the post. Taking it back doesn't unfollow.
+    if (input.voted) await subscribe(tx, input.postId, input.userId);
     const [updated] = await tx
       .update(posts)
       .set({ voteCount: sql`${posts.voteCount} + ${input.voted ? 1 : -1}` })
