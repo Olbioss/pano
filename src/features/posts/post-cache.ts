@@ -1,11 +1,17 @@
 import type { Draft } from "immer";
 import { postKeys } from "@/lib/keys";
 import { type CachePatch, patch } from "@/lib/optimistic";
-import type { FeedPage, PostDetail, PostSummary } from "@/shared/posts";
+import type {
+  FeedPage,
+  PostDetail,
+  PostSummary,
+  Roadmap,
+} from "@/shared/posts";
+import { ROADMAP_STATUSES } from "@/shared/status";
 
 /**
  * The same edit to one post wherever it's cached: every feed page, its own
- * page, and the similar-requests lists.
+ * page, the similar-requests lists, and the roadmaps.
  */
 export function everyCopyOfPost(
   postId: number,
@@ -21,6 +27,13 @@ export function everyCopyOfPost(
     patch<PostSummary[]>({ queryKey: postKeys.similarAll }, (list) => {
       for (const item of list) {
         if (item.id === postId) edit(item);
+      }
+    }),
+    patch<Roadmap>({ queryKey: postKeys.roadmapAll }, (board) => {
+      for (const status of ROADMAP_STATUSES) {
+        for (const item of board[status]) {
+          if (item.id === postId) edit(item);
+        }
       }
     }),
   ];

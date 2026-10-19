@@ -23,7 +23,16 @@ export const postKeys = {
   similarAll: ["posts", "similar"] as const,
   similar: (workspace: string, q: string) =>
     ["posts", "similar", workspace, q] as const,
+  roadmapAll: ["posts", "roadmap"] as const,
+  roadmap: (workspace: string) => ["posts", "roadmap", workspace] as const,
 };
+
+/** Every status change shares this key: the board refetches once none is left. */
+export const statusMutationKey = ["status"] as const;
+
+/** Every subscription change to one post shares this key. */
+export const subscriptionKey = (postId: number) =>
+  ["subscription", postId] as const;
 
 /** Every vote on one post shares this key, so they can be counted. */
 export const voteKey = (postId: number) => ["vote", postId] as const;

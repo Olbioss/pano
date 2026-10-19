@@ -1,4 +1,5 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import type { PostStatus } from "@/shared/status";
 import { api, unwrap } from "./api";
 import { type FeedParams, postKeys } from "./keys";
 
@@ -78,6 +79,44 @@ export async function castVote(id: number, voted: boolean) {
     await api.posts[":id"].vote.$put({
       param: { id: String(id) },
       json: { voted },
+    })
+  );
+}
+
+export const roadmapQueryOptions = (workspace: string) =>
+  queryOptions({
+    queryKey: postKeys.roadmap(workspace),
+    queryFn: async () =>
+      unwrap(
+        await api.workspaces[":slug"].roadmap.$get({
+          param: { slug: workspace },
+        })
+      ),
+  });
+
+export async function changeStatus(
+  id: number,
+  json: { status: PostStatus; note?: string }
+) {
+  return unwrap(
+    await api.posts[":id"].status.$patch({ param: { id: String(id) }, json })
+  );
+}
+
+export async function mergePost(id: number, intoId: number) {
+  return unwrap(
+    await api.posts[":id"].merge.$post({
+      param: { id: String(id) },
+      json: { intoId },
+    })
+  );
+}
+
+export async function setSubscription(id: number, subscribed: boolean) {
+  return unwrap(
+    await api.posts[":id"].subscription.$put({
+      param: { id: String(id) },
+      json: { subscribed },
     })
   );
 }
