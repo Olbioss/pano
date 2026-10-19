@@ -59,7 +59,11 @@ otherwise.
   runtime-agnostic (no Workers globals, bindings only from `c.env`), because
   the browser project typechecks it through `AppType` and tests run it under
   Node.
-- `worker/index.ts`: the Workers entry. Workers-only code goes here.
+- `worker/index.ts`: the Workers entry. Workers-only code goes here: `/p/*`
+  link previews, and the cron trigger, which runs `worker/cron.ts` every five
+  minutes to send queued emails. In local dev,
+  `curl 'http://localhost:5173/cdn-cgi/handler/scheduled?cron=*/5+*+*+*+*'`
+  runs it, and the emails print in the terminal.
 - `worker/auth.ts`: Better Auth, with email-code sign-in and workspaces as
   organizations. Its routes under `/api/auth/*` answer in Better Auth's JSON,
   so the browser calls them through `authClient`. In local dev, sign-in codes
@@ -70,6 +74,9 @@ otherwise.
   moves `comment_count` and `reply_count` in the comment's own transaction.
   Deleting a comment is soft, so its replies keep their place. `ranking.ts`
   (trending, top, new) and `similar.ts` serve the feed and the submit form.
+  `status.ts` moves a post and, on Shipped, queues one email per subscriber
+  in the same transaction (`outbox.ts`). `merge.ts` locks both posts and
+  moves votes, subscriptions and comments at once.
 - **Search** folds case and Turkish letters with the SQL function
   `pano_fold` (migration `0005_search_fold.sql`), on the stored `tsvector`
   and on the query alike, so results don't depend on the database's locale.
@@ -82,5 +89,8 @@ otherwise.
 - `src/features/comments/`: the thread under each post. A new comment shows
   at once as a greyed-out draft. It gives way to the server's copy, or
   disappears again, with its text back in the box, if saving fails.
+- `src/features/roadmap/`: the public roadmap. The team drags cards between
+  columns with dnd-kit, and the arrow keys move a picked-up card a column at
+  a time.
 - **Aliases:** `@/shared/*` works everywhere. `@/*` means `src/` and is used
   only there. Worker files import each other relatively.
