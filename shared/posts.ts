@@ -1,6 +1,6 @@
 import type { CommentView } from "./comments";
 import type { Locale } from "./locale";
-import type { PostStatus } from "./status";
+import type { PostStatus, RoadmapStatus } from "./status";
 
 /** A post as feeds and lists show it. */
 export type PostSummary = {
@@ -35,3 +35,20 @@ export type PostDetail = PostSummary & {
 export type FeedPage = { items: PostSummary[]; page: number; hasMore: boolean };
 
 export type VoteResult = { voted: boolean; voteCount: number };
+
+/** One entry on a post's timeline. */
+export type StatusChangeView = {
+  id: number;
+  from: PostStatus;
+  to: PostStatus;
+  /** The team's note, if they left one. */
+  note: string | null;
+  /** null once the account is gone; name is "" until they pick one. */
+  by: { name: string } | null;
+  createdAt: string;
+};
+
+/** The public roadmap: each column's unmerged posts. */
+export type Roadmap = Record<RoadmapStatus, PostSummary[]>;
+
+export type SubscriptionResult = { subscribed: boolean };

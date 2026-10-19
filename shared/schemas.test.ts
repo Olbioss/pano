@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   boardNameSchema,
+  changeStatusSchema,
   codeFormSchema,
   commentBodySchema,
   commentPageQuerySchema,
@@ -9,8 +10,10 @@ import {
   createWorkspaceSchema,
   displayNameSchema,
   feedQuerySchema,
+  mergeSchema,
   pinSchema,
   similarQuerySchema,
+  subscriptionSchema,
   updatePostSchema,
   updateWorkspaceSchema,
   voteSchema,
@@ -209,5 +212,42 @@ describe("pinSchema", () => {
     expect(pinSchema.safeParse({ commentId: 3 }).success).toBe(true);
     expect(pinSchema.safeParse({ commentId: null }).success).toBe(true);
     expect(pinSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("changeStatusSchema", () => {
+  it("takes a status, with or without a note, trimmed", () => {
+    expect(
+      changeStatusSchema.parse({ status: "planned", note: "  Next month.  " })
+    ).toEqual({ status: "planned", note: "Next month." });
+    expect(changeStatusSchema.parse({ status: "shipped" })).toEqual({
+      status: "shipped",
+    });
+  });
+
+  it.each([
+    ["an unknown status", { status: "done" }],
+    [
+      "a note over 1000 characters",
+      { status: "planned", note: "x".repeat(1001) },
+    ],
+    ["a note with a NUL character", { status: "planned", note: "a\u0000b" }],
+  ])("refuses %s", (_label, input) => {
+    expect(changeStatusSchema.safeParse(input).success).toBe(false);
+  });
+});
+
+describe("mergeSchema", () => {
+  it("takes the target as a positive id", () => {
+    expect(mergeSchema.safeParse({ intoId: 4 }).success).toBe(true);
+    expect(mergeSchema.safeParse({ intoId: 0 }).success).toBe(false);
+  });
+});
+
+describe("subscriptionSchema", () => {
+  it("takes only true or false", () => {
+    expect(subscriptionSchema.safeParse({ subscribed: "yes" }).success).toBe(
+      false
+    );
   });
 });

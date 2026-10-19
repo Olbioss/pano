@@ -143,3 +143,19 @@ export const commentPageQuerySchema = z.object({
 });
 
 export const pinSchema = z.object({ commentId: idSchema.nullable() });
+
+/** The team's note on a status change. Empty means none. */
+export const statusNoteSchema = z
+  .string()
+  .trim()
+  .max(1000)
+  .refine((note) => !note.includes("\u0000"));
+
+export const changeStatusSchema = z.object({
+  status: z.enum(POST_STATUSES),
+  note: statusNoteSchema.optional(),
+});
+
+export const mergeSchema = z.object({ intoId: idSchema });
+
+export const subscriptionSchema = z.object({ subscribed: z.boolean() });

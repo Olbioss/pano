@@ -14,6 +14,8 @@ export const FIELD_ERROR_KEYS = [
   "NOTHING_TO_UPDATE",
   "CODE_FORMAT",
   "COMMENT_UNKNOWN",
+  "MERGE_SELF",
+  "MERGE_TARGET",
 ] as const;
 
 export type FieldErrorKey = (typeof FIELD_ERROR_KEYS)[number];
