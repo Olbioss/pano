@@ -55,7 +55,12 @@ export async function renderPostPage(
   try {
     const post = await findPostMeta(db, id);
     if (!post) return withStatus(shell, 404);
-    const meta = postMeta(post);
+    // A merged post's link lands on the post it was merged into.
+    const live =
+      post.mergedIntoId === null
+        ? post
+        : ((await findPostMeta(db, post.mergedIntoId)) ?? post);
+    const meta = postMeta(live);
     if (url.pathname !== meta.canonicalPath) {
       const current = new URL(`${meta.canonicalPath}${url.search}`, url);
       // A 301 without caching rules is kept forever. Once the title changed

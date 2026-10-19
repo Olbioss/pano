@@ -50,6 +50,7 @@ const detail: PostDetail = {
   pinned: null,
   subscribed: false,
   timeline: [],
+  mergedInto: null,
 };
 const feedParams: FeedParams = { sort: "trending", page: 1 };
 

@@ -11,6 +11,7 @@ import {
   changeStatusSchema,
   createPostSchema,
   feedQuerySchema,
+  mergeSchema,
   similarQuerySchema,
   subscriptionSchema,
   updatePostSchema,
@@ -22,6 +23,7 @@ import { AppError } from "../lib/errors";
 import { idParamSchema, validate } from "../lib/validate";
 import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
+import { mergePost } from "../services/merge";
 import {
   boardInWorkspace,
   createPost,
@@ -183,6 +185,24 @@ export const postRoutes = new Hono<AppEnv>()
       return c.json<SuccessResponse<PostDetail>>({
         success: true,
         data: await postDetail(c.var.db, id, c.var.user.id),
+      });
+    }
+  )
+  .post(
+    "/:id/merge",
+    requireUser,
+    validate("param", idParamSchema),
+    validate("json", mergeSchema),
+    async (c) => {
+      const { intoId } = c.req.valid("json");
+      await mergePost(c.var.db, {
+        postId: c.req.valid("param").id,
+        intoId,
+        userId: c.var.user.id,
+      });
+      return c.json<SuccessResponse<PostDetail>>({
+        success: true,
+        data: await postDetail(c.var.db, intoId, c.var.user.id),
       });
     }
   );

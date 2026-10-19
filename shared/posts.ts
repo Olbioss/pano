@@ -34,6 +34,8 @@ export type PostDetail = PostSummary & {
   subscribed: boolean;
   /** Its status changes, oldest first. */
   timeline: StatusChangeView[];
+  /** Set once the team merged it into another post: its page sends people there. */
+  mergedInto: { id: number; ref: string } | null;
 };
 
 export type FeedPage = { items: PostSummary[]; page: number; hasMore: boolean };

@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { boards, organization, posts } from "./db/schema";
 import { escapeAttribute, postMeta, renderPostPage } from "./og";
@@ -100,5 +101,20 @@ describe("renderPostPage", () => {
     );
     // Kept forever, an old→new hop would loop once the title changes back.
     expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("sends a merged post's link to the post it was merged into", async () => {
+    const id = await postTitled("Dark mode");
+    const into = await postTitled("Dark theme");
+    await db.update(posts).set({ mergedIntoId: into }).where(eq(posts.id, id));
+    const res = await renderPostPage(
+      new Request(`http://localhost/p/${id}-dark-mode`),
+      env,
+      ctx
+    );
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe(
+      `http://localhost/p/${into}-dark-theme`
+    );
   });
 });

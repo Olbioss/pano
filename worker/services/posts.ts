@@ -88,6 +88,7 @@ export async function findPostDetail(
       defaultLocale: workspaceSettings.defaultLocale,
       onTeam: viewerId ? onTeam(viewerId) : sql<boolean>`false`,
       pinnedCommentId: posts.pinnedCommentId,
+      mergedIntoId: posts.mergedIntoId,
       subscribed: viewerId
         ? sql<boolean>`exists (select 1 from ${subscriptions} as s where s.post_id = ${posts}.id and s.user_id = ${viewerId})`
         : sql<boolean>`false`,
@@ -116,11 +117,23 @@ export async function findPostDetail(
     isTeam: row.onTeam,
     subscribed: row.subscribed,
     timeline: await findTimeline(db, row.id),
+    mergedInto:
+      row.mergedIntoId === null ? null : await findRef(db, row.mergedIntoId),
     pinned:
       row.pinnedCommentId === null
         ? null
         : await findComment(db, row.pinnedCommentId, viewer),
   };
+}
+
+/** Where a post lives now, for pointing at it. */
+async function findRef(db: Database, id: number) {
+  const [row] = await db
+    .select({ id: posts.id, title: posts.title })
+    .from(posts)
+    .where(eq(posts.id, id))
+    .limit(1);
+  return row ? { id: row.id, ref: postRef(row.id, row.title) } : null;
 }
 
 export async function boardInWorkspace(
@@ -208,6 +221,7 @@ export async function findPostMeta(db: Database, id: number) {
       title: posts.title,
       body: posts.body,
       workspaceName: organization.name,
+      mergedIntoId: posts.mergedIntoId,
     })
     .from(posts)
     .innerJoin(organization, eq(organization.id, posts.organizationId))
