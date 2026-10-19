@@ -65,6 +65,9 @@ export const posts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    // When the team last changed the status: the roadmap shows what shipped
+    // in the last 30 days.
+    statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
   },
   (table) => [
     index("posts_board_created_idx").on(table.boardId, table.createdAt),
