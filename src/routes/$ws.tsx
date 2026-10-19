@@ -54,6 +54,13 @@ function WorkspaceLayout() {
           >
             {t("requests")}
           </Link>
+          <Link
+            to="/$ws/roadmap"
+            params={{ ws }}
+            activeProps={{ className: "font-semibold" }}
+          >
+            {t("roadmap")}
+          </Link>
           {onTeam && (
             <Link
               to="/$ws/settings"

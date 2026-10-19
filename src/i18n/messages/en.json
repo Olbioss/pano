@@ -41,6 +41,7 @@
   },
   "workspace": {
     "requests": "Requests",
+    "roadmap": "Roadmap",
     "settings": "Settings",
     "noBoards": "No boards yet.",
     "notFound": "There's no workspace at this address."
@@ -124,6 +125,18 @@
     "confirmButton": "Confirm merge",
     "back": "Back",
     "cancel": "Cancel"
+  },
+  "roadmap": {
+    "empty": "Nothing here yet.",
+    "shippedHint": "Last 30 days",
+    "loading": "Loading the roadmap…",
+    "loadFailed": "Couldn't load the roadmap. Reload the page to try again.",
+    "move": "Move “{title}”",
+    "instructions": "To move a request, press space or enter, pick a column with the arrow keys, then press space or enter again. Escape cancels.",
+    "pickedUp": "Picked up “{title}”.",
+    "over": "“{title}” is over {column}.",
+    "dropped": "“{title}” moved to {column}.",
+    "stayed": "“{title}” stayed where it was."
   },
   "submit": {
     "title": "New request",

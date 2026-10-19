@@ -15,6 +15,7 @@ import { Route as NewWorkspaceRouteImport } from './routes/new-workspace'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as WsIndexRouteImport } from './routes/$ws/index'
 import { Route as WsNewRouteImport } from './routes/$ws/new'
+import { Route as WsRoadmapRouteImport } from './routes/$ws/roadmap'
 import { Route as WsSettingsRouteImport } from './routes/$ws/settings'
 import { Route as PRefRouteImport } from './routes/p/$ref'
 
@@ -48,6 +49,11 @@ const WsNewRoute = WsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => WsRoute,
 } as any)
+const WsRoadmapRoute = WsRoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => WsRoute,
+} as any)
 const WsSettingsRoute = WsSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
   '/$ws/new': typeof WsNewRoute
+  '/$ws/roadmap': typeof WsRoadmapRoute
   '/$ws/settings': typeof WsSettingsRoute
   '/p/$ref': typeof PRefRoute
   '/$ws/': typeof WsIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
   '/$ws/new': typeof WsNewRoute
+  '/$ws/roadmap': typeof WsRoadmapRoute
   '/$ws/settings': typeof WsSettingsRoute
   '/p/$ref': typeof PRefRoute
   '/$ws': typeof WsIndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
   '/$ws/new': typeof WsNewRoute
+  '/$ws/roadmap': typeof WsRoadmapRoute
   '/$ws/settings': typeof WsSettingsRoute
   '/p/$ref': typeof PRefRoute
   '/$ws/': typeof WsIndexRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/new-workspace'
     | '/signin'
     | '/$ws/new'
+    | '/$ws/roadmap'
     | '/$ws/settings'
     | '/p/$ref'
     | '/$ws/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/new-workspace'
     | '/signin'
     | '/$ws/new'
+    | '/$ws/roadmap'
     | '/$ws/settings'
     | '/p/$ref'
     | '/$ws'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/new-workspace'
     | '/signin'
     | '/$ws/new'
+    | '/$ws/roadmap'
     | '/$ws/settings'
     | '/p/$ref'
     | '/$ws/'
@@ -173,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WsNewRouteImport
       parentRoute: typeof WsRoute
     }
+    '/$ws/roadmap': {
+      id: '/$ws/roadmap'
+      path: '/roadmap'
+      fullPath: '/$ws/roadmap'
+      preLoaderRoute: typeof WsRoadmapRouteImport
+      parentRoute: typeof WsRoute
+    }
     '/$ws/settings': {
       id: '/$ws/settings'
       path: '/settings'
@@ -192,12 +211,14 @@ declare module '@tanstack/react-router' {
 
 interface WsRouteChildren {
   WsNewRoute: typeof WsNewRoute
+  WsRoadmapRoute: typeof WsRoadmapRoute
   WsSettingsRoute: typeof WsSettingsRoute
   WsIndexRoute: typeof WsIndexRoute
 }
 
 const WsRouteChildren: WsRouteChildren = {
   WsNewRoute: WsNewRoute,
+  WsRoadmapRoute: WsRoadmapRoute,
   WsSettingsRoute: WsSettingsRoute,
   WsIndexRoute: WsIndexRoute,
 }

@@ -41,6 +41,7 @@
   },
   "workspace": {
     "requests": "İstekler",
+    "roadmap": "Yol haritası",
     "settings": "Ayarlar",
     "noBoards": "Henüz pano yok.",
     "notFound": "Bu adreste bir çalışma alanı yok."
@@ -124,6 +125,18 @@
     "confirmButton": "Birleştirmeyi onayla",
     "back": "Geri",
     "cancel": "Vazgeç"
+  },
+  "roadmap": {
+    "empty": "Henüz bir şey yok.",
+    "shippedHint": "Son 30 gün",
+    "loading": "Yol haritası yükleniyor…",
+    "loadFailed": "Yol haritası yüklenemedi. Tekrar denemek için sayfayı yenileyin.",
+    "move": "“{title}” isteğini taşı",
+    "instructions": "Bir isteği taşımak için boşluk veya enter tuşuna basın, ok tuşlarıyla bir sütun seçin, sonra yeniden boşluk veya enter tuşuna basın. Escape iptal eder.",
+    "pickedUp": "“{title}” alındı.",
+    "over": "“{title}”, {column} sütununun üzerinde.",
+    "dropped": "“{title}”, {column} sütununa taşındı.",
+    "stayed": "“{title}” yerinde kaldı."
   },
   "submit": {
     "title": "Yeni istek",
