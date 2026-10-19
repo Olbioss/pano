@@ -18,8 +18,12 @@ import { Markdown } from "@/components/markdown";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { CommentThread } from "@/features/comments/comment-thread";
+import { MergePanel } from "@/features/merge/merge-panel";
 import { AuthorName } from "@/features/posts/author-name";
 import { PostEditor } from "@/features/posts/post-editor";
+import { StatusControl } from "@/features/status/status-control";
+import { StatusTimeline } from "@/features/status/status-timeline";
+import { SubscribeButton } from "@/features/subscriptions/subscribe-button";
 import { SignInToVote, VoteButton } from "@/features/votes/vote-button";
 import { useLocaleControls } from "@/i18n/provider";
 import { ApiError } from "@/lib/api";
@@ -41,6 +45,14 @@ export const Route = createFileRoute("/p/$ref")({
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) throw notFound();
       throw error;
+    }
+    // A merged post's page is the one it was merged into.
+    if (post.mergedInto) {
+      throw redirect({
+        to: "/p/$ref",
+        params: { ref: post.mergedInto.ref },
+        replace: true,
+      });
     }
     // An old or mistyped slug: show the post at its current address.
     if (post.ref !== params.ref) {
@@ -67,6 +79,8 @@ function PostPage() {
   const format = useFormatter();
   const now = useNow({ updateInterval: 60_000 });
   const [editing, setEditing] = useState(false);
+  const navigate = useNavigate();
+  const signedIn = Boolean(me.data?.user);
 
   // As on the workspace's own pages: visitors who haven't picked a language
   // see the workspace's default.
@@ -85,7 +99,7 @@ function PostPage() {
         ← {post.workspace.name}
       </Link>
       <article className="flex gap-4">
-        {me.data?.user ? (
+        {signedIn ? (
           <VoteButton
             postId={post.id}
             title={post.title}
@@ -119,6 +133,21 @@ function PostPage() {
           )}
         </div>
       </article>
+      {(signedIn || post.isTeam) && (
+        <div className="flex flex-col gap-4">
+          {signedIn && <SubscribeButton post={post} />}
+          {post.isTeam && <StatusControl post={post} />}
+          {post.isTeam && (
+            <MergePanel
+              post={post}
+              onMerged={(target) =>
+                navigate({ to: "/p/$ref", params: { ref: target.ref } })
+              }
+            />
+          )}
+        </div>
+      )}
+      <StatusTimeline timeline={post.timeline} />
       <CommentThread post={post} />
     </main>
   );

@@ -100,6 +100,31 @@
     "unpin": "Unpin",
     "signInToComment": "Sign in to comment"
   },
+  "status": {
+    "label": "Status",
+    "update": "Update status",
+    "noteLabel": "Note for the timeline (optional)",
+    "noteHint": "Shown on the request's timeline, and in the email when it ships.",
+    "timelineHeading": "Status history",
+    "movedTo": "Moved to"
+  },
+  "subscription": {
+    "subscribe": "Subscribe",
+    "unsubscribe": "Unsubscribe",
+    "hint": "Get an email when it ships."
+  },
+  "merge": {
+    "open": "Merge into another request",
+    "heading": "Merge this request",
+    "searchLabel": "Find the request to merge into",
+    "searchPlaceholder": "Search by title",
+    "pick": "Merge into “{title}”",
+    "noResults": "No other requests match.",
+    "confirm": "Merge into “{title}”? Its votes, comments and subscribers move there, and this request's page sends people to it.",
+    "confirmButton": "Confirm merge",
+    "back": "Back",
+    "cancel": "Cancel"
+  },
   "submit": {
     "title": "New request",
     "intro": "Describe one idea or problem. Look through similar requests first: a vote there counts too.",

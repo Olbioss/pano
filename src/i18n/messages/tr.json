@@ -100,6 +100,31 @@
     "unpin": "Sabitlemeyi kaldır",
     "signInToComment": "Yorum yapmak için giriş yapın"
   },
+  "status": {
+    "label": "Durum",
+    "update": "Durumu güncelle",
+    "noteLabel": "Zaman çizelgesi için not (isteğe bağlı)",
+    "noteHint": "İsteğin zaman çizelgesinde ve yayına alındığında gönderilen e-postada görünür.",
+    "timelineHeading": "Durum geçmişi",
+    "movedTo": "Taşındığı durum:"
+  },
+  "subscription": {
+    "subscribe": "Abone ol",
+    "unsubscribe": "Abonelikten çık",
+    "hint": "Yayına alındığında e-posta alın."
+  },
+  "merge": {
+    "open": "Başka bir istekle birleştir",
+    "heading": "Bu isteği birleştir",
+    "searchLabel": "Birleştirilecek isteği bulun",
+    "searchPlaceholder": "Başlığa göre arayın",
+    "pick": "“{title}” ile birleştir",
+    "noResults": "Eşleşen başka istek yok.",
+    "confirm": "“{title}” ile birleştirilsin mi? Oyları, yorumları ve aboneleri oraya taşınır; bu isteğin sayfası da ziyaretçileri oraya yönlendirir.",
+    "confirmButton": "Birleştirmeyi onayla",
+    "back": "Geri",
+    "cancel": "Vazgeç"
+  },
   "submit": {
     "title": "Yeni istek",
     "intro": "Tek bir fikri ya da sorunu anlatın. Önce benzer isteklere göz atın: oradaki bir oy da sayılır.",
