@@ -10,6 +10,7 @@ import { commentRoutes, postCommentRoutes } from "./routes/comments";
 import { healthRoutes } from "./routes/health";
 import { meRoutes } from "./routes/me";
 import { postRoutes, workspacePostRoutes } from "./routes/posts";
+import { workspaceRoadmapRoutes } from "./routes/roadmap";
 import { workspaceRoutes } from "./routes/workspaces";
 
 export type AppDeps = { mailer?: Mailer };
@@ -55,6 +56,7 @@ export function createApp(deps: AppDeps = {}) {
     .route("/me", meRoutes)
     .route("/workspaces", workspaceRoutes)
     .route("/workspaces", workspacePostRoutes)
+    .route("/workspaces", workspaceRoadmapRoutes)
     .route("/posts", postRoutes)
     .route("/posts", postCommentRoutes)
     .route("/comments", commentRoutes);
