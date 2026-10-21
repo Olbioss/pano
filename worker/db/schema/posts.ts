@@ -52,10 +52,11 @@ export const posts = pgTable(
       (): AnyPgColumn => comments.id,
       { onDelete: "set null" }
     ),
-    // Set by a team merge (Phase 4). Votes refuse merged posts.
+    // Set by a team merge. Votes refuse merged posts. A merged post is an
+    // empty shell pointing at the original, so it goes with the original.
     mergedIntoId: bigint("merged_into_id", { mode: "number" }).references(
       (): AnyPgColumn => posts.id,
-      { onDelete: "set null" }
+      { onDelete: "cascade" }
     ),
     // The workspace's language when the post was written; search stems in it.
     searchConfig: regconfig("search_config").notNull(),

@@ -247,6 +247,25 @@ describe("POST /api/posts/:id/merge", () => {
     await t.settle();
   });
 
+  it("takes the merged duplicates along when the original is deleted", async () => {
+    const t = testApp();
+    const { owner, duplicate, original } = await twoPosts(t);
+    await merge(t, owner.cookie, duplicate.id, original.id);
+    const res = await t.client.api.posts[":id"].$delete(
+      { param: { id: String(original.id) } },
+      { headers: { cookie: owner.cookie } }
+    );
+    expect(res.status).toBe(200);
+    // A merged post is an empty shell pointing at the original: without
+    // it, it would come back to the feed and roadmap with no votes.
+    const [left] = await db
+      .select({ n: count() })
+      .from(posts)
+      .where(eq(posts.id, duplicate.id));
+    expect(left?.n).toBe(0);
+    await t.settle();
+  });
+
   it("points a merged post's page at the original", async () => {
     const t = testApp();
     const { owner, duplicate, original } = await twoPosts(t);
