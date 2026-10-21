@@ -65,6 +65,10 @@ export const Route = createFileRoute("/p/$ref")({
     // Comments start loading with the post instead of after it renders.
     void context.queryClient.prefetchInfiniteQuery(threadQueryOptions(id));
   },
+  // A new page for each post: going from one to another (a merge lands on
+  // the original) must not carry over an open editor, panel or note. A
+  // corrected slug keeps the same post, and the same page.
+  remountDeps: ({ params }) => parseRef(params.ref),
   component: PostPage,
   notFoundComponent: PostNotFound,
 });
