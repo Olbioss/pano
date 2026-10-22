@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslations } from "use-intl";
 import { authClient } from "@/lib/auth-client";
 import { meQueryOptions } from "@/lib/session";
+import { isDemoEmail } from "@/shared/demo";
 import { LanguageSwitcher } from "./language-switcher";
 import { Button } from "./ui/button";
 
@@ -36,9 +37,19 @@ export function SiteHeader() {
         <LanguageSwitcher />
         {user ? (
           <>
-            <span className="hidden text-muted-foreground text-sm sm:inline">
-              {user.email}
-            </span>
+            {isDemoEmail(user.email) ? (
+              // Guests' addresses are made up; their name is what others see.
+              <span className="hidden items-center gap-2 text-sm sm:inline-flex">
+                <span className="font-medium">{user.name}</span>
+                <span className="rounded-[3px] border border-foreground/30 px-1.5 py-px text-xs">
+                  {t("demo")}
+                </span>
+              </span>
+            ) : (
+              <span className="hidden text-muted-foreground text-sm sm:inline">
+                {user.email}
+              </span>
+            )}
             <Button size="sm" variant="outline" onClick={signOut}>
               {t("signOut")}
             </Button>

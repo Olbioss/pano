@@ -1,15 +1,39 @@
 {
   "home": {
     "title": "Pano",
-    "tagline": "Geri bildirim panoları ve herkese açık yol haritası.",
-    "signInCta": "Başlamak için giriş yapın",
+    "headline": "Geri bildirim panoları ve herkese açık yol haritası",
+    "intro": "İnsanlar ihtiyaçlarını yazar, önemli bulduklarına oy verir. Ekibiniz herkesin önünde yanıt verir, istekleri yol haritasında ilerletir ve bir şey yayınlandığı anda herkese haber verir.",
+    "demoNote": "Demo, Inkwell adlı hayalî bir not uygulaması. Size ayrı bir misafir hesabı açılır ve her şey her gece sıfırlanır.",
+    "ownBoard": "Pano'yla ilgili fikirler <link>Pano'nun kendi panosuna</link> yazılıyor.",
+    "signInCta": "Kendi panonuzu kurmak için giriş yapın",
     "createWorkspace": "Çalışma alanınızı oluşturun",
-    "openWorkspace": "{name} çalışma alanını aç"
+    "openWorkspace": "{name} çalışma alanını aç",
+    "pointsHeading": "İyi yaptığı işler",
+    "votesTitle": "Kaymayan oylar",
+    "votesBody": "Aynı anda oy veren elli kişi bile sayıyı oy sayısıyla eşit bırakır. İstediğiniz kadar hızlı tıklayın: sonuç, son tıkladığınız gibi olur.",
+    "instantTitle": "Anında, ve hata olunca dürüst",
+    "instantBody": "Oylar, taşımalar ve yorumlar tıkladığınız anda görünür. Sunucu reddederse her şey eski hâline döner ve nedenini söyleyen bir mesaj çıkar.",
+    "duplicatesTitle": "Kopyalar iki kez yakalanır",
+    "duplicatesBody": "Başlık yazılırken en benzer beş istek görünür. Kalanları ekip birleştirir; ikisine de oy veren biri tek sayılır.",
+    "languagesTitle": "Türkçe ve İngilizce",
+    "languagesBody": "Her ekran ve her e-posta iki dilde. Arama Türkçe harfleri tanır: “isler” araması “işler”i bulur.",
+    "madeBy": "<link>Olbios</link> tarafından yapıldı.",
+    "source": "Kaynak kodu GitHub'da"
   },
   "header": {
     "signIn": "Giriş yap",
     "signOut": "Çıkış yap",
-    "language": "Dil"
+    "language": "Dil",
+    "demo": "Demo"
+  },
+  "demo": {
+    "asTeam": "Ekip olarak deneyin",
+    "asMember": "Üye olarak deneyin",
+    "failed": "Demo başlatılamadı. Tekrar deneyin.",
+    "tooMany": "Buradan çok fazla demo girişi yapıldı. Bir dakika bekleyip tekrar deneyin.",
+    "bannerLabel": "Bu demo hakkında",
+    "banner": "Inkwell bir demo çalışma alanıdır. Her ziyaretçiye ayrı bir misafir hesabı verilir ve her şey her gece 01:00'de (UTC) sıfırlanır.",
+    "settingsReadOnly": "Demonun ekibindesiniz; ayarları görebilirsiniz ama değiştiremezsiniz. Bunun yerine durumları, birleştirmeyi ve yol haritasını deneyin."
   },
   "signin": {
     "title": "Pano'ya giriş yapın",

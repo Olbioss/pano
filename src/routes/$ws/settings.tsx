@@ -24,8 +24,14 @@ function Settings() {
   const { ws } = Route.useParams();
   const { data: workspace } = useSuspenseQuery(workspaceQueryOptions(ws));
   const t = useTranslations("settings");
+  const tDemo = useTranslations("demo");
   return (
-    <div className="flex flex-col gap-10">
+    // The demo's settings stay as the nightly reset makes them; the API
+    // refuses changes, and a disabled fieldset says so up front.
+    <fieldset disabled={workspace.isDemo} className="flex flex-col gap-10">
+      {workspace.isDemo && (
+        <p className="paper p-4 text-sm">{tDemo("settingsReadOnly")}</p>
+      )}
       <section className="paper flex flex-col gap-4 p-5 sm:p-6">
         <h2 className="font-semibold text-lg">{t("workspaceSection")}</h2>
         <WorkspaceForm workspace={workspace} />
@@ -37,6 +43,6 @@ function Settings() {
         </div>
         <BoardsEditor slug={workspace.slug} boards={workspace.boards} />
       </section>
-    </div>
+    </fieldset>
   );
 }

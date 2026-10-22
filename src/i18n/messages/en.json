@@ -1,15 +1,39 @@
 {
   "home": {
     "title": "Pano",
-    "tagline": "Feedback boards and a public roadmap.",
-    "signInCta": "Sign in to get started",
+    "headline": "Feedback boards and a public roadmap",
+    "intro": "People post what they need and vote on what matters. Your team answers in the open, moves requests across the roadmap, and tells everyone the moment something ships.",
+    "demoNote": "The demo is Inkwell, a made-up notes app. You get your own guest account, and everything resets each night.",
+    "ownBoard": "Ideas for Pano itself go on <link>Pano's own board</link>.",
+    "signInCta": "Sign in to start your own board",
     "createWorkspace": "Create your workspace",
-    "openWorkspace": "Open {name}"
+    "openWorkspace": "Open {name}",
+    "pointsHeading": "What it does well",
+    "votesTitle": "Votes that add up",
+    "votesBody": "Fifty people voting at the same moment still leave the count equal to the votes. Click as fast as you like: it ends the way your last click left it.",
+    "instantTitle": "Instant, and honest when it fails",
+    "instantBody": "Votes, moves and comments show the moment you act. If the server says no, everything goes back, with a message that says why.",
+    "duplicatesTitle": "Duplicates caught twice",
+    "duplicatesBody": "While someone types a title, the five closest requests appear. The team merges the rest, and a person who voted on both counts once.",
+    "languagesTitle": "English and Turkish",
+    "languagesBody": "Every screen and email in both languages. Search folds Turkish letters, so “isler” finds “işler”.",
+    "madeBy": "Made by <link>Olbios</link>.",
+    "source": "Source on GitHub"
   },
   "header": {
     "signIn": "Sign in",
     "signOut": "Sign out",
-    "language": "Language"
+    "language": "Language",
+    "demo": "Demo"
+  },
+  "demo": {
+    "asTeam": "Try as team",
+    "asMember": "Try as member",
+    "failed": "The demo couldn't start. Try again.",
+    "tooMany": "Too many demo sign-ins from here. Wait a minute and try again.",
+    "bannerLabel": "About this demo",
+    "banner": "Inkwell is a demo workspace. Every visitor gets their own guest account, and everything resets at 01:00 UTC each night.",
+    "settingsReadOnly": "You're on the demo's team, so you can see its settings, but they stay as they are. Try statuses, merging and the roadmap instead."
   },
   "signin": {
     "title": "Sign in to Pano",

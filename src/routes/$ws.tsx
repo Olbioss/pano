@@ -9,6 +9,7 @@ import {
 import { cn } from "cn";
 import { useEffect } from "react";
 import { useTranslations } from "use-intl";
+import { DemoBanner } from "@/features/demo/demo-banner";
 import { useLocaleControls } from "@/i18n/provider";
 import { ApiError } from "@/lib/api";
 import { meQueryOptions } from "@/lib/session";
@@ -52,6 +53,7 @@ function WorkspaceLayout() {
         wide ? "max-w-5xl" : "max-w-3xl"
       )}
     >
+      {workspace.isDemo && <DemoBanner />}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-bold text-3xl">{workspace.name}</h1>
         <nav className="flex gap-4 text-sm">
