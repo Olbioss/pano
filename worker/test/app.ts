@@ -1,4 +1,5 @@
 import { testClient } from "hono/testing";
+import type { DemoRole } from "@/shared/demo";
 import { createApp } from "../app";
 import type { Bindings } from "../env";
 import type { Mailer, ShippedNotice, SignInCode } from "../mail/mailer";
@@ -99,6 +100,17 @@ export function testApp(overrides: Partial<Bindings> = {}) {
     return { email, cookie: cookieFrom(res) };
   }
 
+  /** "Try as team" or "Try as member": a new guest account and its cookie. */
+  async function signInDemo(
+    as: DemoRole,
+    headers: Record<string, string> = {}
+  ) {
+    const res = await post("/api/auth/demo/sign-in", { as }, headers);
+    if (!res.ok) throw new Error(`demo sign-in failed with ${res.status}`);
+    const body = (await res.json()) as { name: string; team: boolean };
+    return { cookie: cookieFrom(res), ...body };
+  }
+
   return {
     app,
     env,
@@ -108,6 +120,7 @@ export function testApp(overrides: Partial<Bindings> = {}) {
     sendCode,
     lastCode,
     signIn,
+    signInDemo,
     mail,
     settle: base.settle,
   };

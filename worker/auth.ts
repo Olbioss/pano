@@ -1,8 +1,10 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, organization } from "better-auth/plugins";
+import { isDemoEmail } from "@/shared/demo";
 import type { Database } from "./db/client";
 import * as schema from "./db/schema";
+import { demoSignIn } from "./demo/sign-in";
 import type { Bindings } from "./env";
 import { cleanDisplayName } from "./lib/display-name";
 import { localeFromHeaders } from "./lib/request-locale";
@@ -57,6 +59,8 @@ export function createAuth({ db, env, mailer }: AuthDeps) {
       customRules: {
         "/email-otp/send-verification-otp": { window: 60, max: 3 },
         "/sign-in/email-otp": { window: 60, max: 10 },
+        // Each demo sign-in makes an account, until the nightly reset.
+        "/demo/sign-in": { window: 60, max: 5 },
       },
     },
     advanced: {
@@ -67,7 +71,8 @@ export function createAuth({ db, env, mailer }: AuthDeps) {
       emailOTP({
         storeOTP: "hashed",
         async sendVerificationOTP({ email, otp, type }, ctx) {
-          if (type !== "sign-in") return;
+          // Demo addresses can't receive mail: nobody signs in to them.
+          if (type !== "sign-in" || isDemoEmail(email)) return;
           await mailer.sendSignInCode({
             to: email,
             code: otp,
@@ -76,6 +81,7 @@ export function createAuth({ db, env, mailer }: AuthDeps) {
         },
       }),
       organization({ organizationLimit: 1 }),
+      demoSignIn({ db }),
     ],
   });
 }
