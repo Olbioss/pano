@@ -10,7 +10,11 @@ import { cleanDisplayName } from "./lib/display-name";
 import { localeFromHeaders } from "./lib/request-locale";
 import type { CodeMailer } from "./mail/mailer";
 
-export type AuthDeps = { db: Database; env: Bindings; mailer: CodeMailer };
+export type AuthDeps = {
+  db: Database;
+  env: Pick<Bindings, "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "ENVIRONMENT">;
+  mailer: CodeMailer;
+};
 
 /**
  * Better Auth for one request. It's built per request because it needs the

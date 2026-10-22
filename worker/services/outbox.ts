@@ -8,20 +8,21 @@ import {
   user as users,
   workspaceSettings,
 } from "../db/schema";
+import type { Flags } from "../env";
 import type { Mailer } from "../mail/mailer";
 
 /**
  * Queues a Shipped email to each of the post's subscribers but the person
- * who shipped it. It runs in the status change's transaction, so the
- * emails exist exactly when the change does. Someone already emailed about
- * this post shipping isn't emailed again. The demo workspace queues none:
- * its people have no inboxes.
+ * who shipped it, and answers how many. It runs in the status change's
+ * transaction, so the emails exist exactly when the change does. Someone
+ * already emailed about this post shipping isn't emailed again. The demo
+ * workspace queues none: its people have no inboxes.
  */
 export async function queueShippedEmails(
   tx: Transaction,
   post: { id: number; title: string; organizationId: string },
   input: { actorId: string; note: string | null }
-) {
+): Promise<number> {
   const [workspace] = await tx
     .select({
       name: organization.name,
@@ -35,7 +36,7 @@ export async function queueShippedEmails(
     )
     .where(eq(organization.id, post.organizationId))
     .limit(1);
-  if (workspace?.isDemo) return;
+  if (workspace?.isDemo) return 0;
   const payload: ShippedPayload = {
     title: post.title,
     ref: postRef(post.id, post.title),
@@ -46,12 +47,25 @@ export async function queueShippedEmails(
   };
   // Raw SQL: Drizzle's insert … select wants every column, the generated
   // id included, so it can't fill this table from a query.
-  await tx.execute(sql`
+  const queued = await tx.execute(sql`
     insert into email_outbox (user_id, post_id, kind, payload)
     select user_id, ${post.id}::bigint, 'shipped', ${JSON.stringify(payload)}::jsonb
     from subscriptions
     where post_id = ${post.id} and user_id <> ${input.actorId}
     on conflict do nothing`);
+  return queued.count;
+}
+
+/** The flag that tells the five-minute cron emails are waiting. */
+export const OUTBOX_PENDING = "outbox:pending";
+
+/**
+ * Raises that flag for half an hour: long enough for every try at a batch
+ * (5 tries, 5 minutes apart). It lapses by itself, so it never needs
+ * clearing, and two status changes at once can't lose each other's emails.
+ */
+export function markOutboxPending(flags: Flags) {
+  return flags.put(OUTBOX_PENDING, "1", { expirationTtl: 30 * 60 });
 }
 
 /** A post moved back out of Shipped: drop its emails that haven't gone out. */

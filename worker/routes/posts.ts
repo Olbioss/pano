@@ -25,6 +25,7 @@ import { confineDemo } from "../middleware/demo";
 import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
 import { mergePost } from "../services/merge";
+import { markOutboxPending } from "../services/outbox";
 import {
   boardInWorkspace,
   createPost,
@@ -181,11 +182,13 @@ export const postRoutes = new Hono<AppEnv>()
     validate("json", changeStatusSchema),
     async (c) => {
       const { id } = c.req.valid("param");
-      await changeStatus(c.var.db, {
+      const { queued } = await changeStatus(c.var.db, {
         postId: id,
         userId: c.var.user.id,
         ...c.req.valid("json"),
       });
+      // The five-minute cron sends them, once this tells it to look.
+      if (queued > 0) c.executionCtx.waitUntil(markOutboxPending(c.env.FLAGS));
       return c.json<SuccessResponse<PostDetail>>({
         success: true,
         data: await postDetail(c.var.db, id, c.var.user.id),

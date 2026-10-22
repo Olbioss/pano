@@ -9,7 +9,6 @@ import { consoleMailer } from "./worker/mail/mailer";
 export const auth = createAuth({
   db: drizzle.mock() as unknown as Database,
   env: {
-    HYPERDRIVE: { connectionString: "" },
     BETTER_AUTH_SECRET: "schema-generation-only-not-a-real-secret",
     BETTER_AUTH_URL: "http://localhost:5173",
   },

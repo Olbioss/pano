@@ -1,5 +1,5 @@
 import type { ExecutionContext } from "hono";
-import type { Bindings } from "../env";
+import type { Bindings, Flags } from "../env";
 import { assertLocalDatabaseUrl } from "./local-db";
 
 /**
@@ -22,8 +22,22 @@ export function testEnv(connectionString = process.env.TEST_DATABASE_URL) {
   };
   const env: Bindings = {
     HYPERDRIVE: { connectionString },
+    FLAGS: memoryFlags(),
     BETTER_AUTH_SECRET: "test-only-secret-test-only-secret-0123",
     BETTER_AUTH_URL: "http://localhost",
   };
   return { env, ctx, settle: () => Promise.allSettled(pending) };
+}
+
+/** A Workers KV namespace in memory. Expiry isn't simulated. */
+export function memoryFlags(): Flags {
+  const values = new Map<string, string>();
+  return {
+    async get(key) {
+      return values.get(key) ?? null;
+    },
+    async put(key, value) {
+      values.set(key, value);
+    },
+  };
 }

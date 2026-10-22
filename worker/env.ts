@@ -9,6 +9,8 @@ import type { Database } from "./db/client";
  */
 export type Bindings = {
   HYPERDRIVE: { connectionString: string };
+  /** A Workers KV namespace for flags the crons read without waking the database. */
+  FLAGS: Flags;
   /** Signs session cookies: `openssl rand -base64 32`. A Worker secret in production. */
   BETTER_AUTH_SECRET: string;
   /** The app's own origin, e.g. http://localhost:5173. Better Auth trusts requests from it. */
@@ -18,6 +20,16 @@ export type Bindings = {
   BREVO_API_KEY?: string;
   /** The sender address Brevo has verified. */
   MAIL_FROM?: string;
+};
+
+/** The part of a KV namespace Pano uses. */
+export type Flags = {
+  get(key: string): Promise<string | null>;
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number }
+  ): Promise<void>;
 };
 
 export type AppEnv = {
