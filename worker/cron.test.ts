@@ -3,6 +3,7 @@ import { EVERY_FIVE_MINUTES, NIGHTLY, runScheduled } from "./cron";
 import type { resetDemo } from "./services/demo-reset";
 import {
   markOutboxPending,
+  OUTBOX_BATCH,
   OUTBOX_PENDING,
   type sendQueuedEmails,
 } from "./services/outbox";
@@ -65,6 +66,55 @@ describe("runScheduled", () => {
       expect.any(Error)
     );
     logged.mockRestore();
+  });
+
+  it("keeps the flag up after a full batch, so the rest go out five minutes later", async () => {
+    const { env } = testEnv();
+    await markOutboxPending(env.FLAGS);
+    const put = vi.spyOn(env.FLAGS, "put");
+    const send = vi.fn<typeof sendQueuedEmails>(async () => ({
+      sent: OUTBOX_BATCH,
+      failed: 0,
+    }));
+    await runScheduled(EVERY_FIVE_MINUTES, env, { send });
+    expect(put).toHaveBeenCalledWith(OUTBOX_PENDING, "1", {
+      expirationTtl: 1800,
+    });
+  });
+
+  it("keeps the flag up while emails failed, for their next try", async () => {
+    const { env } = testEnv();
+    await markOutboxPending(env.FLAGS);
+    const put = vi.spyOn(env.FLAGS, "put");
+    const send = vi.fn<typeof sendQueuedEmails>(async () => ({
+      sent: 3,
+      failed: 2,
+    }));
+    await runScheduled(EVERY_FIVE_MINUTES, env, { send });
+    expect(put).toHaveBeenCalledOnce();
+  });
+
+  it("lets the flag lapse once a run leaves nothing behind", async () => {
+    const { env } = testEnv();
+    await markOutboxPending(env.FLAGS);
+    const put = vi.spyOn(env.FLAGS, "put");
+    const send = vi.fn<typeof sendQueuedEmails>(async () => ({
+      sent: 3,
+      failed: 0,
+    }));
+    await runScheduled(EVERY_FIVE_MINUTES, env, { send });
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it("hands a full nightly batch on to the five-minute cron", async () => {
+    const { env } = testEnv();
+    const put = vi.spyOn(env.FLAGS, "put");
+    const send = vi.fn<typeof sendQueuedEmails>(async () => ({
+      sent: OUTBOX_BATCH,
+      failed: 0,
+    }));
+    await runScheduled(NIGHTLY, env, { send, reset: fakeReset() });
+    expect(put).toHaveBeenCalledOnce();
   });
 
   it("ignores other triggers", async () => {

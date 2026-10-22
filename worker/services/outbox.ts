@@ -85,6 +85,9 @@ export async function takeBackShippedEmails(tx: Transaction, postId: number) {
 /** After this many failed tries, an email stays unsent with its last error. */
 const MAX_ATTEMPTS = 5;
 
+/** The most emails one run sends. */
+export const OUTBOX_BATCH = 20;
+
 /**
  * Sends the oldest unsent emails, at most `batch` of them: Brevo's free plan
  * allows 300 a day, and the cron runs every five minutes.
@@ -118,7 +121,7 @@ export async function sendQueuedEmails(
       )
     )
     .orderBy(asc(emailOutbox.id))
-    .limit(options.batch ?? 20)
+    .limit(options.batch ?? OUTBOX_BATCH)
     .for("update", { skipLocked: true });
   const claimed = await db
     .update(emailOutbox)

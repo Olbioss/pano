@@ -2,7 +2,12 @@ import { createDb, type Database } from "./db/client";
 import type { Bindings } from "./env";
 import { type Mailer, mailerFor } from "./mail/mailer";
 import { resetDemo } from "./services/demo-reset";
-import { OUTBOX_PENDING, sendQueuedEmails } from "./services/outbox";
+import {
+  markOutboxPending,
+  OUTBOX_BATCH,
+  OUTBOX_PENDING,
+  sendQueuedEmails,
+} from "./services/outbox";
 
 /** The triggers in wrangler.jsonc. */
 export const EVERY_FIVE_MINUTES = "*/5 * * * *";
@@ -21,7 +26,8 @@ type CronDeps = {
  * - Every five minutes: send queued emails. Neon's free plan counts the
  *   hours its database is awake, and the database sleeps after five quiet
  *   minutes, so a query every five minutes would keep it awake all month.
- *   The cron connects only while a status change's flag says emails wait.
+ *   The cron connects only while a status change's flag says emails wait,
+ *   and puts the flag back up while some are left.
  * - Every night: reset the demo workspace, then send whatever is queued, in
  *   case a flag was lost.
  */
@@ -68,5 +74,11 @@ async function sendOutbox(
   });
   if (result.sent + result.failed > 0) {
     console.log(`[outbox] sent ${result.sent}, failed ${result.failed}`);
+  }
+  // A full batch may have left more behind, and a failed email gets another
+  // try: keep the five-minute cron looking. One KV write a run, only while
+  // emails are waiting.
+  if (result.sent + result.failed >= OUTBOX_BATCH || result.failed > 0) {
+    await markOutboxPending(env.FLAGS);
   }
 }
