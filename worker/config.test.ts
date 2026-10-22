@@ -31,4 +31,12 @@ describe("wrangler.jsonc", () => {
       "FLAGS",
     ]);
   });
+
+  it("runs production as production, at its own address", () => {
+    const { vars } = wranglerConfig();
+    // Without it, rate limits are off, and a missing Brevo key would print
+    // sign-in codes to the log instead of failing.
+    expect(vars?.ENVIRONMENT).toBe("production");
+    expect(vars?.BETTER_AUTH_URL).toBe("https://pano.olbios88.workers.dev");
+  });
 });

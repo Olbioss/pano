@@ -13,6 +13,12 @@
     "run_worker_first": ["/api", "/api/*", "/p/*"]
   },
   "observability": { "enabled": true },
+  // Production's settings. Local dev and the tests take theirs from
+  // .dev.vars, which wins over these.
+  "vars": {
+    "ENVIRONMENT": "production",
+    "BETTER_AUTH_URL": "https://pano.olbios88.workers.dev"
+  },
   // Every five minutes: send queued emails, if a status change queued any.
   // Every night at 01:00 UTC: reset the demo workspace. (worker/cron.ts)
   "triggers": { "crons": ["*/5 * * * *", "0 1 * * *"] },

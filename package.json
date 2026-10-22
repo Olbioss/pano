@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite build && vite preview",
+    "deploy": "vite build && wrangler deploy",
     "typecheck": "tsc -b",
     "check": "biome check .",
     "check:fix": "biome check --write .",
