@@ -10,10 +10,13 @@ import type { Database } from "../db/client";
 import { comments, posts, user as users } from "../db/schema";
 import { AppError } from "../lib/errors";
 import { subscribe } from "./subscriptions";
-import { onTeam } from "./team";
+import { moderates, onTeam } from "./team";
 
-/** Who's reading: their id, and whether they're on the post's team. */
-export type Viewer = { id: string | null; isTeam: boolean };
+/**
+ * Who's reading: their id, and whether they may delete other people's
+ * comments on the post (its team, but not in the demo: see moderates).
+ */
+export type Viewer = { id: string | null; moderates: boolean };
 
 /**
  * What every comment view selects. Queries using it left-join `users` on
@@ -69,7 +72,7 @@ function toView(
     canDelete:
       !deleted &&
       viewer.id !== null &&
-      (row.authorId === viewer.id || viewer.isTeam),
+      (row.authorId === viewer.id || viewer.moderates),
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -175,9 +178,10 @@ export async function createComment(
       isTeam: post.isTeam,
     };
   });
+  // The author's own comment: authorship alone lets them delete it.
   const comment = await findComment(db, saved.id, {
     id: input.authorId,
-    isTeam: saved.isTeam,
+    moderates: false,
   });
   if (!comment) throw new Error("the new comment is missing");
   return { comment, commentCount: saved.commentCount };
@@ -193,11 +197,13 @@ async function viewerOf(
   viewerId: string | null
 ): Promise<Viewer | null> {
   const [post] = await db
-    .select({ isTeam: viewerId ? onTeam(viewerId) : sql<boolean>`false` })
+    .select({
+      moderates: viewerId ? moderates(viewerId) : sql<boolean>`false`,
+    })
     .from(posts)
     .where(eq(posts.id, postId))
     .limit(1);
-  return post ? { id: viewerId, isTeam: post.isTeam } : null;
+  return post ? { id: viewerId, moderates: post.moderates } : null;
 }
 
 /**
@@ -347,11 +353,14 @@ export async function setPin(
   db: Database,
   input: { postId: number; userId: string; commentId: number | null }
 ): Promise<CommentView | null> {
-  await db.transaction(async (tx) => {
+  const canModerate = await db.transaction(async (tx) => {
     // The same lock a delete takes, so a comment can't be pinned while it's
     // being deleted.
     const [post] = await tx
-      .select({ isTeam: onTeam(input.userId) })
+      .select({
+        isTeam: onTeam(input.userId),
+        moderates: moderates(input.userId),
+      })
       .from(posts)
       .where(eq(posts.id, input.postId))
       .for("update");
@@ -388,14 +397,19 @@ export async function setPin(
       .update(posts)
       .set({ pinnedCommentId: input.commentId })
       .where(eq(posts.id, input.postId));
+    return post.moderates;
   });
   return input.commentId === null
     ? null
-    : findComment(db, input.commentId, { id: input.userId, isTeam: true });
+    : findComment(db, input.commentId, {
+        id: input.userId,
+        moderates: canModerate,
+      });
 }
 
 /**
- * Deletes a comment as its author or as the team. The row stays, so its
+ * Deletes a comment as its author or as the team (in the demo, only as its
+ * author: see moderates). The row stays, so its
  * replies keep their place, but its words go. Only the first delete changes
  * the row, so repeating one, or racing it against itself, uncounts it once.
  * A deleted comment can't stay pinned.
@@ -417,6 +431,7 @@ export async function deleteComment(
         commentCount: posts.commentCount,
         pinnedCommentId: posts.pinnedCommentId,
         isTeam: onTeam(input.userId),
+        moderates: moderates(input.userId),
       })
       .from(posts)
       .where(eq(posts.id, target.postId))
@@ -434,12 +449,18 @@ export async function deleteComment(
     if (!post || !comment) {
       throw new AppError(404, "NOT_FOUND", "Comment not found");
     }
-    if (comment.authorId !== input.userId && !post.isTeam) {
-      throw new AppError(
-        403,
-        "FORBIDDEN",
-        "Only the author or the workspace team can do that"
-      );
+    if (comment.authorId !== input.userId && !post.moderates) {
+      throw post.isTeam
+        ? new AppError(
+            403,
+            "DEMO_READ_ONLY",
+            "In the demo, a comment is its author's to delete"
+          )
+        : new AppError(
+            403,
+            "FORBIDDEN",
+            "Only the author or the workspace team can do that"
+          );
     }
     const changed = await tx
       .update(comments)
@@ -447,7 +468,7 @@ export async function deleteComment(
       .where(and(eq(comments.id, input.commentId), isNull(comments.deletedAt)))
       .returning({ id: comments.id });
     if (changed.length === 0) {
-      return { commentCount: post.commentCount, isTeam: post.isTeam };
+      return { commentCount: post.commentCount, moderates: post.moderates };
     }
     const [counted] = await tx
       .update(posts)
@@ -461,12 +482,12 @@ export async function deleteComment(
       .returning({ commentCount: posts.commentCount });
     return {
       commentCount: counted?.commentCount ?? post.commentCount,
-      isTeam: post.isTeam,
+      moderates: post.moderates,
     };
   });
   const comment = await findComment(db, input.commentId, {
     id: input.userId,
-    isTeam: saved.isTeam,
+    moderates: saved.moderates,
   });
   if (!comment) throw new AppError(404, "NOT_FOUND", "Comment not found");
   return { comment, commentCount: saved.commentCount };

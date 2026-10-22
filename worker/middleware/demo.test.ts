@@ -1,6 +1,12 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { boards, emailOutbox, posts, subscriptions } from "../db/schema";
+import {
+  boards,
+  comments,
+  emailOutbox,
+  posts,
+  subscriptions,
+} from "../db/schema";
 import { DEMO_WORKSPACE_ID, resetDemo } from "../services/demo-reset";
 import { testApp } from "../test/app";
 import { testDb } from "../test/db";
@@ -164,5 +170,109 @@ describe("the demo workspace", () => {
       .from(emailOutbox)
       .where(eq(emailOutbox.postId, id));
     expect(queued).toEqual([]);
+  });
+
+  it("leaves other people's requests and comments to their authors, even for its team", async () => {
+    await resetDemo(db);
+    const t = testApp();
+    const team = await t.signInDemo("team");
+    const headers = { headers: { cookie: team.cookie } };
+    const { id } = await demoPost();
+    const param = { id: String(id) };
+    const [comment] = await db
+      .select({ id: comments.id })
+      .from(comments)
+      .where(and(eq(comments.postId, id), isNull(comments.deletedAt)))
+      .limit(1);
+
+    const attempts = [
+      await t.client.api.posts[":id"].$patch(
+        { param, json: { title: "Rewritten by a visitor" } },
+        headers
+      ),
+      await t.client.api.comments[":id"].$delete(
+        { param: { id: String(comment!.id) } },
+        headers
+      ),
+      await t.client.api.posts[":id"].$delete({ param }, headers),
+    ];
+    for (const res of attempts) {
+      expect(res.status).toBe(403);
+      expect(await codeOf(res)).toBe("DEMO_READ_ONLY");
+    }
+    // And the pages don't offer what the API refuses.
+    const post = await (
+      await t.client.api.posts[":id"].$get({ param }, headers)
+    ).json();
+    if (!post.success) throw new Error(post.error);
+    expect(post.data.canEdit).toBe(false);
+    expect(post.data.pinned?.canDelete).toBe(false);
+    const thread = await (
+      await t.client.api.posts[":id"].comments.$get(
+        { param, query: {} },
+        headers
+      )
+    ).json();
+    if (!thread.success) throw new Error(thread.error);
+    expect(thread.data.items.some((item) => item.canDelete)).toBe(false);
+    await t.settle();
+  });
+
+  it("still lets its team move and merge requests, and anyone change what they wrote", async () => {
+    await resetDemo(db);
+    const t = testApp();
+    const team = await t.signInDemo("team");
+    const headers = { headers: { cookie: team.cookie } };
+    const { boardId } = await demoPost();
+    const own = await (
+      await t.client.api.workspaces[":slug"].posts.$post(
+        {
+          param: { slug: "demo" },
+          json: { boardId, title: "A team guest's idea", body: "" },
+        },
+        headers
+      )
+    ).json();
+    if (!own.success) throw new Error(own.error);
+    const param = { id: String(own.data.id) };
+    expect(own.data.canEdit).toBe(true);
+
+    const renamed = await t.client.api.posts[":id"].$patch(
+      { param, json: { title: "A team guest's better idea" } },
+      headers
+    );
+    expect(renamed.status).toBe(200);
+    const comment = await (
+      await t.client.api.posts[":id"].comments.$post(
+        { param, json: { body: "Second thoughts" } },
+        headers
+      )
+    ).json();
+    if (!comment.success) throw new Error(comment.error);
+    const uncommented = await t.client.api.comments[":id"].$delete(
+      { param: { id: String(comment.data.comment.id) } },
+      headers
+    );
+    expect(uncommented.status).toBe(200);
+
+    const [duplicate] = await db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.organizationId, DEMO_WORKSPACE_ID),
+          eq(posts.title, "Night theme for late writing sessions")
+        )
+      );
+    const { id: original } = await demoPost();
+    const merged = await t.client.api.posts[":id"].merge.$post(
+      { param: { id: String(duplicate!.id) }, json: { intoId: original } },
+      headers
+    );
+    expect(merged.status).toBe(200);
+
+    const removed = await t.client.api.posts[":id"].$delete({ param }, headers);
+    expect(removed.status).toBe(200);
+    await t.settle();
   });
 });

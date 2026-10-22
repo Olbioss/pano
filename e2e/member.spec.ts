@@ -6,23 +6,12 @@ test("a member submits a request, sees similar ones, votes and comments", async 
 }) => {
   await tryDemo(page, "member");
 
-  // Typing a title brings up the requests it may duplicate, each votable.
-  await page.goto("/demo/new");
-  await page.getByLabel("Title").fill("Dark theme for the editor");
-  const similar = page.getByRole("complementary", {
-    name: "Similar requests",
-  });
-  const vote = similar.getByRole("button", { name: "Vote for Dark mode" });
-  const before = Number(await vote.textContent());
-  await vote.click();
-  await expect(vote).toHaveText(String(before + 1));
-  await expect(vote).toHaveAttribute("aria-pressed", "true");
-  // Taken back, so the demo is left as it was.
-  await vote.click();
-  await expect(vote).toHaveText(String(before));
-
   const title = unique("Export to Markdown, from the end-to-end suite");
-  await postRequest(page, title, "Posted by the end-to-end suite.");
+  const path = await postRequest(
+    page,
+    title,
+    "Posted by the end-to-end suite."
+  );
   // The author's own vote comes with the request.
   const article = page.getByRole("article");
   await expect(
@@ -38,5 +27,21 @@ test("a member submits a request, sees similar ones, votes and comments", async 
       .getByText("A comment from the suite.")
   ).toBeVisible();
 
+  // Typing a title like it brings the request up, votable from the form.
+  // It's the run's own request: the demo's requests are the team's to ship,
+  // merge and move, so a live run can't count on any one of them.
+  await page.goto("/demo/new");
+  await page.getByLabel("Title").fill("Export to Markdown from the suite");
+  const vote = page
+    .getByRole("complementary", { name: "Similar requests" })
+    .getByRole("button", { name: `Vote for ${title}` });
+  await expect(vote).toHaveText("1");
+  await vote.click();
+  await expect(vote).toHaveText("0");
+  await expect(vote).toHaveAttribute("aria-pressed", "false");
+  await vote.click();
+  await expect(vote).toHaveText("1");
+
+  await page.goto(path);
   await deleteRequest(page);
 });

@@ -19,7 +19,7 @@ import { findComment } from "./comments";
 import { searchConfigFor } from "./search";
 import { findTimeline } from "./status";
 import { subscribe } from "./subscriptions";
-import { onTeam } from "./team";
+import { moderates, onTeam } from "./team";
 
 /**
  * What every post view selects. Queries using it join `boards` (inner) and
@@ -87,6 +87,7 @@ export async function findPostDetail(
       workspaceName: organization.name,
       defaultLocale: workspaceSettings.defaultLocale,
       onTeam: viewerId ? onTeam(viewerId) : sql<boolean>`false`,
+      moderates: viewerId ? moderates(viewerId) : sql<boolean>`false`,
       pinnedCommentId: posts.pinnedCommentId,
       mergedIntoId: posts.mergedIntoId,
       subscribed: viewerId
@@ -104,7 +105,7 @@ export async function findPostDetail(
     .where(eq(posts.id, id))
     .limit(1);
   if (!row) return null;
-  const viewer = { id: viewerId, isTeam: row.onTeam };
+  const viewer = { id: viewerId, moderates: row.moderates };
   return {
     ...toSummary(row),
     body: row.body,
@@ -113,7 +114,7 @@ export async function findPostDetail(
       name: row.workspaceName,
       defaultLocale: row.defaultLocale ?? "en",
     },
-    canEdit: viewerId !== null && (row.authorId === viewerId || row.onTeam),
+    canEdit: viewerId !== null && (row.authorId === viewerId || row.moderates),
     isTeam: row.onTeam,
     subscribed: row.subscribed,
     timeline: await findTimeline(db, row.id),
@@ -184,21 +185,34 @@ export async function createPost(
   });
 }
 
-/** Only the author or the workspace's team may change or delete a post. */
+/**
+ * Only the author or the workspace's team may change or delete a post; in
+ * the demo, only its author (see moderates).
+ */
 export async function requireCanEdit(db: Database, id: number, userId: string) {
   const [row] = await db
-    .select({ authorId: posts.authorId, onTeam: onTeam(userId) })
+    .select({
+      authorId: posts.authorId,
+      onTeam: onTeam(userId),
+      moderates: moderates(userId),
+    })
     .from(posts)
     .where(eq(posts.id, id))
     .limit(1);
   if (!row) throw new AppError(404, "NOT_FOUND", "Post not found");
-  if (row.authorId !== userId && !row.onTeam) {
+  if (row.authorId === userId || row.moderates) return;
+  if (row.onTeam) {
     throw new AppError(
       403,
-      "FORBIDDEN",
-      "Only the author or the workspace team can do that"
+      "DEMO_READ_ONLY",
+      "In the demo, a request is its author's to change"
     );
   }
+  throw new AppError(
+    403,
+    "FORBIDDEN",
+    "Only the author or the workspace team can do that"
+  );
 }
 
 export async function updatePost(

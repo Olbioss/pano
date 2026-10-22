@@ -43,8 +43,8 @@ test("the team drags a card to Planned, and a member sees the new status", async
     member.getByRole("article").getByText("Planned", { exact: true })
   ).toBeVisible();
 
-  await team.goto(path);
-  await deleteRequest(team);
+  // In the demo, a request is its author's to delete.
+  await deleteRequest(member);
   await memberContext.close();
   await teamContext.close();
 });
