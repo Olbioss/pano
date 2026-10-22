@@ -4,7 +4,9 @@ import { useTranslations } from "use-intl";
 import { Button } from "@/components/ui/button";
 import { useVote } from "./use-vote";
 
-const SHAPE = "h-auto w-12 shrink-0 flex-col gap-0 py-1.5 tabular-nums";
+// A tally: the count in tabular figures, so it never shifts as it changes.
+const SHAPE =
+  "h-auto w-12 shrink-0 flex-col gap-0 rounded-sm py-1.5 font-semibold tabular-nums";
 
 type Props = {
   postId: number;

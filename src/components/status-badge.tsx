@@ -1,24 +1,22 @@
 import { useTranslations } from "use-intl";
 import type { PostStatus } from "@/shared/status";
 
-// Plain tones for now; Phase 5's visual pass revisits them.
+// Each status inks its stamp in its own color (styles.css, --stamp-*).
 const TONE: Record<PostStatus, string> = {
-  open: "bg-muted text-foreground",
-  under_review:
-    "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100",
-  planned: "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100",
+  open: "border-foreground/30 text-foreground",
+  under_review: "border-stamp-review/40 bg-stamp-review/10 text-stamp-review",
+  planned: "border-stamp-planned/40 bg-stamp-planned/10 text-stamp-planned",
   in_progress:
-    "bg-violet-100 text-violet-900 dark:bg-violet-900/40 dark:text-violet-100",
-  shipped:
-    "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100",
-  closed: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+    "border-stamp-progress/40 bg-stamp-progress/10 text-stamp-progress",
+  shipped: "border-stamp-shipped/40 bg-stamp-shipped/10 text-stamp-shipped",
+  closed: "border-stamp-closed/40 bg-stamp-closed/10 text-stamp-closed",
 };
 
 export function StatusBadge({ status }: { status: PostStatus }) {
   const t = useTranslations("statuses");
   return (
     <span
-      className={`rounded-full px-2 py-0.5 font-medium text-xs ${TONE[status]}`}
+      className={`inline-flex items-center rounded-[3px] border px-1.5 py-px font-medium text-xs ${TONE[status]}`}
     >
       {t(status)}
     </span>

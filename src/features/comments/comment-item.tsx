@@ -135,7 +135,8 @@ export function CommentByline({ comment }: { comment: CommentView }) {
         </span>
       )}
       {comment.official && (
-        <span className="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">
+        // The team signs in ink: solid, where everyone else is plain text.
+        <span className="rounded-[3px] bg-foreground px-1.5 py-px font-medium text-background">
           {t("team")}
         </span>
       )}

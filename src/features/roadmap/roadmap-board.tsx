@@ -136,12 +136,13 @@ function RoadmapColumn({
       aria-labelledby={`roadmap-${status}`}
       data-roadmap-column={status}
       className={cn(
-        "flex min-h-40 flex-col gap-3 rounded-lg bg-muted/50 p-3",
-        isOver && "ring-2 ring-ring"
+        // A lane taped off on the board; it lights up under a dragged card.
+        "flex min-h-40 flex-col gap-3 rounded-md border-2 border-border border-dashed p-3",
+        isOver && "border-ring bg-primary/5"
       )}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h2 id={`roadmap-${status}`} className="font-semibold">
+        <h2 id={`roadmap-${status}`} className="font-bold text-lg">
           {tStatuses(status)}
         </h2>
         <span className="text-muted-foreground text-xs tabular-nums">
@@ -198,8 +199,8 @@ function RoadmapCard({
           : undefined
       }
       className={cn(
-        "flex items-start gap-3 rounded-lg border bg-background p-3",
-        isDragging && "relative z-10 shadow-lg"
+        "paper flex items-start gap-3 p-3",
+        isDragging && "relative z-10 rotate-1 shadow-lg"
       )}
     >
       {signedIn ? (
@@ -216,7 +217,7 @@ function RoadmapCard({
         <Link
           to="/p/$ref"
           params={{ ref: post.ref }}
-          className="font-medium text-sm hover:underline"
+          className="font-heading font-semibold leading-snug hover:underline"
         >
           {post.title}
         </Link>

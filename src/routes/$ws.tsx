@@ -4,7 +4,9 @@ import {
   Link,
   notFound,
   Outlet,
+  useMatchRoute,
 } from "@tanstack/react-router";
+import { cn } from "cn";
 import { useEffect } from "react";
 import { useTranslations } from "use-intl";
 import { useLocaleControls } from "@/i18n/provider";
@@ -34,6 +36,8 @@ function WorkspaceLayout() {
   const { setWorkspaceDefault } = useLocaleControls();
   const t = useTranslations("workspace");
   const onTeam = me.data?.workspaces.some((w) => w.slug === ws) ?? false;
+  // The roadmap's three columns get room; the rest reads at a narrow measure.
+  const wide = Boolean(useMatchRoute()({ to: "/$ws/roadmap", params: { ws } }));
 
   // Visitors who haven't picked a language see the workspace's default.
   useEffect(() => {
@@ -42,9 +46,14 @@ function WorkspaceLayout() {
   }, [workspace.defaultLocale, setWorkspaceDefault]);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
+    <div
+      className={cn(
+        "mx-auto flex flex-col gap-6 px-6 py-10",
+        wide ? "max-w-5xl" : "max-w-3xl"
+      )}
+    >
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-semibold text-2xl">{workspace.name}</h1>
+        <h1 className="font-bold text-3xl">{workspace.name}</h1>
         <nav className="flex gap-4 text-sm">
           <Link
             to="/$ws"

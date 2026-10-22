@@ -65,7 +65,7 @@ export function FeedToolbar({ boards, params, rawQuery, onChange }: Props) {
         </label>
         <select
           id="feed-status"
-          className="h-8 rounded-md border bg-transparent px-2 text-sm"
+          className="h-8 rounded-md border border-input bg-card px-2 text-sm"
           value={params.status ?? ""}
           onChange={(event) =>
             onChange({

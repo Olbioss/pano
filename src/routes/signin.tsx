@@ -28,7 +28,7 @@ function SignIn() {
   const t = useTranslations("signin");
   const [email, setEmail] = useState<string | null>(null);
   return (
-    <main className="mx-auto flex max-w-sm flex-col gap-6 px-6 py-16">
+    <main className="paper mx-6 my-16 flex flex-col gap-6 p-6 sm:mx-auto sm:max-w-sm sm:p-8">
       <h1 className="font-semibold text-2xl">{t("title")}</h1>
       {email === null ? (
         <EmailStep onSent={setEmail} />

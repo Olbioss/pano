@@ -21,7 +21,15 @@ export function SiteHeader() {
 
   return (
     <header className="flex items-center justify-between gap-4 border-b px-6 py-3">
-      <Link to="/" className="font-semibold text-lg">
+      <Link
+        to="/"
+        className="flex items-center gap-2 font-bold font-heading text-xl tracking-tight"
+      >
+        {/* A pushpin: the board's own mark. */}
+        <span
+          aria-hidden="true"
+          className="size-3 rounded-full bg-foreground shadow-[inset_-2px_-2px_0_rgb(0_0_0/0.25)]"
+        />
         Pano
       </Link>
       <div className="flex items-center gap-3">

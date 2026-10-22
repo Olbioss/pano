@@ -2,25 +2,21 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/familjen-grotesk";
 
-@custom-variant dark (&:is(.dark *));
+/* Dark mode follows the system setting. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
 
 @theme inline {
-  --font-heading: var(--font-sans);
+  /* Headings and the wordmark: a grotesk with ink traps. Everything else is
+     Geist, with tabular figures wherever a count can change. */
+  --font-heading: "Familjen Grotesk Variable", var(--font-sans);
   --font-sans: "Geist Variable", sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
+  --color-stamp-review: var(--stamp-review);
+  --color-stamp-planned: var(--stamp-planned);
+  --color-stamp-progress: var(--stamp-progress);
+  --color-stamp-shipped: var(--stamp-shipped);
+  --color-stamp-closed: var(--stamp-closed);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -48,83 +44,127 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+@theme {
+  /* The landing page's one moment of motion: a rubber stamp coming down.
+     It runs only for people who haven't asked for reduced motion. */
+  --animate-stamp: stamp 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) 0.9s both;
+  @keyframes stamp {
+    from {
+      opacity: 0;
+      scale: 2.2;
+      rotate: -14deg;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+      rotate: -7deg;
+    }
+  }
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/*
+ * A cork board with paper pinned to it. The board is the page; everything
+ * people wrote sits on paper. Blue-black ink for text. Signal orange marks
+ * what you can act on, or did: primary buttons, your vote, the focus ring.
+ */
+:root {
+  --board: #e2cfb3;
+  --background: var(--board);
+  --foreground: #1e2440;
+  --card: #fffcf6;
+  --card-foreground: #1e2440;
+  --popover: #fffcf6;
+  --popover-foreground: #1e2440;
+  --primary: #ff5a1f;
+  --primary-foreground: #1e2440;
+  --secondary: #f3e9da;
+  --secondary-foreground: #1e2440;
+  --muted: #efe4d3;
+  --muted-foreground: #4e5266;
+  --accent: #f3e9da;
+  --accent-foreground: #1e2440;
+  --destructive: #c62a1d;
+  --border: #cbb593;
+  --input: #806a4c;
+  --ring: #ff5a1f;
+  --radius: 0.375rem;
+  /* The shadow under a sheet of paper. */
+  --paper-edge: rgb(78 56 28 / 0.16);
+  --speckle: rgb(120 84 40 / 0.07);
+  /* Status stamps: each status inks in its own color. */
+  --stamp-review: #5b3596;
+  --stamp-planned: #244a9e;
+  --stamp-progress: #8a5300;
+  --stamp-shipped: #1c6b43;
+  --stamp-closed: #5c5955;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* The same board after dark: warm brown, paper a shade lighter. */
+  :root {
+    --board: #231e19;
+    --foreground: #efe7da;
+    --card: #302923;
+    --card-foreground: #efe7da;
+    --popover: #302923;
+    --popover-foreground: #efe7da;
+    --primary: #ff6a2b;
+    --primary-foreground: #1d1814;
+    --secondary: #3a322b;
+    --secondary-foreground: #efe7da;
+    --muted: #3a322b;
+    --muted-foreground: #b9ae9d;
+    --accent: #3a322b;
+    --accent-foreground: #efe7da;
+    --destructive: #ff7b6b;
+    --border: #4a4037;
+    --input: #8c7d6b;
+    --ring: #ff6a2b;
+    --paper-edge: rgb(0 0 0 / 0.4);
+    --speckle: rgb(255 240 220 / 0.035);
+    --stamp-review: #cdb6f2;
+    --stamp-planned: #a9c3f5;
+    --stamp-progress: #f0c97d;
+    --stamp-shipped: #94dbb3;
+    --stamp-closed: #c9c2b8;
+  }
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Cork: two offset grids of faint dots. */
+    background-image:
+      radial-gradient(var(--speckle) 1px, transparent 1.5px),
+      radial-gradient(var(--speckle) 1px, transparent 1.5px);
+    background-size:
+      7px 7px,
+      11px 11px;
+    background-position:
+      0 0,
+      3px 5px;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading tracking-tight;
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  /* A sheet of paper on the board. */
+  .paper {
+    @apply rounded-sm bg-card text-card-foreground;
+    box-shadow:
+      0 0 0 1px var(--paper-edge),
+      0 1px 0 var(--paper-edge),
+      0 6px 14px -8px var(--paper-edge);
   }
 }

@@ -102,7 +102,7 @@ function PostPage() {
       >
         ← {post.workspace.name}
       </Link>
-      <article className="flex gap-4">
+      <article className="paper flex items-start gap-4 p-5 sm:p-6">
         {signedIn ? (
           <VoteButton
             postId={post.id}
@@ -118,7 +118,7 @@ function PostPage() {
             <PostEditor post={post} onDone={() => setEditing(false)} />
           ) : (
             <>
-              <h1 className="font-semibold text-2xl">{post.title}</h1>
+              <h1 className="font-bold text-3xl leading-tight">{post.title}</h1>
               <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
                 <StatusBadge status={post.status} />
                 <span>{post.board.name}</span>
@@ -138,7 +138,7 @@ function PostPage() {
         </div>
       </article>
       {(signedIn || post.isTeam) && (
-        <div className="flex flex-col gap-4">
+        <div className="paper flex flex-col gap-4 p-5 sm:p-6">
           {signedIn && <SubscribeButton post={post} />}
           {post.isTeam && <StatusControl post={post} />}
           {post.isTeam && (

@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
       "worker/**/*.test.ts",
       "shared/**/*.test.ts",
       "src/**/*.test.{ts,tsx}",
+      "test/**/*.test.ts",
     ],
     globalSetup: ["./test/global-setup.ts"],
     // The integration tests share one Postgres. Running files in parallel

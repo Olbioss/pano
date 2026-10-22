@@ -11,7 +11,10 @@ export function StatusTimeline({ timeline }: { timeline: StatusChangeView[] }) {
   const now = useNow({ updateInterval: 60_000 });
   if (timeline.length === 0) return null;
   return (
-    <section aria-labelledby="timeline-heading" className="flex flex-col gap-3">
+    <section
+      aria-labelledby="timeline-heading"
+      className="paper flex flex-col gap-3 p-5 sm:p-6"
+    >
       <h2 id="timeline-heading" className="font-semibold text-lg">
         {t("timelineHeading")}
       </h2>

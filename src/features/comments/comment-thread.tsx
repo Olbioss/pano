@@ -31,7 +31,7 @@ export function CommentThread({ post }: { post: PostDetail }) {
     <ThreadContext value={state}>
       <section
         aria-labelledby="comments-heading"
-        className="flex flex-col gap-4"
+        className="paper flex flex-col gap-4 p-5 sm:p-6"
       >
         <h2 id="comments-heading" className="font-semibold text-lg">
           {t("heading", { count: post.commentCount })}
@@ -82,7 +82,7 @@ function PinnedComment({ comment }: { comment: CommentView }) {
   return (
     <section
       aria-label={t("pinnedByTeam")}
-      className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-4"
+      className="flex flex-col gap-2 rounded-sm border border-dashed bg-muted/60 p-4"
     >
       <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
         <span className="font-medium text-foreground">{t("pinnedByTeam")}</span>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- A note pinned to the board: Pano's mark. -->
+  <rect x="3.5" y="6" width="25" height="23" rx="2.5" fill="#fffcf6" stroke="#cbb593" stroke-width="1.5"/>
+  <path d="M9 16.5h14M9 21.5h9" stroke="#1e2440" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+  <circle cx="16" cy="7.5" r="4.5" fill="#1e2440"/>
+  <circle cx="14.6" cy="6.1" r="1.3" fill="#fffcf6" opacity=".6"/>
+</svg>

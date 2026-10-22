@@ -26,11 +26,11 @@ function Settings() {
   const t = useTranslations("settings");
   return (
     <div className="flex flex-col gap-10">
-      <section className="flex flex-col gap-4">
+      <section className="paper flex flex-col gap-4 p-5 sm:p-6">
         <h2 className="font-semibold text-lg">{t("workspaceSection")}</h2>
         <WorkspaceForm workspace={workspace} />
       </section>
-      <section className="flex flex-col gap-4">
+      <section className="paper flex flex-col gap-4 p-5 sm:p-6">
         <div className="flex flex-col gap-1">
           <h2 className="font-semibold text-lg">{t("boardsSection")}</h2>
           <p className="text-muted-foreground text-sm">{t("boardsHint")}</p>

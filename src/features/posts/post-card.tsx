@@ -12,7 +12,7 @@ export function PostCard({ post, signedIn, now }: Props) {
   const format = useFormatter();
   const tComments = useTranslations("comments");
   return (
-    <li className="flex gap-4 rounded-lg border p-4">
+    <li className="paper flex items-start gap-4 p-4">
       {signedIn ? (
         <VoteButton
           postId={post.id}
@@ -27,7 +27,7 @@ export function PostCard({ post, signedIn, now }: Props) {
         <Link
           to="/p/$ref"
           params={{ ref: post.ref }}
-          className="font-medium hover:underline"
+          className="font-heading font-semibold text-[1.0625rem] leading-snug hover:underline"
         >
           {post.title}
         </Link>
