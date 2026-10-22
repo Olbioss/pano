@@ -21,6 +21,7 @@ import type { Database } from "../db/client";
 import type { AppEnv } from "../env";
 import { AppError } from "../lib/errors";
 import { idParamSchema, validate } from "../lib/validate";
+import { confineDemo } from "../middleware/demo";
 import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
 import { mergePost } from "../services/merge";
@@ -59,6 +60,7 @@ export const workspacePostRoutes = new Hono<AppEnv>()
   .post(
     "/:slug/posts",
     requireUser,
+    confineDemo("workspace"),
     validate("json", createPostSchema),
     rateLimit("post", 5, 3600),
     async (c) => {
@@ -138,6 +140,7 @@ export const postRoutes = new Hono<AppEnv>()
     "/:id/vote",
     requireUser,
     validate("param", idParamSchema),
+    confineDemo("post"),
     validate("json", voteSchema),
     rateLimit("vote", 120, 3600),
     async (c) => {
@@ -157,6 +160,7 @@ export const postRoutes = new Hono<AppEnv>()
     "/:id/subscription",
     requireUser,
     validate("param", idParamSchema),
+    confineDemo("post"),
     validate("json", subscriptionSchema),
     async (c) => {
       const result = await setSubscription(c.var.db, {

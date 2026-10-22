@@ -200,6 +200,8 @@
     "INTERNAL_ERROR": "Bizim tarafımızda bir sorun oluştu. Tekrar deneyin.",
     "WORKSPACE_LIMIT": "Şimdilik her hesap bir çalışma alanı açabilir.",
     "POST_MERGED": "Bu istek başka bir istekle birleştirildi.",
+    "DEMO_ONLY": "Demo hesapları yalnızca demo çalışma alanında kullanılabilir.",
+    "DEMO_READ_ONLY": "Demonun ayarları değiştirilemez. Geri kalan her şeyi deneyebilirsiniz.",
     "NETWORK": "Pano'ya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin."
   },
   "fieldErrors": {

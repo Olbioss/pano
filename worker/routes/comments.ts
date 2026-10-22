@@ -8,6 +8,7 @@ import {
 } from "@/shared/schemas";
 import type { AppEnv } from "../env";
 import { idParamSchema, validate } from "../lib/validate";
+import { confineDemo } from "../middleware/demo";
 import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
 import {
@@ -40,6 +41,7 @@ export const postCommentRoutes = new Hono<AppEnv>()
     "/:id/comments",
     requireUser,
     validate("param", idParamSchema),
+    confineDemo("post"),
     validate("json", createCommentSchema),
     rateLimit("comment", 30, 3600),
     async (c) => {

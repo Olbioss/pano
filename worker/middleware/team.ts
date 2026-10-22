@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
-import { member, organization } from "../db/schema";
+import { member, organization, workspaceSettings } from "../db/schema";
 import type { AppEnv, Bindings } from "../env";
 import { AppError } from "../lib/errors";
 import type { SessionUser } from "./session";
@@ -10,9 +10,10 @@ export type TeamWorkspace = {
   slug: string;
   name: string;
   role: string;
+  isDemo: boolean;
 };
 
-type TeamEnv = {
+export type TeamEnv = {
   Bindings: Bindings;
   Variables: AppEnv["Variables"] & {
     user: SessionUser;
@@ -33,8 +34,13 @@ export const requireTeam = createMiddleware<TeamEnv>(async (c, next) => {
       slug: organization.slug,
       name: organization.name,
       role: member.role,
+      isDemo: workspaceSettings.isDemo,
     })
     .from(organization)
+    .leftJoin(
+      workspaceSettings,
+      eq(workspaceSettings.organizationId, organization.id)
+    )
     .leftJoin(
       member,
       and(
@@ -53,6 +59,7 @@ export const requireTeam = createMiddleware<TeamEnv>(async (c, next) => {
     slug: row.slug,
     name: row.name,
     role: row.role,
+    isDemo: row.isDemo ?? false,
   });
   await next();
 });

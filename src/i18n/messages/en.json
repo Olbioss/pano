@@ -200,6 +200,8 @@
     "INTERNAL_ERROR": "Something went wrong on our side. Try again.",
     "WORKSPACE_LIMIT": "Each account can have one workspace for now.",
     "POST_MERGED": "This request was merged into another one.",
+    "DEMO_ONLY": "Demo accounts work only in the demo workspace.",
+    "DEMO_READ_ONLY": "The demo's settings stay as they are. Everything else is yours to try.",
     "NETWORK": "Couldn't reach Pano. Check your connection and try again."
   },
   "fieldErrors": {

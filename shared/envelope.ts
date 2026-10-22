@@ -12,7 +12,9 @@ export type ApiErrorCode =
   | "RATE_LIMITED"
   | "INTERNAL_ERROR"
   | "WORKSPACE_LIMIT"
-  | "POST_MERGED";
+  | "POST_MERGED"
+  | "DEMO_ONLY"
+  | "DEMO_READ_ONLY";
 
 export type SuccessResponse<T> = { success: true; data: T };
 

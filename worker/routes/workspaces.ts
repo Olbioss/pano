@@ -19,6 +19,7 @@ import { boards, organization, workspaceSettings } from "../db/schema";
 import type { AppEnv } from "../env";
 import { AppError } from "../lib/errors";
 import { validate } from "../lib/validate";
+import { confineDemo, readOnlyInDemo } from "../middleware/demo";
 import { requireUser } from "../middleware/session";
 import { requireTeam } from "../middleware/team";
 
@@ -128,6 +129,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
   .post(
     "/",
     requireUser,
+    confineDemo("new-workspace"),
     validate("json", createWorkspaceSchema),
     async (c) => {
       const { name, slug, defaultLocale } = c.req.valid("json");
@@ -170,6 +172,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     "/:slug",
     requireUser,
     requireTeam,
+    readOnlyInDemo,
     validate("json", updateWorkspaceSchema),
     async (c) => {
       const { name, defaultLocale } = c.req.valid("json");
@@ -199,6 +202,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     "/:slug/boards",
     requireUser,
     requireTeam,
+    readOnlyInDemo,
     validate("json", createBoardSchema),
     async (c) => {
       const { name } = c.req.valid("json");
@@ -232,6 +236,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     "/:slug/boards/:boardId",
     requireUser,
     requireTeam,
+    readOnlyInDemo,
     validate("param", boardParamSchema),
     validate("json", renameBoardSchema),
     async (c) => {
@@ -255,6 +260,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     "/:slug/boards/:boardId",
     requireUser,
     requireTeam,
+    readOnlyInDemo,
     validate("param", boardParamSchema),
     async (c) => {
       const { boardId } = c.req.valid("param");
@@ -278,6 +284,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     "/:slug/boards/order",
     requireUser,
     requireTeam,
+    readOnlyInDemo,
     validate("json", reorderBoardsSchema),
     async (c) => {
       const { ids } = c.req.valid("json");

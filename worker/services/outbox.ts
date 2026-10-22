@@ -14,7 +14,8 @@ import type { Mailer } from "../mail/mailer";
  * Queues a Shipped email to each of the post's subscribers but the person
  * who shipped it. It runs in the status change's transaction, so the
  * emails exist exactly when the change does. Someone already emailed about
- * this post shipping isn't emailed again.
+ * this post shipping isn't emailed again. The demo workspace queues none:
+ * its people have no inboxes.
  */
 export async function queueShippedEmails(
   tx: Transaction,
@@ -25,6 +26,7 @@ export async function queueShippedEmails(
     .select({
       name: organization.name,
       defaultLocale: workspaceSettings.defaultLocale,
+      isDemo: workspaceSettings.isDemo,
     })
     .from(organization)
     .leftJoin(
@@ -33,6 +35,7 @@ export async function queueShippedEmails(
     )
     .where(eq(organization.id, post.organizationId))
     .limit(1);
+  if (workspace?.isDemo) return;
   const payload: ShippedPayload = {
     title: post.title,
     ref: postRef(post.id, post.title),
