@@ -33,6 +33,7 @@ describe("POST /api/workspaces", () => {
         slug,
         name: "Rezerve",
         defaultLocale: "tr",
+        isDemo: false,
       },
     });
 

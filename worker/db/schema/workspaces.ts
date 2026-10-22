@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, check, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
 
 /**
@@ -15,6 +15,9 @@ export const workspaceSettings = pgTable(
     defaultLocale: text("default_locale", { enum: ["en", "tr"] })
       .notNull()
       .default("en"),
+    // The sandbox the demo logins open: its settings are read-only, it never
+    // sends email, and the nightly reset rebuilds it.
+    isDemo: boolean("is_demo").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

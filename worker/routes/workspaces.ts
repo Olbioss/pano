@@ -27,6 +27,8 @@ export type WorkspaceSummary = {
   slug: string;
   name: string;
   defaultLocale: Locale;
+  /** The sandbox the demo logins open: its settings are read-only. */
+  isDemo: boolean;
 };
 
 export type Board = {
@@ -103,6 +105,7 @@ export async function findWorkspace(
       slug: organization.slug,
       name: organization.name,
       defaultLocale: workspaceSettings.defaultLocale,
+      isDemo: workspaceSettings.isDemo,
     })
     .from(organization)
     .leftJoin(
@@ -117,6 +120,7 @@ export async function findWorkspace(
     slug: row.slug,
     name: row.name,
     defaultLocale: row.defaultLocale ?? "en",
+    isDemo: row.isDemo ?? false,
   };
 }
 
@@ -142,7 +146,13 @@ export const workspaceRoutes = new Hono<AppEnv>()
       return c.json<SuccessResponse<WorkspaceSummary>>(
         {
           success: true,
-          data: { id: org.id, slug: org.slug, name: org.name, defaultLocale },
+          data: {
+            id: org.id,
+            slug: org.slug,
+            name: org.name,
+            defaultLocale,
+            isDemo: false,
+          },
         },
         201
       );

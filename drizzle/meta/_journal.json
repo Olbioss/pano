@@ -71,6 +71,13 @@
       "when": 1792614072827,
       "tag": "0009_merged_posts_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792690377692,
+      "tag": "0010_demo_workspace",
+      "breakpoints": true
     }
   ]
 }
