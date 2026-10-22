@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // Read as text: Vitest replaces imported CSS with an empty string.
@@ -51,10 +51,13 @@ const TEXT = [
   ["stamp-closed", "card"],
 ] as const;
 
-// A form field's edge, which is what shows where it is: 3:1.
+// A form field's edge, which is what shows where it is, and the focus
+// ring, which shows a keyboard user where they are: 3:1.
 const EDGES = [
   ["input", "card"],
   ["input", "board"],
+  ["ring", "card"],
+  ["ring", "board"],
 ] as const;
 
 describe.each([
@@ -67,5 +70,22 @@ describe.each([
 
   it.each(EDGES)("keeps %s edges visible on %s", (edge, surface) => {
     expect(contrast(colors[edge], colors[surface])).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("the focus ring", () => {
+  it("is drawn at full strength everywhere", () => {
+    // A ring at half strength (ring-ring/50) can't reach 3:1 on the board,
+    // whatever its color.
+    const root = new URL("../src/", import.meta.url);
+    const faint = readdirSync(root, { recursive: true })
+      .map(String)
+      .filter((file) => /\.(tsx?|css)$/.test(file))
+      .filter((file) =>
+        /(?:ring|outline)-ring\/\d+/.test(
+          readFileSync(new URL(file, root), "utf8")
+        )
+      );
+    expect(faint).toEqual([]);
   });
 });

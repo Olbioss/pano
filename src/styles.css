@@ -86,7 +86,8 @@
   --destructive: #c62a1d;
   --border: #cbb593;
   --input: #806a4c;
-  --ring: #ff5a1f;
+  /* Deeper than the buttons' orange: a ring has to show on cork too. */
+  --ring: #b83d0b;
   --radius: 0.375rem;
   /* The shadow under a sheet of paper. */
   --paper-edge: rgb(78 56 28 / 0.16);
@@ -132,7 +133,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     @apply font-sans;
