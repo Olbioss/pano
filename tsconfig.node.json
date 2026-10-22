@@ -13,7 +13,9 @@
     "vitest.config.ts",
     "drizzle.config.ts",
     "auth.config.ts",
+    "playwright.config.ts",
     "test",
+    "e2e",
     "scripts"
   ]
 }

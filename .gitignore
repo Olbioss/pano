@@ -2,6 +2,10 @@ node_modules
 dist
 .wrangler
 *.log
+# Playwright's output
+test-results
+playwright-report
+blob-report
 .DS_Store
 
 # Local env: tool-only (.env) and Worker (.dev.vars) variables

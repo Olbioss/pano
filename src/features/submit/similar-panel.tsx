@@ -26,9 +26,12 @@ export function SimilarPanel({
     <aside
       className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3"
       aria-live="polite"
+      aria-labelledby="similar-heading"
     >
       <div>
-        <h3 className="font-medium text-sm">{t("similarHeading")}</h3>
+        <h3 id="similar-heading" className="font-medium text-sm">
+          {t("similarHeading")}
+        </h3>
         <p className="text-muted-foreground text-xs">{t("similarHint")}</p>
       </div>
       <ul className="flex flex-col gap-2">

@@ -8,6 +8,7 @@
       "worker/**/*",
       "shared/**/*",
       "test/**/*",
+      "e2e/**/*",
       "*.ts",
       "*.json",
       "*.jsonc",

@@ -63,3 +63,65 @@ jobs:
       # here means a route was added without committing the regenerated file.
       - name: Route tree is committed
         run: git diff --exit-code src/routeTree.gen.ts
+
+  e2e:
+    name: end-to-end
+    runs-on: ubuntu-latest
+
+    # The production build in workerd (vite preview), driven by Chromium,
+    # against this job's own Postgres. The suite's setup migrates it and
+    # seeds the demo workspace.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pano_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pano_e2e
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # vite preview reads the Worker's variables from .dev.vars. Not a
+      # secret: the database it signs sessions for lasts one job.
+      - name: Worker variables
+        run: |
+          cp .dev.vars.example .dev.vars
+          sed -i 's/^BETTER_AUTH_SECRET=.*/BETTER_AUTH_SECRET=ci-not-a-secret-ci-not-a-secret-0123/' .dev.vars
+
+      - name: Cache Playwright's browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: End-to-end
+        run: bun run e2e
+
+      - name: Keep the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
