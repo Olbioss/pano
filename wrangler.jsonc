@@ -12,7 +12,9 @@
     // /p/* gets the shell with link-preview tags, so it skips the assets layer.
     "run_worker_first": ["/api", "/api/*", "/p/*"]
   },
-  "observability": { "enabled": true },
+  "observability": {
+    "enabled": true
+  },
   // Production's settings. Local dev and the tests take theirs from
   // .dev.vars, which wins over these.
   "vars": {
@@ -21,23 +23,22 @@
   },
   // Every five minutes: send queued emails, if a status change queued any.
   // Every night at 01:00 UTC: reset the demo workspace. (worker/cron.ts)
-  "triggers": { "crons": ["*/5 * * * *", "0 1 * * *"] },
+  "triggers": {
+    "crons": ["*/5 * * * *", "0 1 * * *"]
+  },
   "kv_namespaces": [
     {
-      // Flags the crons read without waking the database.
+      // Flags the crons read without waking the database. Local dev keeps
+      // its own namespace; this id is production's.
       "binding": "FLAGS",
-      // Placeholder until launch creates the namespace with
-      // `wrangler kv namespace create FLAGS`. Local dev keeps its own.
-      "id": "00000000000000000000000000000000"
+      "id": "3cad1a5caaa0409f9a6555661d03446c"
     }
   ],
   "upload_source_maps": true,
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      // Placeholder until Phase 5 creates the real config with
-      // `wrangler hyperdrive create`. Local dev never uses the id.
-      "id": "00000000000000000000000000000000",
+      "id": "6b92702f9ac4436b9c77d2a7e04f7f26",
       // Miniflare rejects a connection string without a password. Local
       // Postgres uses trust auth, so this one is ignored.
       "localConnectionString": "postgresql://olbios:local@127.0.0.1:5432/pano"
