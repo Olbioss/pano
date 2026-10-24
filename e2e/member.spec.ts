@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { deleteRequest, postRequest, tryDemo, unique } from "./helpers";
+import {
+  deleteRequest,
+  postRequest,
+  tryDemo,
+  unique,
+  untilSaved,
+} from "./helpers";
 
 test("a member submits a request, sees similar ones, votes and comments", async ({
   page,
@@ -19,7 +25,9 @@ test("a member submits a request, sees similar ones, votes and comments", async 
   ).toHaveText("1");
 
   await page.getByLabel("Add a comment").fill("A comment from the suite.");
-  await page.getByRole("button", { name: "Comment", exact: true }).click();
+  await untilSaved(page, "POST", "/comments", () =>
+    page.getByRole("button", { name: "Comment", exact: true }).click()
+  );
   await expect(page.getByRole("heading", { name: "1 comment" })).toBeVisible();
   await expect(
     page
@@ -36,10 +44,10 @@ test("a member submits a request, sees similar ones, votes and comments", async 
     .getByRole("complementary", { name: "Similar requests" })
     .getByRole("button", { name: `Vote for ${title}` });
   await expect(vote).toHaveText("1");
-  await vote.click();
+  await untilSaved(page, "PUT", "/vote", () => vote.click());
   await expect(vote).toHaveText("0");
   await expect(vote).toHaveAttribute("aria-pressed", "false");
-  await vote.click();
+  await untilSaved(page, "PUT", "/vote", () => vote.click());
   await expect(vote).toHaveText("1");
 
   await page.goto(path);

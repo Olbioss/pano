@@ -27,7 +27,29 @@ export async function postRequest(page: Page, title: string, body = "") {
   return new URL(page.url()).pathname;
 }
 
-/** Deletes the request open on the page: its author or the team can. */
+/**
+ * Does `action`, then waits for the API to answer the save it starts: a
+ * `method` request to a path ending in `pathEnd`. Changes show at once and
+ * save behind them, and a page load cancels a save still on its way, which
+ * on the live site takes a few hundred milliseconds. So a test waits for
+ * this before it leaves the page or looks from another browser.
+ */
+export async function untilSaved(
+  page: Page,
+  method: "POST" | "PUT" | "PATCH",
+  pathEnd: string,
+  action: () => Promise<unknown>
+) {
+  const answer = page.waitForResponse(
+    (res) =>
+      res.request().method() === method &&
+      new URL(res.url()).pathname.endsWith(pathEnd)
+  );
+  await action();
+  expect((await answer).ok(), `${method} ${pathEnd} saved`).toBe(true);
+}
+
+/** Deletes the request open on the page. In the demo, only its author can. */
 export async function deleteRequest(page: Page) {
   const article = page.getByRole("article");
   await article.getByRole("button", { name: "Delete" }).click();

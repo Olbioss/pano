@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { deleteRequest, postRequest, tryDemo, unique } from "./helpers";
+import {
+  deleteRequest,
+  postRequest,
+  tryDemo,
+  unique,
+  untilSaved,
+} from "./helpers";
 
 test("the team drags a card to Planned, and a member sees the new status", async ({
   browser,
@@ -17,7 +23,9 @@ test("the team drags a card to Planned, and a member sees the new status", async
   // Onto the roadmap first: In progress, from the request's page.
   await team.goto(path);
   await team.getByLabel("Status", { exact: true }).selectOption("in_progress");
-  await team.getByRole("button", { name: "Update status" }).click();
+  await untilSaved(team, "PATCH", "/status", () =>
+    team.getByRole("button", { name: "Update status" }).click()
+  );
   await expect(
     team.getByRole("article").getByText("In progress", { exact: true })
   ).toBeVisible();
@@ -34,7 +42,7 @@ test("the team drags a card to Planned, and a member sees the new status", async
     target.y + target.height / 2,
     { steps: 15 }
   );
-  await team.mouse.up();
+  await untilSaved(team, "PATCH", "/status", () => team.mouse.up());
   await expect(planned.getByRole("link", { name: title })).toBeVisible();
 
   // The member, in another browser, sees it planned.
