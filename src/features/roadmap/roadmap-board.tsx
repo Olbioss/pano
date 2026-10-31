@@ -102,6 +102,7 @@ export function RoadmapBoard({ workspace, roadmap, isTeam, signedIn }: Props) {
         {ROADMAP_STATUSES.map((status) => (
           <RoadmapColumn
             key={status}
+            workspace={workspace}
             status={status}
             posts={roadmap[status]}
             isTeam={isTeam}
@@ -114,11 +115,13 @@ export function RoadmapBoard({ workspace, roadmap, isTeam, signedIn }: Props) {
 }
 
 function RoadmapColumn({
+  workspace,
   status,
   posts,
   isTeam,
   signedIn,
 }: {
+  workspace: string;
   status: RoadmapStatus;
   posts: PostSummary[];
   isTeam: boolean;
@@ -150,8 +153,15 @@ function RoadmapColumn({
         </span>
       </div>
       {status === "shipped" && (
-        <p className="-mt-2 text-muted-foreground text-xs">
-          {t("shippedHint")}
+        <p className="-mt-2 flex justify-between gap-2 text-muted-foreground text-xs">
+          <span>{t("shippedHint")}</span>
+          <Link
+            to="/$ws/changelog"
+            params={{ ws: workspace }}
+            className="underline underline-offset-4"
+          >
+            {t("fullChangelog")}
+          </Link>
         </p>
       )}
       {posts.length === 0 ? (

@@ -25,6 +25,9 @@ export const postKeys = {
     ["posts", "similar", workspace, q] as const,
   roadmapAll: ["posts", "roadmap"] as const,
   roadmap: (workspace: string) => ["posts", "roadmap", workspace] as const,
+  // Under "posts" too: a status change refetches the changelog with the rest.
+  changelog: (workspace: string, page: number) =>
+    ["posts", "changelog", workspace, page] as const,
 };
 
 /** Every status change shares this key: the board refetches once none is left. */

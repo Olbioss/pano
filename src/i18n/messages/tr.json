@@ -70,7 +70,8 @@
     "roadmap": "Yol haritası",
     "settings": "Ayarlar",
     "noBoards": "Henüz pano yok.",
-    "notFound": "Bu adreste bir çalışma alanı yok."
+    "notFound": "Bu adreste bir çalışma alanı yok.",
+    "changelog": "Yenilikler"
   },
   "vote": {
     "voteFor": "{title} için oy ver",
@@ -162,7 +163,8 @@
     "pickedUp": "“{title}” alındı.",
     "over": "“{title}”, {column} sütununun üzerinde.",
     "dropped": "“{title}”, {column} sütununa taşındı.",
-    "stayed": "“{title}” yerinde kaldı."
+    "stayed": "“{title}” yerinde kaldı.",
+    "fullChangelog": "Tüm yenilikler"
   },
   "submit": {
     "title": "Yeni istek",
@@ -253,5 +255,17 @@
     "COMMENT_UNKNOWN": "Bu yorum bu istekte yok. Sayfayı yenileyip tekrar deneyin.",
     "MERGE_SELF": "Bir istek kendisiyle birleştirilemez.",
     "MERGE_TARGET": "Bu çalışma alanından, birleştirilmemiş bir istek seçin."
+  },
+  "changelog": {
+    "intro": "Ekibin yayına aldıkları, en yenisi önce.",
+    "follow": "RSS ile takip edin",
+    "empty": "Henüz yayına çıkan bir şey yok.",
+    "shipped": "{date} tarihinde yayında",
+    "votes": "{count} oy",
+    "loading": "Yenilikler yükleniyor…",
+    "loadFailed": "Yenilikler yüklenemedi. Tekrar denemek için sayfayı yenileyin.",
+    "pages": "Sayfalar",
+    "newer": "Daha yeni",
+    "older": "Daha eski"
   }
 }

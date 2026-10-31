@@ -200,6 +200,17 @@ describe("RoadmapBoard", () => {
     expect(screen.queryByRole("button", { name: /^Move/ })).toBeNull();
   });
 
+  it("links the Shipped column to the full changelog", async () => {
+    fakeServer();
+    renderBoard({ isTeam: false });
+    await screen.findByRole("region", { name: /^Shipped/ });
+    expect(
+      column("Shipped")
+        .getByRole("link", { name: "Full changelog" })
+        .getAttribute("href")
+    ).toBe("/acme/changelog");
+  });
+
   it("lets the team move a card a column over with the keyboard", async () => {
     const server = fakeServer();
     renderBoard({ isTeam: true });

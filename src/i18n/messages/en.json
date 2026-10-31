@@ -70,7 +70,8 @@
     "roadmap": "Roadmap",
     "settings": "Settings",
     "noBoards": "No boards yet.",
-    "notFound": "There's no workspace at this address."
+    "notFound": "There's no workspace at this address.",
+    "changelog": "Changelog"
   },
   "vote": {
     "voteFor": "Vote for {title}",
@@ -162,7 +163,8 @@
     "pickedUp": "Picked up “{title}”.",
     "over": "“{title}” is over {column}.",
     "dropped": "“{title}” moved to {column}.",
-    "stayed": "“{title}” stayed where it was."
+    "stayed": "“{title}” stayed where it was.",
+    "fullChangelog": "Full changelog"
   },
   "submit": {
     "title": "New request",
@@ -253,5 +255,17 @@
     "COMMENT_UNKNOWN": "That comment isn't on this request. Reload and try again.",
     "MERGE_SELF": "A request can't be merged into itself.",
     "MERGE_TARGET": "Pick a request from this workspace that hasn't been merged."
+  },
+  "changelog": {
+    "intro": "What the team shipped, newest first.",
+    "follow": "Follow with RSS",
+    "empty": "Nothing has shipped yet.",
+    "shipped": "Shipped {date}",
+    "votes": "{count, plural, one {# vote} other {# votes}}",
+    "loading": "Loading the changelog…",
+    "loadFailed": "Couldn't load the changelog. Reload the page to try again.",
+    "pages": "Pages",
+    "newer": "Newer",
+    "older": "Older"
   }
 }
