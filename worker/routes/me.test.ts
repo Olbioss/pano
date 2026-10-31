@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app";
 import { createDb } from "../db/client";
-import { session, user } from "../db/schema";
+import { emailCounters, session, user } from "../db/schema";
+import { addressKey, DAILY_EMAILS, utcDay } from "../services/email-budget";
 import {
   cookieFrom,
   ORIGIN,
@@ -101,6 +102,80 @@ describe("email-code sign-in", () => {
     expect(statuses).toEqual([200, 200, 200, 429]);
     await t.settle();
   });
+
+  it("sends one address at most three codes in ten minutes in production", async () => {
+    const t = testApp({ ENVIRONMENT: "production" });
+    const email = uniqueEmail("limit");
+    // A new network each time, so Better Auth's per-IP limit stays out of it.
+    const base = Math.floor(Math.random() * 60) * 4;
+    const statuses: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      const ip = { "cf-connecting-ip": `198.51.100.${base + i + 1}` };
+      statuses.push((await t.sendCode(email, ip)).status);
+    }
+    expect(statuses).toEqual([200, 200, 200, 429]);
+    const last = await t.sendCode(email, { "cf-connecting-ip": "192.0.2.77" });
+    expect(await last.json()).toMatchObject({ code: "CODE_LIMIT" });
+    expect(t.mail.sent.filter((message) => message.to === email)).toHaveLength(
+      3
+    );
+    await t.settle();
+  });
+
+  it("stops sending codes once the day's email is spent", async () => {
+    const t = testApp({ ENVIRONMENT: "production" });
+    const { db, close } = createDb(t.env.HYPERDRIVE.connectionString);
+    const today = utcDay(new Date());
+    const spent = { key: "daily", windowStart: today, count: DAILY_EMAILS };
+    await db
+      .insert(emailCounters)
+      .values(spent)
+      .onConflictDoUpdate({
+        target: [emailCounters.key, emailCounters.windowStart],
+        set: { count: DAILY_EMAILS },
+      });
+    try {
+      const email = uniqueEmail("budget");
+      const res = await t.sendCode(email, {
+        "cf-connecting-ip": `198.51.100.${Math.floor(Math.random() * 250) + 1}`,
+      });
+      expect(res.status).toBe(429);
+      expect(await res.json()).toMatchObject({
+        success: false,
+        code: "EMAIL_BUDGET",
+      });
+      expect(t.mail.sent.some((message) => message.to === email)).toBe(false);
+    } finally {
+      // Later tests send codes today too.
+      await db
+        .delete(emailCounters)
+        .where(
+          and(
+            eq(emailCounters.key, "daily"),
+            eq(emailCounters.windowStart, today)
+          )
+        );
+      await close();
+      await t.settle();
+    }
+  });
+
+  it("counts no codes outside production", async () => {
+    const t = testApp();
+    const email = uniqueEmail("dev");
+    for (let i = 0; i < 4; i++) {
+      expect((await t.sendCode(email)).status).toBe(200);
+    }
+    const { db, close } = createDb(t.env.HYPERDRIVE.connectionString);
+    const rows = await db
+      .select()
+      .from(emailCounters)
+      .where(eq(emailCounters.key, await addressKey(email)));
+    await close();
+    expect(rows).toEqual([]);
+    await t.settle();
+  });
+
   it("tells the person when the code email couldn't be sent", async () => {
     const app = createApp({
       mailer: {

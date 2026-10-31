@@ -39,6 +39,20 @@ export function createApp(deps: AppDeps = {}) {
     // them through Better Auth's client, not through `unwrap`.
     .on(["GET", "POST"], "/auth/*", async (c) => {
       const res = await c.var.auth.handler(c.req.raw);
+      // A refused code wasn't sent: say which limit stopped it.
+      if (c.var.mail.refused) {
+        return c.json<ErrorResponse>(
+          {
+            success: false,
+            code: c.var.mail.refused,
+            error:
+              c.var.mail.refused === "CODE_LIMIT"
+                ? "Too many codes for this address"
+                : "Today's email is spent",
+          },
+          429
+        );
+      }
       // A code that never left must not read as "check your inbox".
       if (c.var.mail.failed) {
         return c.json<ErrorResponse>(

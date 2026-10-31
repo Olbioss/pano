@@ -47,7 +47,9 @@
     "verify": "Sign in",
     "codeInvalid": "That code didn't work. Check it, or request a new one.",
     "tooManyAttempts": "Too many attempts. Wait a minute, then request a new code.",
-    "useAnotherEmail": "Use a different email"
+    "useAnotherEmail": "Use a different email",
+    "codeLimit": "Too many codes went to this address. Try again in a few minutes.",
+    "emailBudget": "Pano has sent all the email it can today. Try again tomorrow."
   },
   "newWorkspace": {
     "title": "Create your workspace",
@@ -226,7 +228,9 @@
     "POST_MERGED": "This request was merged into another one.",
     "DEMO_ONLY": "Demo accounts work only in the demo workspace.",
     "DEMO_READ_ONLY": "In the demo, settings and other people's posts stay as they are. Everything else is yours to try.",
-    "NETWORK": "Couldn't reach Pano. Check your connection and try again."
+    "NETWORK": "Couldn't reach Pano. Check your connection and try again.",
+    "CODE_LIMIT": "Too many codes went to this address. Try again in a few minutes.",
+    "EMAIL_BUDGET": "Pano has sent all the email it can today. Try again tomorrow."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Use lowercase letters, numbers and single hyphens.",

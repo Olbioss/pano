@@ -37,7 +37,10 @@ export type AppEnv = {
   Variables: {
     db: Database;
     auth: Auth;
-    /** Set when this request's sign-in code email failed to send. */
-    mail: { failed: boolean };
+    /**
+     * This request's sign-in code email: `failed` when sending it failed,
+     * `refused` when a limit kept it from being sent.
+     */
+    mail: { failed: boolean; refused?: "CODE_LIMIT" | "EMAIL_BUDGET" };
   };
 };

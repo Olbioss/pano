@@ -47,7 +47,9 @@
     "verify": "Giriş yap",
     "codeInvalid": "Bu kod çalışmadı. Kodu kontrol edin ya da yeni bir kod isteyin.",
     "tooManyAttempts": "Çok fazla deneme yapıldı. Bir dakika bekleyip yeni bir kod isteyin.",
-    "useAnotherEmail": "Başka bir e-posta kullan"
+    "useAnotherEmail": "Başka bir e-posta kullan",
+    "codeLimit": "Bu adrese çok fazla kod gönderildi. Birkaç dakika sonra tekrar deneyin.",
+    "emailBudget": "Pano bugün gönderebileceği tüm e-postaları gönderdi. Yarın tekrar deneyin."
   },
   "newWorkspace": {
     "title": "Çalışma alanınızı oluşturun",
@@ -226,7 +228,9 @@
     "POST_MERGED": "Bu istek başka bir istekle birleştirildi.",
     "DEMO_ONLY": "Demo hesapları yalnızca demo çalışma alanında kullanılabilir.",
     "DEMO_READ_ONLY": "Demoda ayarlar ve başkalarının yazdıkları değiştirilemez. Geri kalan her şeyi deneyebilirsiniz.",
-    "NETWORK": "Pano'ya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin."
+    "NETWORK": "Pano'ya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin.",
+    "CODE_LIMIT": "Bu adrese çok fazla kod gönderildi. Birkaç dakika sonra tekrar deneyin.",
+    "EMAIL_BUDGET": "Pano bugün gönderebileceği tüm e-postaları gönderdi. Yarın tekrar deneyin."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Küçük harf, rakam ve tek tire kullanın.",

@@ -26,11 +26,15 @@ export const consoleMailer: Mailer = {
 
 export type SendFn = (url: string, init: RequestInit) => Promise<Response>;
 
+/** How long a Brevo call may take before it's given up. */
+export const BREVO_TIMEOUT_MS = 10_000;
+
 /** Brevo's transactional email API (its free tier allows 300 emails a day). */
 export function brevoMailer(
   apiKey: string,
   from: string,
-  send: SendFn = (url, init) => fetch(url, init)
+  send: SendFn = (url, init) => fetch(url, init),
+  timeoutMs = BREVO_TIMEOUT_MS
 ): Mailer {
   async function deliver(
     to: string,
@@ -38,6 +42,9 @@ export function brevoMailer(
   ) {
     const res = await send("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
+      // A stuck call would hold up the request or the cron run, and past
+      // the outbox's ten-minute claim another run could send it again.
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         "api-key": apiKey,
         "content-type": "application/json",

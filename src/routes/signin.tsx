@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { safeRedirect } from "@/lib/redirect";
 import { meQueryOptions } from "@/lib/session";
+import { codeErrorKey } from "@/lib/sign-in-error";
 import { codeFormSchema, emailFormSchema } from "@/shared/schemas";
 
 export const Route = createFileRoute("/signin")({
@@ -52,7 +53,7 @@ function EmailStep({ onSent }: { onSent: (email: string) => void }) {
         type: "sign-in",
       });
       if (failure) {
-        setError(failure.status === 429 ? t("tooManyCodes") : t("sendFailed"));
+        setError(t(codeErrorKey(failure)));
         return;
       }
       onSent(value.email);

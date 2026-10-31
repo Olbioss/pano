@@ -68,6 +68,24 @@ describe("brevoMailer", () => {
       })
     ).rejects.toThrow(/401/);
   });
+
+  it("gives up when Brevo doesn't answer in time", async () => {
+    // Never answers; only the timeout's abort ends the call.
+    const send: SendFn = (_url, init) =>
+      new Promise((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () =>
+          reject(init.signal?.reason)
+        );
+      });
+    const mailer = brevoMailer("k", "hello@pano.example", send, 20);
+    await expect(
+      mailer.sendSignInCode({
+        to: "a@example.com",
+        code: "123456",
+        locale: "en",
+      })
+    ).rejects.toThrow(/timeout/i);
+  });
 });
 
 describe("mailerFor", () => {

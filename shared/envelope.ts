@@ -14,7 +14,9 @@ export type ApiErrorCode =
   | "WORKSPACE_LIMIT"
   | "POST_MERGED"
   | "DEMO_ONLY"
-  | "DEMO_READ_ONLY";
+  | "DEMO_READ_ONLY"
+  | "CODE_LIMIT"
+  | "EMAIL_BUDGET";
 
 export type SuccessResponse<T> = { success: true; data: T };
 
