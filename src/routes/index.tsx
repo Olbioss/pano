@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTranslations } from "use-intl";
 import { DemoButtons } from "@/features/demo/demo-buttons";
 import { MiniBoard } from "@/features/landing/mini-board";
-import { meQueryOptions } from "@/lib/session";
+import { meQueryOptions, ownedWorkspace } from "@/lib/session";
 import { isDemoEmail } from "@/shared/demo";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -85,7 +85,11 @@ function YourBoard() {
   const t = useTranslations("home");
   const me = useQuery(meQueryOptions);
   const user = me.data?.user;
-  const workspace = me.data?.workspaces.find((w) => w.slug !== "demo");
+  const teams = me.data?.workspaces.filter((w) => w.slug !== "demo") ?? [];
+  // The workspace they own comes first. Someone who's only on other teams
+  // sees one of them, and can still make their own (#8).
+  const owned = ownedWorkspace(teams);
+  const workspace = owned ?? teams[0];
   const link = "font-medium underline underline-offset-4";
 
   return (
@@ -103,14 +107,19 @@ function YourBoard() {
         <Link to="/signin" className={link}>
           {t("signInCta")}
         </Link>
-      ) : workspace ? (
-        <Link to="/$ws" params={{ ws: workspace.slug }} className={link}>
-          {t("openWorkspace", { name: workspace.name })}
-        </Link>
       ) : (
-        <Link to="/new-workspace" className={link}>
-          {t("createWorkspace")}
-        </Link>
+        <>
+          {workspace && (
+            <Link to="/$ws" params={{ ws: workspace.slug }} className={link}>
+              {t("openWorkspace", { name: workspace.name })}
+            </Link>
+          )}
+          {!owned && (
+            <Link to="/new-workspace" className={link}>
+              {t("createWorkspace")}
+            </Link>
+          )}
+        </>
       )}
     </div>
   );

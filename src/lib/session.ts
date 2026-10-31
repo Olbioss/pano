@@ -12,3 +12,11 @@ export const meQueryOptions = queryOptions({
 export async function updateMe(name: string) {
   return unwrap(await api.me.$patch({ json: { name } }));
 }
+
+/**
+ * The workspace an account owns. There's one at most, and being on another
+ * team doesn't count, so someone invited elsewhere can still make theirs.
+ */
+export function ownedWorkspace<W extends { role: string }>(workspaces: W[]) {
+  return workspaces.find((workspace) => workspace.role === "owner");
+}

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useLocaleControls } from "@/i18n/provider";
 import { ApiError } from "@/lib/api";
 import { apiErrorKey } from "@/lib/error-text";
-import { meQueryOptions } from "@/lib/session";
+import { meQueryOptions, ownedWorkspace } from "@/lib/session";
 import { createWorkspace } from "@/lib/workspaces";
 import { LOCALES, type Locale } from "@/shared/locale";
 import { createWorkspaceSchema } from "@/shared/schemas";
@@ -22,10 +22,11 @@ export const Route = createFileRoute("/new-workspace")({
     if (!me.user) {
       throw redirect({ to: "/signin", search: { redirect: location.href } });
     }
-    // One workspace per account: send its owner there instead.
-    const existing = me.workspaces[0];
-    if (existing) {
-      throw redirect({ to: "/$ws", params: { ws: existing.slug } });
+    // One workspace per account: send its owner there instead. Being on
+    // someone else's team doesn't count (#8).
+    const owned = ownedWorkspace(me.workspaces);
+    if (owned) {
+      throw redirect({ to: "/$ws", params: { ws: owned.slug } });
     }
   },
   component: NewWorkspace,
