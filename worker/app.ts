@@ -9,7 +9,10 @@ import { withDb } from "./middleware/db";
 import { withMailer } from "./middleware/mailer";
 import { commentRoutes, postCommentRoutes } from "./routes/comments";
 import { healthRoutes } from "./routes/health";
-import { workspaceInvitationRoutes } from "./routes/invitations";
+import {
+  invitationRoutes,
+  workspaceInvitationRoutes,
+} from "./routes/invitations";
 import { meRoutes } from "./routes/me";
 import { postRoutes, workspacePostRoutes } from "./routes/posts";
 import { workspaceRoadmapRoutes } from "./routes/roadmap";
@@ -79,7 +82,8 @@ export function createApp(deps: AppDeps = {}) {
     .route("/workspaces", workspaceInvitationRoutes)
     .route("/posts", postRoutes)
     .route("/posts", postCommentRoutes)
-    .route("/comments", commentRoutes);
+    .route("/comments", commentRoutes)
+    .route("/invitations", invitationRoutes);
 
   app.onError(handleError);
   app.notFound(handleNotFound);

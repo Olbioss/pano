@@ -1,11 +1,13 @@
 import { APIError } from "better-auth/api";
 import { and, count, eq } from "drizzle-orm";
+import type { InvitationState } from "@/shared/invitations";
 import type { Locale } from "@/shared/locale";
 import { type PendingInvitation, TEAM_SIZE } from "@/shared/team";
 import type { Database } from "../db/client";
 import {
   invitation,
   member,
+  organization,
   user as users,
   workspaceSettings,
 } from "../db/schema";
@@ -15,16 +17,25 @@ import { pendingInvitationColumns, toPendingInvitation } from "./team-members";
 const teamFull = () =>
   new AppError(409, "TEAM_FULL", `A team can have ${TEAM_SIZE} people`);
 
+export const alreadyOnTeam = () =>
+  new AppError(409, "ALREADY_ON_TEAM", "That person is already on the team");
+
+export const invitationNotFound = () =>
+  new AppError(404, "INVITATION_NOT_FOUND", "No such invitation");
+
+export const wrongAddress = () =>
+  new AppError(
+    403,
+    "INVITATION_WRONG_ADDRESS",
+    "This invitation is for another address"
+  );
+
 /** Better Auth's refusals as Pano's codes; anything else is rethrown. */
 export function fromBetterAuth(err: unknown): never {
   if (err instanceof APIError) {
     const code = (err.body as { code?: string } | undefined)?.code;
     if (code === "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION") {
-      throw new AppError(
-        409,
-        "ALREADY_ON_TEAM",
-        "That person is already on the team"
-      );
+      throw alreadyOnTeam();
     }
     if (code === "INVITATION_LIMIT_REACHED") {
       throw new AppError(
@@ -34,8 +45,61 @@ export function fromBetterAuth(err: unknown): never {
       );
     }
     if (code === "ORGANIZATION_MEMBERSHIP_LIMIT_REACHED") throw teamFull();
+    // Pano checks these first; Better Auth's checks cover a race.
+    if (code === "INVITATION_NOT_FOUND") throw invitationNotFound();
+    if (code === "YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION") {
+      throw wrongAddress();
+    }
   }
   throw err;
+}
+
+/** An invitation with its workspace and inviter, for /invite/<id>. */
+export async function findInvitation(db: Database, id: string) {
+  const [row] = await db
+    .select({
+      id: invitation.id,
+      email: invitation.email,
+      role: invitation.role,
+      status: invitation.status,
+      expiresAt: invitation.expiresAt,
+      organizationId: invitation.organizationId,
+      workspaceName: organization.name,
+      workspaceSlug: organization.slug,
+      inviterName: users.name,
+    })
+    .from(invitation)
+    .innerJoin(organization, eq(organization.id, invitation.organizationId))
+    .leftJoin(users, eq(users.id, invitation.inviterId))
+    .where(eq(invitation.id, id))
+    .limit(1);
+  if (!row) throw invitationNotFound();
+  return row;
+}
+
+/** Better Auth keeps an expired invitation pending; Pano says expired. */
+export function invitationState(
+  row: { status: string; expiresAt: Date },
+  now = new Date()
+): InvitationState {
+  if (row.status === "accepted") return "accepted";
+  if (row.status !== "pending") return "canceled";
+  return row.expiresAt < now ? "expired" : "pending";
+}
+
+export async function isOnTeam(
+  db: Database,
+  organizationId: string,
+  userId: string
+) {
+  const [row] = await db
+    .select({ id: member.id })
+    .from(member)
+    .where(
+      and(eq(member.organizationId, organizationId), eq(member.userId, userId))
+    )
+    .limit(1);
+  return row !== undefined;
 }
 
 /** One of the workspace's pending invitations, as Settings → Team lists it. */

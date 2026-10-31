@@ -21,7 +21,10 @@ export type ApiErrorCode =
   | "OWNER_PROTECTED"
   | "ALREADY_ON_TEAM"
   | "TOO_MANY_INVITATIONS"
-  | "TEAM_FULL";
+  | "TEAM_FULL"
+  | "INVITATION_NOT_FOUND"
+  | "INVITATION_EXPIRED"
+  | "INVITATION_WRONG_ADDRESS";
 
 export type SuccessResponse<T> = { success: true; data: T };
 

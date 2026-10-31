@@ -1,5 +1,7 @@
 import { Hono } from "hono";
+import { isDemoEmail } from "@/shared/demo";
 import type { SuccessResponse } from "@/shared/envelope";
+import { type InvitationView, maskEmail } from "@/shared/invitations";
 import { inviteSchema } from "@/shared/schemas";
 import type { AssignableRole, SentInvitation } from "@/shared/team";
 import type { Auth } from "../auth";
@@ -10,7 +12,7 @@ import { validate } from "../lib/validate";
 import type { AppMailer } from "../mail/mailer";
 import { readOnlyInDemo } from "../middleware/demo";
 import { rateLimit } from "../middleware/rate-limit";
-import { requireUser } from "../middleware/session";
+import { readSession, requireUser } from "../middleware/session";
 import {
   requireAdmin,
   requireTeam,
@@ -18,10 +20,16 @@ import {
 } from "../middleware/team";
 import { claimDailyEmail } from "../services/email-budget";
 import {
+  alreadyOnTeam,
+  findInvitation,
   findPending,
   fromBetterAuth,
+  invitationNotFound,
+  invitationState,
+  isOnTeam,
   refuseFullTeam,
   workspaceLocale,
+  wrongAddress,
 } from "../services/invitations";
 
 /** Invitations and resends one person can send an hour, in production. */
@@ -192,3 +200,67 @@ export const workspaceInvitationRoutes = new Hono<AppEnv>()
       });
     }
   );
+
+/**
+ * Under /invitations: the page an invitation's link opens. Anyone with the
+ * link sees the workspace, the inviter, the role and the masked address;
+ * only the invited address can accept.
+ */
+export const invitationRoutes = new Hono<AppEnv>()
+  .get("/:id", async (c) => {
+    const row = await findInvitation(c.var.db, c.req.param("id"));
+    const viewer = (await readSession(c))?.user ?? null;
+    const view: InvitationView = {
+      id: row.id,
+      workspace: { name: row.workspaceName, slug: row.workspaceSlug },
+      inviter: row.inviterName || row.workspaceName,
+      role: row.role === "admin" ? "admin" : "member",
+      email: maskEmail(row.email),
+      state: invitationState(row),
+      forYou:
+        viewer !== null &&
+        viewer.email.toLowerCase() === row.email.toLowerCase(),
+      onTeam:
+        viewer !== null &&
+        (await isOnTeam(c.var.db, row.organizationId, viewer.id)),
+    };
+    return c.json<SuccessResponse<InvitationView>>({
+      success: true,
+      data: view,
+    });
+  })
+  .post("/:id/accept", requireUser, async (c) => {
+    const user = c.var.user;
+    if (isDemoEmail(user.email)) {
+      throw new AppError(
+        403,
+        "DEMO_ONLY",
+        "Demo accounts can only act in the demo workspace"
+      );
+    }
+    const row = await findInvitation(c.var.db, c.req.param("id"));
+    const state = invitationState(row);
+    if (state === "expired") {
+      throw new AppError(410, "INVITATION_EXPIRED", "This invitation expired");
+    }
+    if (state !== "pending") throw invitationNotFound();
+    if (user.email.toLowerCase() !== row.email.toLowerCase()) {
+      throw wrongAddress();
+    }
+    // Better Auth would add a second membership.
+    if (await isOnTeam(c.var.db, row.organizationId, user.id)) {
+      throw alreadyOnTeam();
+    }
+    try {
+      await c.var.auth.api.acceptInvitation({
+        body: { invitationId: row.id },
+        headers: c.req.raw.headers,
+      });
+    } catch (err) {
+      fromBetterAuth(err);
+    }
+    return c.json<SuccessResponse<{ slug: string }>>({
+      success: true,
+      data: { slug: row.workspaceSlug },
+    });
+  });

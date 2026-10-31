@@ -235,7 +235,10 @@
     "OWNER_PROTECTED": "The workspace's owner stays its owner: they can't be changed, removed or leave.",
     "ALREADY_ON_TEAM": "That person is already on the team.",
     "TOO_MANY_INVITATIONS": "This workspace has 20 invitations waiting. Cancel some, or wait for them to be accepted.",
-    "TEAM_FULL": "The team is full: a workspace can have 50 people."
+    "TEAM_FULL": "The team is full: a workspace can have 50 people.",
+    "INVITATION_NOT_FOUND": "This invitation isn't open any more: it was cancelled or already used.",
+    "INVITATION_EXPIRED": "This invitation has expired. Ask whoever invited you to send it again.",
+    "INVITATION_WRONG_ADDRESS": "This invitation is for another address. Sign in with the address it was sent to."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Use lowercase letters, numbers and single hyphens.",

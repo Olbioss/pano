@@ -235,7 +235,10 @@
     "OWNER_PROTECTED": "Çalışma alanının sahibi değiştirilemez, ekipten çıkarılamaz ve ayrılamaz.",
     "ALREADY_ON_TEAM": "Bu kişi zaten ekipte.",
     "TOO_MANY_INVITATIONS": "Bu çalışma alanında bekleyen 20 davet var. Bazılarını iptal edin ya da kabul edilmelerini bekleyin.",
-    "TEAM_FULL": "Ekip dolu: bir çalışma alanında en fazla 50 kişi olabilir."
+    "TEAM_FULL": "Ekip dolu: bir çalışma alanında en fazla 50 kişi olabilir.",
+    "INVITATION_NOT_FOUND": "Bu davet artık geçerli değil: iptal edilmiş ya da kullanılmış.",
+    "INVITATION_EXPIRED": "Bu davetin süresi doldu. Sizi davet eden kişiden yeniden göndermesini isteyin.",
+    "INVITATION_WRONG_ADDRESS": "Bu davet başka bir adres için. Davetin gönderildiği adresle giriş yapın."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Küçük harf, rakam ve tek tire kullanın.",
