@@ -2,9 +2,11 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useTranslations } from "use-intl";
 import { BoardsEditor } from "@/components/settings/boards-editor";
+import { TeamSection } from "@/components/settings/team-section";
 import { WorkspaceForm } from "@/components/settings/workspace-form";
 import { meQueryOptions } from "@/lib/session";
 import { workspaceQueryOptions } from "@/lib/workspaces";
+import { managesTeam } from "@/shared/team";
 
 export const Route = createFileRoute("/$ws/settings")({
   beforeLoad: async ({ context, params, location }) => {
@@ -23,8 +25,11 @@ export const Route = createFileRoute("/$ws/settings")({
 function Settings() {
   const { ws } = Route.useParams();
   const { data: workspace } = useSuspenseQuery(workspaceQueryOptions(ws));
+  const { data: me } = useSuspenseQuery(meQueryOptions);
   const t = useTranslations("settings");
   const tDemo = useTranslations("demo");
+  const role = me.workspaces.find((w) => w.slug === ws)?.role ?? "member";
+  const manages = managesTeam(role);
   return (
     // The demo's settings stay as the nightly reset makes them; the API
     // refuses changes, and a disabled fieldset says so up front.
@@ -32,16 +37,32 @@ function Settings() {
       {workspace.isDemo && (
         <p className="paper p-4 text-sm">{tDemo("settingsReadOnly")}</p>
       )}
-      <section className="paper flex flex-col gap-4 p-5 sm:p-6">
-        <h2 className="font-semibold text-lg">{t("workspaceSection")}</h2>
-        <WorkspaceForm workspace={workspace} />
-      </section>
+      <fieldset disabled={!manages} className="flex flex-col gap-10">
+        {!manages && !workspace.isDemo && (
+          <p className="paper p-4 text-sm">{t("adminsOnly")}</p>
+        )}
+        <section className="paper flex flex-col gap-4 p-5 sm:p-6">
+          <h2 className="font-semibold text-lg">{t("workspaceSection")}</h2>
+          <WorkspaceForm workspace={workspace} />
+        </section>
+        <section className="paper flex flex-col gap-4 p-5 sm:p-6">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-semibold text-lg">{t("boardsSection")}</h2>
+            <p className="text-muted-foreground text-sm">{t("boardsHint")}</p>
+          </div>
+          <BoardsEditor slug={workspace.slug} boards={workspace.boards} />
+        </section>
+      </fieldset>
       <section className="paper flex flex-col gap-4 p-5 sm:p-6">
         <div className="flex flex-col gap-1">
-          <h2 className="font-semibold text-lg">{t("boardsSection")}</h2>
-          <p className="text-muted-foreground text-sm">{t("boardsHint")}</p>
+          <h2 className="font-semibold text-lg">{t("teamSection")}</h2>
+          <p className="text-muted-foreground text-sm">{t("teamHint")}</p>
         </div>
-        <BoardsEditor slug={workspace.slug} boards={workspace.boards} />
+        <TeamSection
+          slug={workspace.slug}
+          viewerId={me.user?.id ?? ""}
+          viewerRole={role}
+        />
       </section>
     </fieldset>
   );

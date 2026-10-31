@@ -216,7 +216,10 @@
     "confirmDelete": "Confirm delete",
     "moveUp": "Move {board} up",
     "moveDown": "Move {board} down",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "teamSection": "Team",
+    "teamHint": "Everyone on the team can change statuses, merge duplicates and pin replies. Owners and admins also change the settings and the team.",
+    "adminsOnly": "Only the workspace's owner and admins can change these settings."
   },
   "errors": {
     "BAD_REQUEST": "Something in the form needs fixing.",
@@ -267,5 +270,37 @@
     "pages": "Pages",
     "newer": "Newer",
     "older": "Older"
+  },
+  "team": {
+    "loading": "Loading the team…",
+    "loadFailed": "Couldn't load the team. Reload the page to try again.",
+    "emailLabel": "Email",
+    "roleLabel": "Role",
+    "invite": "Send invitation",
+    "invited": "Invitation sent to {email}.",
+    "resent": "Invitation sent to {email} again.",
+    "notSent": "The invitation to {email} is saved, but its email didn't go out. Try Resend.",
+    "invalidEmail": "Enter an email address.",
+    "members": "Members",
+    "pending": "Waiting invitations",
+    "anonymous": "Anonymous",
+    "you": "{name} (you)",
+    "roleFor": "Role for {name}",
+    "remove": "Remove",
+    "removeLabel": "Remove {name} from the team",
+    "confirmRemove": "Confirm remove",
+    "leave": "Leave team",
+    "confirmLeave": "Confirm leave",
+    "expires": "expires {date}",
+    "expired": "expired",
+    "resend": "Resend",
+    "resendLabel": "Send the invitation to {email} again",
+    "cancel": "Cancel",
+    "cancelLabel": "Cancel the invitation to {email}",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    }
   }
 }

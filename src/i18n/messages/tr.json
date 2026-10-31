@@ -216,7 +216,10 @@
     "confirmDelete": "Silmeyi onayla",
     "moveUp": "{board} panosunu yukarı taşı",
     "moveDown": "{board} panosunu aşağı taşı",
-    "cancel": "Vazgeç"
+    "cancel": "Vazgeç",
+    "teamSection": "Ekip",
+    "teamHint": "Ekipteki herkes durumları değiştirebilir, mükerrerleri birleştirebilir ve yanıtları sabitleyebilir. Sahip ve yöneticiler ayrıca ayarları ve ekibi yönetir.",
+    "adminsOnly": "Bu ayarları yalnızca çalışma alanının sahibi ve yöneticileri değiştirebilir."
   },
   "errors": {
     "BAD_REQUEST": "Formda düzeltilmesi gereken bir şey var.",
@@ -267,5 +270,37 @@
     "pages": "Sayfalar",
     "newer": "Daha yeni",
     "older": "Daha eski"
+  },
+  "team": {
+    "loading": "Ekip yükleniyor…",
+    "loadFailed": "Ekip yüklenemedi. Tekrar denemek için sayfayı yenileyin.",
+    "emailLabel": "E-posta",
+    "roleLabel": "Rol",
+    "invite": "Davet gönder",
+    "invited": "Davet {email} adresine gönderildi.",
+    "resent": "Davet {email} adresine yeniden gönderildi.",
+    "notSent": "{email} davetini kaydettik ama e-postası gönderilemedi. Yeniden göndermeyi deneyin.",
+    "invalidEmail": "Bir e-posta adresi girin.",
+    "members": "Üyeler",
+    "pending": "Bekleyen davetler",
+    "anonymous": "Anonim",
+    "you": "{name} (siz)",
+    "roleFor": "{name} için rol",
+    "remove": "Çıkar",
+    "removeLabel": "{name} kişisini ekipten çıkar",
+    "confirmRemove": "Çıkarmayı onayla",
+    "leave": "Ekipten ayrıl",
+    "confirmLeave": "Ayrılmayı onayla",
+    "expires": "{date} tarihine kadar",
+    "expired": "süresi doldu",
+    "resend": "Yeniden gönder",
+    "resendLabel": "{email} davetini yeniden gönder",
+    "cancel": "İptal et",
+    "cancelLabel": "{email} davetini iptal et",
+    "roles": {
+      "owner": "Sahip",
+      "admin": "Yönetici",
+      "member": "Üye"
+    }
   }
 }
