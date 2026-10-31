@@ -1,11 +1,47 @@
+import { eq } from "drizzle-orm";
 import type { Locale } from "@/shared/locale";
+import { member, organization, user } from "../db/schema";
 import type { testApp } from "./app";
+import { testDb } from "./db";
 
 type TestApp = ReturnType<typeof testApp>;
 type Board = { id: string; slug: string; name: string; position: number };
 
 export const uniqueSlug = (prefix = "ws") =>
   `${prefix}-${crypto.randomUUID().slice(0, 8)}`;
+
+/**
+ * Puts the account with `email` straight on the workspace's team, the way an
+ * accepted invitation does, and answers its user id.
+ */
+export async function addToTeam(
+  slug: string,
+  email: string,
+  role: "admin" | "member"
+) {
+  const { db, close } = testDb();
+  try {
+    const [workspace] = await db
+      .select({ id: organization.id })
+      .from(organization)
+      .where(eq(organization.slug, slug));
+    const [person] = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.email, email));
+    if (!workspace || !person) throw new Error("addToTeam: nobody to add");
+    await db.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: workspace.id,
+      userId: person.id,
+      role,
+      createdAt: new Date(),
+    });
+    return person.id;
+  } finally {
+    await close();
+  }
+}
 
 /** A new owner with a workspace and boards, made through the real API. */
 export async function setupWorkspace(

@@ -14,8 +14,13 @@ import {
 import { slugify } from "@/shared/slug";
 import type { Auth } from "../auth";
 import type { Database } from "../db/client";
-import { pgErrorCode, UNIQUE_VIOLATION } from "../db/errors";
-import { boards, organization, workspaceSettings } from "../db/schema";
+import {
+  ONE_OWNED_WORKSPACE,
+  pgConstraint,
+  pgErrorCode,
+  UNIQUE_VIOLATION,
+} from "../db/errors";
+import { boards, member, organization, workspaceSettings } from "../db/schema";
 import type { AppEnv } from "../env";
 import { AppError } from "../lib/errors";
 import { validate } from "../lib/validate";
@@ -67,8 +72,12 @@ const slugTaken = () =>
     slug: "SLUG_TAKEN",
   });
 
+const workspaceLimit = () =>
+  new AppError(409, "WORKSPACE_LIMIT", "One workspace per account");
+
 /** Better Auth's createOrganization, with its refusals turned into ours. */
 async function createOrganization(
+  db: Database,
   auth: Auth,
   headers: Headers,
   name: string,
@@ -86,12 +95,29 @@ async function createOrganization(
       const code = (err.body as { code?: string } | undefined)?.code;
       if (code === "ORGANIZATION_ALREADY_EXISTS") throw slugTaken();
       if (code === "YOU_HAVE_REACHED_THE_MAXIMUM_NUMBER_OF_ORGANIZATIONS") {
-        throw new AppError(409, "WORKSPACE_LIMIT", "One workspace per account");
+        throw workspaceLimit();
       }
     }
-    // Two people claiming one address at once can both pass Better Auth's
-    // own check; the unique index on organization.slug settles it.
-    if (pgErrorCode(err) === UNIQUE_VIOLATION) throw slugTaken();
+    if (pgErrorCode(err) === UNIQUE_VIOLATION) {
+      // Two creates from one account at once can both pass Better Auth's
+      // check; the owner index refuses the second owner. Better Auth wrote
+      // the workspace before its owner, outside a transaction, so remove
+      // the ownerless one.
+      if (pgConstraint(err) === ONE_OWNED_WORKSPACE) {
+        await db
+          .delete(organization)
+          .where(
+            and(
+              eq(organization.slug, slug),
+              sql`not exists (select 1 from ${member} where ${member.organizationId} = ${organization.id})`
+            )
+          );
+        throw workspaceLimit();
+      }
+      // Two people claiming one address at once can both pass Better
+      // Auth's own check; the unique index on organization.slug settles it.
+      throw slugTaken();
+    }
     throw err;
   }
 }
@@ -134,6 +160,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     async (c) => {
       const { name, slug, defaultLocale } = c.req.valid("json");
       const org = await createOrganization(
+        c.var.db,
         c.var.auth,
         c.req.raw.headers,
         name,

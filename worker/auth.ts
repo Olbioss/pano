@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, organization } from "better-auth/plugins";
+import { and, eq } from "drizzle-orm";
 import { isDemoEmail } from "@/shared/demo";
 import type { Database } from "./db/client";
 import * as schema from "./db/schema";
@@ -84,7 +85,25 @@ export function createAuth({ db, env, mailer }: AuthDeps) {
           });
         },
       }),
-      organization({ organizationLimit: 1 }),
+      organization({
+        // One workspace per account counts only the ones it owns, so being
+        // on another team never stops anyone from making their own (#8).
+        // The unique index on owner memberships settles two creates at the
+        // same moment (#7).
+        organizationLimit: async (user) => {
+          const [owned] = await db
+            .select({ id: schema.member.id })
+            .from(schema.member)
+            .where(
+              and(
+                eq(schema.member.userId, user.id),
+                eq(schema.member.role, "owner")
+              )
+            )
+            .limit(1);
+          return owned !== undefined;
+        },
+      }),
       demoSignIn({ db }),
     ],
   });

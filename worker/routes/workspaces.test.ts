@@ -1,5 +1,9 @@
+import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import { member, organization, user } from "../db/schema";
 import { testApp } from "../test/app";
+import { testDb } from "../test/db";
+import { addToTeam } from "../test/fixtures";
 
 const uniqueSlug = () => `ws-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -106,6 +110,46 @@ describe("POST /api/workspaces", () => {
       users.map((user) => createWorkspace(t, user.cookie, slug, "Race"))
     );
     expect(responses.map((res) => res.status).sort()).toEqual([201, 409]);
+    await t.settle();
+  });
+
+  it("lets someone on another workspace's team create their own (#8)", async () => {
+    const t = testApp();
+    const owner = await t.signIn();
+    const theirs = uniqueSlug();
+    await createWorkspace(t, owner.cookie, theirs);
+    const teammate = await t.signIn();
+    await addToTeam(theirs, teammate.email, "admin");
+    const res = await createWorkspace(t, teammate.cookie);
+    expect(res.status).toBe(201);
+    await t.settle();
+  });
+
+  it("gives an account one workspace even when it sends three creates at once (#7)", async () => {
+    const t = testApp();
+    const { cookie, email } = await t.signIn();
+    const slugs = [uniqueSlug(), uniqueSlug(), uniqueSlug()];
+    const responses = await Promise.all(
+      slugs.map((slug) => createWorkspace(t, cookie, slug))
+    );
+    expect(responses.map((res) => res.status).sort()).toEqual([201, 409, 409]);
+    for (const res of responses.filter((res) => res.status === 409)) {
+      expect(await res.json()).toMatchObject({ code: "WORKSPACE_LIMIT" });
+    }
+    // Nothing is left of the two that lost: no workspace without an owner.
+    const { db, close } = testDb();
+    const made = await db
+      .select({ slug: organization.slug })
+      .from(organization)
+      .where(inArray(organization.slug, slugs));
+    const owned = await db
+      .select({ id: member.id })
+      .from(member)
+      .innerJoin(user, eq(user.id, member.userId))
+      .where(and(eq(user.email, email), eq(member.role, "owner")));
+    await close();
+    expect(made).toHaveLength(1);
+    expect(owned).toHaveLength(1);
     await t.settle();
   });
 
