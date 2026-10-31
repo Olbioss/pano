@@ -1,6 +1,8 @@
+import { DEMO_WORKSPACE_SLUG } from "@/shared/demo";
 import { createDb, type Database } from "./db/client";
 import type { Bindings } from "./env";
 import { type Mailer, mailerFor } from "./mail/mailer";
+import { dropChangelog } from "./services/changelog";
 import { resetDemo } from "./services/demo-reset";
 import { pruneEmailCounters } from "./services/email-budget";
 import {
@@ -51,6 +53,8 @@ export async function runScheduled(
         console.log(
           `[demo] reset: ${demo.posts} requests, ${demo.votes} votes, ${demo.comments} comments`
         );
+        // Its shipped requests were rebuilt: the next feed reader gets them.
+        await dropChangelog(env.FLAGS, DEMO_WORKSPACE_SLUG);
       } catch (error) {
         console.error("[demo] reset failed:", error);
       }

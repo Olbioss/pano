@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { EVERY_FIVE_MINUTES, NIGHTLY, runScheduled } from "./cron";
 import { createDb } from "./db/client";
 import { emailCounters } from "./db/schema";
+import { changelogKey } from "./services/changelog";
 import type { resetDemo } from "./services/demo-reset";
 import {
   markOutboxPending,
@@ -88,6 +89,18 @@ describe("runScheduled", () => {
     const send = nothingToSend();
     await runScheduled(EVERY_FIVE_MINUTES, env, { send });
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it("drops the demo's cached feed once the reset rebuilt it", async () => {
+    const { env } = testEnv();
+    await env.FLAGS.put(changelogKey("demo"), "stale");
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    await runScheduled(NIGHTLY, env, {
+      send: nothingToSend(),
+      reset: fakeReset(),
+    });
+    logged.mockRestore();
+    expect(await env.FLAGS.get(changelogKey("demo"))).toBeNull();
   });
 
   it("prunes old email counters every night", async () => {

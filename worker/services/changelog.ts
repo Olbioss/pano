@@ -4,9 +4,11 @@ import {
   type ChangelogEntry,
   type ChangelogPage,
 } from "@/shared/changelog";
+import type { Locale } from "@/shared/locale";
 import { postRef } from "@/shared/ref";
 import type { Database } from "../db/client";
-import { posts, statusChanges } from "../db/schema";
+import { organization, posts, statusChanges } from "../db/schema";
+import type { Flags } from "../env";
 
 /**
  * A workspace's shipped requests, newest first, each with the team's note on
@@ -56,4 +58,97 @@ export async function listChangelog(
     page: input.page,
     hasMore: rows.length > CHANGELOG_PAGE,
   };
+}
+
+/** How long KV keeps a workspace's rendered feed. */
+export const CHANGELOG_CACHE_SECONDS = 60 * 60;
+
+/** The KV key of a workspace's rendered feed: by slug, so a hit needs no query. */
+export const changelogKey = (slug: string) => `changelog:${slug}`;
+
+/** Feed readers fetch it again; the next one rebuilds it. */
+export function dropChangelog(flags: Flags, slug: string) {
+  return flags.delete(changelogKey(slug));
+}
+
+/**
+ * The slug of the workspace whose changelog shows this post, or null when
+ * the post isn't on one: an edit, merge or delete of it changes the feed.
+ */
+export async function changelogOf(
+  db: Database,
+  postId: number
+): Promise<string | null> {
+  const [row] = await db
+    .select({ slug: organization.slug })
+    .from(posts)
+    .innerJoin(organization, eq(organization.id, posts.organizationId))
+    .where(
+      and(
+        eq(posts.id, postId),
+        eq(posts.status, "shipped"),
+        isNull(posts.mergedIntoId)
+      )
+    )
+    .limit(1);
+  return row?.slug ?? null;
+}
+
+function escapeXml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+/**
+ * The changelog as an Atom 1.0 feed: the latest entries, each linking to its
+ * request, with the team's note as the summary.
+ */
+export function changelogFeed(input: {
+  origin: string;
+  workspace: { name: string; slug: string; defaultLocale: Locale };
+  entries: ChangelogEntry[];
+  now?: Date;
+}) {
+  const title =
+    input.workspace.defaultLocale === "tr"
+      ? `${input.workspace.name} yenilikleri`
+      : `${input.workspace.name} changelog`;
+  const page = new URL(`/${input.workspace.slug}/changelog`, input.origin);
+  const self = new URL(
+    `/api/workspaces/${input.workspace.slug}/changelog.atom`,
+    input.origin
+  );
+  const updated =
+    input.entries[0]?.shippedAt ?? (input.now ?? new Date()).toISOString();
+  const entries = input.entries.map((entry) => {
+    const link = new URL(`/p/${entry.ref}`, input.origin);
+    return [
+      "  <entry>",
+      `    <title>${escapeXml(entry.title)}</title>`,
+      `    <id>${escapeXml(new URL(`/p/${entry.id}`, input.origin).toString())}</id>`,
+      `    <link rel="alternate" type="text/html" href="${escapeXml(link.toString())}"/>`,
+      `    <updated>${entry.shippedAt}</updated>`,
+      ...(entry.note
+        ? [`    <summary>${escapeXml(entry.note)}</summary>`]
+        : []),
+      "  </entry>",
+    ].join("\n");
+  });
+  return [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    '<feed xmlns="http://www.w3.org/2005/Atom">',
+    `  <title>${escapeXml(title)}</title>`,
+    `  <id>${escapeXml(page.toString())}</id>`,
+    `  <link rel="alternate" type="text/html" href="${escapeXml(page.toString())}"/>`,
+    `  <link rel="self" type="application/atom+xml" href="${escapeXml(self.toString())}"/>`,
+    `  <updated>${updated}</updated>`,
+    `  <author><name>${escapeXml(input.workspace.name)}</name></author>`,
+    ...entries,
+    "</feed>",
+    "",
+  ].join("\n");
 }

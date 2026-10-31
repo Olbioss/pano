@@ -32,6 +32,7 @@ export type Flags = {
     /** `expirationTtl` in seconds from now; `expiration` in Unix seconds. */
     options?: { expirationTtl?: number; expiration?: number }
   ): Promise<void>;
+  delete(key: string): Promise<void>;
 };
 
 export type AppEnv = {

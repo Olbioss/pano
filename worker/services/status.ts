@@ -12,7 +12,9 @@ const TIMELINE_LENGTH = 50;
 
 /**
  * Moves a post to `status` as someone on its workspace's team, with an
- * optional note for the timeline. Answers how many emails it queued.
+ * optional note for the timeline. Answers how many emails it queued, and
+ * whether the move went into or out of Shipped, which changes the
+ * workspace's changelog.
  *
  * It locks the post row first, like every write to a post, so moves sent at
  * once run one after another and only the first one changes anything.
@@ -22,7 +24,7 @@ const TIMELINE_LENGTH = 50;
 export async function changeStatus(
   db: Database,
   input: { postId: number; userId: string; status: PostStatus; note?: string }
-): Promise<{ queued: number }> {
+): Promise<{ queued: number; shippedChanged: boolean }> {
   return db.transaction(async (tx) => {
     const [post] = await tx
       .select({
@@ -50,7 +52,9 @@ export async function changeStatus(
         "This request was merged into another one"
       );
     }
-    if (post.status === input.status) return { queued: 0 };
+    if (post.status === input.status) {
+      return { queued: 0, shippedChanged: false };
+    }
     const note = input.note ? input.note : null;
     await tx
       .update(posts)
@@ -73,12 +77,13 @@ export async function changeStatus(
         },
         { actorId: input.userId, note }
       );
-      return { queued };
+      return { queued, shippedChanged: true };
     }
     if (post.status === "shipped") {
       await takeBackShippedEmails(tx, input.postId);
+      return { queued: 0, shippedChanged: true };
     }
-    return { queued: 0 };
+    return { queued: 0, shippedChanged: false };
   });
 }
 

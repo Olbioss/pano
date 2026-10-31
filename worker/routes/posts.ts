@@ -24,6 +24,7 @@ import { idParamSchema, validate } from "../lib/validate";
 import { confineDemo } from "../middleware/demo";
 import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
+import { changelogOf, dropChangelog } from "../services/changelog";
 import { mergePost } from "../services/merge";
 import { markOutboxPending } from "../services/outbox";
 import {
@@ -122,6 +123,10 @@ export const postRoutes = new Hono<AppEnv>()
       const { id } = c.req.valid("param");
       await requireCanEdit(c.var.db, id, c.var.user.id);
       await updatePost(c.var.db, id, c.req.valid("json"));
+      const changelog = await changelogOf(c.var.db, id);
+      if (changelog) {
+        c.executionCtx.waitUntil(dropChangelog(c.env.FLAGS, changelog));
+      }
       return c.json<SuccessResponse<PostDetail>>({
         success: true,
         data: await postDetail(c.var.db, id, c.var.user.id),
@@ -131,7 +136,11 @@ export const postRoutes = new Hono<AppEnv>()
   .delete("/:id", requireUser, validate("param", idParamSchema), async (c) => {
     const { id } = c.req.valid("param");
     await requireCanEdit(c.var.db, id, c.var.user.id);
+    const changelog = await changelogOf(c.var.db, id);
     await deletePost(c.var.db, id);
+    if (changelog) {
+      c.executionCtx.waitUntil(dropChangelog(c.env.FLAGS, changelog));
+    }
     return c.json<SuccessResponse<{ id: number }>>({
       success: true,
       data: { id },
@@ -182,16 +191,22 @@ export const postRoutes = new Hono<AppEnv>()
     validate("json", changeStatusSchema),
     async (c) => {
       const { id } = c.req.valid("param");
-      const { queued } = await changeStatus(c.var.db, {
+      const { queued, shippedChanged } = await changeStatus(c.var.db, {
         postId: id,
         userId: c.var.user.id,
         ...c.req.valid("json"),
       });
       // The five-minute cron sends them, once this tells it to look.
       if (queued > 0) c.executionCtx.waitUntil(markOutboxPending(c.env.FLAGS));
+      const detail = await postDetail(c.var.db, id, c.var.user.id);
+      if (shippedChanged) {
+        c.executionCtx.waitUntil(
+          dropChangelog(c.env.FLAGS, detail.workspace.slug)
+        );
+      }
       return c.json<SuccessResponse<PostDetail>>({
         success: true,
-        data: await postDetail(c.var.db, id, c.var.user.id),
+        data: detail,
       });
     }
   )
@@ -202,11 +217,13 @@ export const postRoutes = new Hono<AppEnv>()
     validate("json", mergeSchema),
     async (c) => {
       const { intoId } = c.req.valid("json");
-      await mergePost(c.var.db, {
-        postId: c.req.valid("param").id,
-        intoId,
-        userId: c.var.user.id,
-      });
+      const postId = c.req.valid("param").id;
+      // A shipped duplicate leaves its workspace's changelog.
+      const changelog = await changelogOf(c.var.db, postId);
+      await mergePost(c.var.db, { postId, intoId, userId: c.var.user.id });
+      if (changelog) {
+        c.executionCtx.waitUntil(dropChangelog(c.env.FLAGS, changelog));
+      }
       return c.json<SuccessResponse<PostDetail>>({
         success: true,
         data: await postDetail(c.var.db, intoId, c.var.user.id),

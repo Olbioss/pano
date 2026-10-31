@@ -39,5 +39,8 @@ export function memoryFlags(): Flags {
     async put(key, value) {
       values.set(key, value);
     },
+    async delete(key) {
+      values.delete(key);
+    },
   };
 }
