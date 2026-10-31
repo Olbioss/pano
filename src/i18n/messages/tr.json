@@ -230,7 +230,9 @@
     "DEMO_READ_ONLY": "Demoda ayarlar ve başkalarının yazdıkları değiştirilemez. Geri kalan her şeyi deneyebilirsiniz.",
     "NETWORK": "Pano'ya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin.",
     "CODE_LIMIT": "Bu adrese çok fazla kod gönderildi. Birkaç dakika sonra tekrar deneyin.",
-    "EMAIL_BUDGET": "Pano bugün gönderebileceği tüm e-postaları gönderdi. Yarın tekrar deneyin."
+    "EMAIL_BUDGET": "Pano bugün gönderebileceği tüm e-postaları gönderdi. Yarın tekrar deneyin.",
+    "ADMINS_ONLY": "Bunu yalnızca çalışma alanının sahibi ve yöneticileri yapabilir.",
+    "OWNER_PROTECTED": "Çalışma alanının sahibi değiştirilemez, ekipten çıkarılamaz ve ayrılamaz."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Küçük harf, rakam ve tek tire kullanın.",

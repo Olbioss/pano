@@ -16,7 +16,9 @@ export type ApiErrorCode =
   | "DEMO_ONLY"
   | "DEMO_READ_ONLY"
   | "CODE_LIMIT"
-  | "EMAIL_BUDGET";
+  | "EMAIL_BUDGET"
+  | "ADMINS_ONLY"
+  | "OWNER_PROTECTED";
 
 export type SuccessResponse<T> = { success: true; data: T };
 

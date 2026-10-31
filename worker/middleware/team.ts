@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
+import { managesTeam } from "@/shared/team";
 import { member, organization, workspaceSettings } from "../db/schema";
 import type { AppEnv, Bindings } from "../env";
 import { AppError } from "../lib/errors";
@@ -61,5 +62,21 @@ export const requireTeam = createMiddleware<TeamEnv>(async (c, next) => {
     role: row.role,
     isDemo: row.isDemo ?? false,
   });
+  await next();
+});
+
+export const adminsOnly = () =>
+  new AppError(
+    403,
+    "ADMINS_ONLY",
+    "Only the workspace's owner and admins can do that"
+  );
+
+/**
+ * Owners and admins only: the workspace's settings and its team. Runs after
+ * requireTeam, and after readOnlyInDemo, so the demo's own answer comes first.
+ */
+export const requireAdmin = createMiddleware<TeamEnv>(async (c, next) => {
+  if (!managesTeam(c.var.workspace.role)) throw adminsOnly();
   await next();
 });

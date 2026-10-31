@@ -230,7 +230,9 @@
     "DEMO_READ_ONLY": "In the demo, settings and other people's posts stay as they are. Everything else is yours to try.",
     "NETWORK": "Couldn't reach Pano. Check your connection and try again.",
     "CODE_LIMIT": "Too many codes went to this address. Try again in a few minutes.",
-    "EMAIL_BUDGET": "Pano has sent all the email it can today. Try again tomorrow."
+    "EMAIL_BUDGET": "Pano has sent all the email it can today. Try again tomorrow.",
+    "ADMINS_ONLY": "Only the workspace's owner and admins can do that.",
+    "OWNER_PROTECTED": "The workspace's owner stays its owner: they can't be changed, removed or leave."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Use lowercase letters, numbers and single hyphens.",

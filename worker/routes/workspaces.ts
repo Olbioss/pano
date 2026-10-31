@@ -26,7 +26,7 @@ import { AppError } from "../lib/errors";
 import { validate } from "../lib/validate";
 import { confineDemo, readOnlyInDemo } from "../middleware/demo";
 import { requireUser } from "../middleware/session";
-import { requireTeam } from "../middleware/team";
+import { requireAdmin, requireTeam } from "../middleware/team";
 
 export type WorkspaceSummary = {
   id: string;
@@ -200,6 +200,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     requireUser,
     requireTeam,
     readOnlyInDemo,
+    requireAdmin,
     validate("json", updateWorkspaceSchema),
     async (c) => {
       const { name, defaultLocale } = c.req.valid("json");
@@ -230,6 +231,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     requireUser,
     requireTeam,
     readOnlyInDemo,
+    requireAdmin,
     validate("json", createBoardSchema),
     async (c) => {
       const { name } = c.req.valid("json");
@@ -264,6 +266,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     requireUser,
     requireTeam,
     readOnlyInDemo,
+    requireAdmin,
     validate("param", boardParamSchema),
     validate("json", renameBoardSchema),
     async (c) => {
@@ -288,6 +291,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     requireUser,
     requireTeam,
     readOnlyInDemo,
+    requireAdmin,
     validate("param", boardParamSchema),
     async (c) => {
       const { boardId } = c.req.valid("param");
@@ -312,6 +316,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
     requireUser,
     requireTeam,
     readOnlyInDemo,
+    requireAdmin,
     validate("json", reorderBoardsSchema),
     async (c) => {
       const { ids } = c.req.valid("json");

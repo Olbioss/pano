@@ -11,6 +11,7 @@ import { healthRoutes } from "./routes/health";
 import { meRoutes } from "./routes/me";
 import { postRoutes, workspacePostRoutes } from "./routes/posts";
 import { workspaceRoadmapRoutes } from "./routes/roadmap";
+import { workspaceTeamRoutes } from "./routes/team";
 import { workspaceRoutes } from "./routes/workspaces";
 
 export type AppDeps = { mailer?: CodeMailer };
@@ -71,6 +72,7 @@ export function createApp(deps: AppDeps = {}) {
     .route("/workspaces", workspaceRoutes)
     .route("/workspaces", workspacePostRoutes)
     .route("/workspaces", workspaceRoadmapRoutes)
+    .route("/workspaces", workspaceTeamRoutes)
     .route("/posts", postRoutes)
     .route("/posts", postCommentRoutes)
     .route("/comments", commentRoutes);

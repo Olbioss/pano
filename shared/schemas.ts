@@ -3,6 +3,7 @@ import type { FieldErrorKey } from "./field-errors";
 import { LOCALES } from "./locale";
 import { isReservedSlug, slugify } from "./slug";
 import { POST_STATUSES } from "./status";
+import { ASSIGNABLE_ROLES } from "./team";
 
 /** A field-error key as a zod issue message, checked at compile time. */
 const key = (error: FieldErrorKey) => ({ error });
@@ -159,3 +160,6 @@ export const changeStatusSchema = z.object({
 export const mergeSchema = z.object({ intoId: idSchema });
 
 export const subscriptionSchema = z.object({ subscribed: z.boolean() });
+
+/** A role change on Settings → Team: admin or member, never owner. */
+export const changeRoleSchema = z.object({ role: z.enum(ASSIGNABLE_ROLES) });
