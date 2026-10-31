@@ -27,6 +27,7 @@ import {
   invitationNotFound,
   invitationState,
   isOnTeam,
+  refreshPending,
   refuseFullTeam,
   workspaceLocale,
   wrongAddress,
@@ -48,13 +49,16 @@ async function claimEmail(db: Database, env: Bindings) {
 /**
  * Invites `email` through Better Auth, which checks the inviter's role and
  * whether the address is on the team already. A pending invitation for the
- * same address gets a fresh expiry instead of a twin. Answers its id.
+ * same address, expired or not, gets the role asked for and a fresh expiry
+ * instead of a twin. Answers its id.
  */
 async function invite(
   auth: Auth,
+  db: Database,
   headers: Headers,
   input: { organizationId: string; email: string; role: AssignableRole }
 ) {
+  await refreshPending(db, input);
   try {
     const sent = await auth.api.createInvitation({
       body: { ...input, resend: true },
@@ -117,7 +121,7 @@ export const workspaceInvitationRoutes = new Hono<AppEnv>()
       const workspace = c.var.workspace;
       await refuseFullTeam(c.var.db, workspace.id);
       await claimEmail(c.var.db, c.env);
-      const id = await invite(c.var.auth, c.req.raw.headers, {
+      const id = await invite(c.var.auth, c.var.db, c.req.raw.headers, {
         organizationId: workspace.id,
         email: email.toLowerCase(),
         role,
@@ -153,7 +157,7 @@ export const workspaceInvitationRoutes = new Hono<AppEnv>()
         c.req.param("id")
       );
       await claimEmail(c.var.db, c.env);
-      const id = await invite(c.var.auth, c.req.raw.headers, {
+      const id = await invite(c.var.auth, c.var.db, c.req.raw.headers, {
         organizationId: workspace.id,
         email: pending.email,
         role: pending.role,

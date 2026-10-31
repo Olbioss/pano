@@ -2,7 +2,12 @@ import { APIError } from "better-auth/api";
 import { and, count, eq } from "drizzle-orm";
 import type { InvitationState } from "@/shared/invitations";
 import type { Locale } from "@/shared/locale";
-import { type PendingInvitation, TEAM_SIZE } from "@/shared/team";
+import {
+  type AssignableRole,
+  INVITATION_DAYS,
+  type PendingInvitation,
+  TEAM_SIZE,
+} from "@/shared/team";
 import type { Database } from "../db/client";
 import {
   invitation,
@@ -122,6 +127,32 @@ export async function findPending(
     .limit(1);
   if (!row) throw new AppError(404, "NOT_FOUND", "No such invitation");
   return toPendingInvitation(row);
+}
+
+/**
+ * Readies an address's waiting invitation for Better Auth's resend, which
+ * finds only invitations that haven't expired and renews only the expiry:
+ * the invitation takes the role it's sent with now, and an expired one
+ * comes back instead of getting a twin.
+ */
+export async function refreshPending(
+  db: Database,
+  input: { organizationId: string; email: string; role: AssignableRole },
+  now = new Date()
+) {
+  await db
+    .update(invitation)
+    .set({
+      role: input.role,
+      expiresAt: new Date(now.getTime() + INVITATION_DAYS * 86_400_000),
+    })
+    .where(
+      and(
+        eq(invitation.organizationId, input.organizationId),
+        eq(invitation.email, input.email),
+        eq(invitation.status, "pending")
+      )
+    );
 }
 
 /** Refuses another invitation once the team is as big as it can be. */

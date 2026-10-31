@@ -104,6 +104,24 @@ describe("POST /api/workspaces/:slug/invitations", () => {
     await t.settle();
   });
 
+  it("gives a waiting invitation the role it's sent with now", async () => {
+    const t = testApp();
+    const { owner, slug } = await setupWorkspace(t);
+    const email = address();
+    const first = await invitationId(
+      await invite(t, slug, email, owner.cookie, "admin")
+    );
+    const res = await invite(t, slug, email, owner.cookie, "member");
+    const body = await res.json();
+    if (!body.success) throw new Error(body.error);
+    expect(body.data.invitation).toMatchObject({ id: first, role: "member" });
+    expect(t.mail.invited.map((mail) => mail.role)).toEqual([
+      "admin",
+      "member",
+    ]);
+    await t.settle();
+  });
+
   it("refuses someone already on the team", async () => {
     const t = testApp();
     const { owner, slug } = await setupWorkspace(t);
@@ -255,6 +273,30 @@ describe("resending and cancelling", () => {
       Date.now() + 6 * 86_400_000
     );
     expect(t.mail.invited).toHaveLength(2);
+    await t.settle();
+  });
+
+  it("brings an expired invitation back instead of making a second one", async () => {
+    const t = testApp();
+    const { owner, slug } = await setupWorkspace(t);
+    const email = address();
+    const id = await invitationId(await invite(t, slug, email, owner.cookie));
+    const expire = () =>
+      db
+        .update(invitation)
+        .set({ expiresAt: new Date(Date.now() - 86_400_000) })
+        .where(eq(invitation.id, id));
+    await expire();
+    const resent = await resend(t, slug, id, owner.cookie);
+    expect((await resent.json()).data.invitation.id).toBe(id);
+    await expire();
+    const again = await invitationId(
+      await invite(t, slug, email, owner.cookie)
+    );
+    expect(again).toBe(id);
+    expect(await pendingOf(t, slug, owner.cookie)).toEqual([
+      expect.objectContaining({ id, email }),
+    ]);
     await t.settle();
   });
 
