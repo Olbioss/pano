@@ -1,7 +1,9 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { emailOTP, organization } from "better-auth/plugins";
 import { and, eq } from "drizzle-orm";
+import { z } from "zod";
 import { isDemoEmail } from "@/shared/demo";
 import { INVITATION_DAYS, PENDING_INVITATIONS, TEAM_SIZE } from "@/shared/team";
 import type { Database } from "./db/client";
@@ -16,6 +18,11 @@ export type AuthDeps = {
   db: Database;
   env: Pick<Bindings, "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "ENVIRONMENT">;
   mailer: CodeMailer;
+  /**
+   * Takes a sign-in code's place in Pano's limits before Better Auth makes
+   * the code; false refuses it.
+   */
+  claimCode?: (email: string) => Promise<boolean>;
 };
 
 /**
@@ -26,7 +33,7 @@ export type AuthDeps = {
  * Sign-in is email codes only. Password hashing doesn't fit the Workers free
  * plan's 10 ms of CPU per request; a code is cheap to create and check.
  */
-export function createAuth({ db, env, mailer }: AuthDeps) {
+export function createAuth({ db, env, mailer, claimCode }: AuthDeps) {
   return betterAuth({
     appName: "Pano",
     baseURL: env.BETTER_AUTH_URL,
@@ -34,6 +41,30 @@ export function createAuth({ db, env, mailer }: AuthDeps) {
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [env.BETTER_AUTH_URL],
     database: drizzleAdapter(db, { provider: "pg", schema }),
+    hooks: {
+      // A code takes its place in Pano's limits before Better Auth stores
+      // it, so a refused request leaves the last code sent working. Better
+      // Auth's per-IP limit has already run by then.
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== "/email-otp/send-verification-otp" || !claimCode) {
+          return;
+        }
+        const { email, type } = (ctx.body ?? {}) as {
+          email?: unknown;
+          type?: unknown;
+        };
+        // Better Auth refuses a bad address, and mails no code for the rest.
+        if (
+          typeof email !== "string" ||
+          type !== "sign-in" ||
+          isDemoEmail(email) ||
+          !z.email().safeParse(email).success
+        ) {
+          return;
+        }
+        if (!(await claimCode(email))) throw new APIError("TOO_MANY_REQUESTS");
+      }),
+    },
     databaseHooks: {
       user: {
         create: {

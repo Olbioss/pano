@@ -122,6 +122,25 @@ describe("email-code sign-in", () => {
     await t.settle();
   });
 
+  it("keeps the last code working when it refuses another", async () => {
+    const t = testApp({ ENVIRONMENT: "production" });
+    const email = uniqueEmail("latest");
+    // A new network each time, so Better Auth's per-IP limit stays out of it.
+    const base = Math.floor(Math.random() * 60) * 4;
+    const statuses: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      const ip = { "cf-connecting-ip": `198.18.0.${base + i + 1}` };
+      statuses.push((await t.sendCode(email, ip)).status);
+    }
+    expect(statuses).toEqual([200, 200, 200, 429]);
+    const res = await t.post("/api/auth/sign-in/email-otp", {
+      email,
+      otp: t.lastCode(email),
+    });
+    expect(res.status).toBe(200);
+    await t.settle();
+  });
+
   it("stops sending codes once the day's email is spent", async () => {
     const t = testApp({ ENVIRONMENT: "production" });
     const { db, close } = createDb(t.env.HYPERDRIVE.connectionString);

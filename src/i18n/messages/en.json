@@ -49,7 +49,8 @@
     "tooManyAttempts": "Too many attempts. Wait a minute, then request a new code.",
     "useAnotherEmail": "Use a different email",
     "codeLimit": "Too many codes went to this address. Try again in a few minutes.",
-    "emailBudget": "Pano has sent all the email it can today. Try again tomorrow."
+    "emailBudget": "Pano has sent all the email it can today. Try again tomorrow.",
+    "useLatestCode": "That address has had three codes in the last ten minutes. Enter the latest one, or ask for a new code in a few minutes."
   },
   "newWorkspace": {
     "title": "Create your workspace",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { codeErrorKey } from "./sign-in-error";
+import { afterRefusedCode, codeErrorKey } from "./sign-in-error";
 
 describe("codeErrorKey", () => {
   it("names Pano's own limits", () => {
@@ -14,5 +14,25 @@ describe("codeErrorKey", () => {
     expect(codeErrorKey({ status: 502, code: "INTERNAL_ERROR" })).toBe(
       "sendFailed"
     );
+  });
+});
+
+describe("afterRefusedCode", () => {
+  it("asks for the latest code once an address has had its three", () => {
+    expect(afterRefusedCode({ status: 429, code: "CODE_LIMIT" })).toEqual({
+      step: "code",
+      note: "useLatestCode",
+    });
+  });
+
+  it("stays on the email step with the reason otherwise", () => {
+    expect(afterRefusedCode({ status: 429, code: "EMAIL_BUDGET" })).toEqual({
+      step: "email",
+      error: "emailBudget",
+    });
+    expect(afterRefusedCode({ status: 429 })).toEqual({
+      step: "email",
+      error: "tooManyCodes",
+    });
   });
 });

@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { safeRedirect } from "@/lib/redirect";
 import { meQueryOptions } from "@/lib/session";
-import { codeErrorKey } from "@/lib/sign-in-error";
+import { afterRefusedCode } from "@/lib/sign-in-error";
 import { codeFormSchema, emailFormSchema } from "@/shared/schemas";
 
 export const Route = createFileRoute("/signin")({
@@ -27,20 +27,31 @@ export const Route = createFileRoute("/signin")({
 
 function SignIn() {
   const t = useTranslations("signin");
-  const [email, setEmail] = useState<string | null>(null);
+  const [sent, setSent] = useState<{ email: string; note?: Note } | null>(null);
   return (
     <main className="paper mx-6 my-16 flex flex-col gap-6 p-6 sm:mx-auto sm:max-w-sm sm:p-8">
       <h1 className="font-semibold text-2xl">{t("title")}</h1>
-      {email === null ? (
-        <EmailStep onSent={setEmail} />
+      {sent === null ? (
+        <EmailStep onSent={(email, note) => setSent({ email, note })} />
       ) : (
-        <CodeStep email={email} onBack={() => setEmail(null)} />
+        <CodeStep
+          email={sent.email}
+          note={sent.note}
+          onBack={() => setSent(null)}
+        />
       )}
     </main>
   );
 }
 
-function EmailStep({ onSent }: { onSent: (email: string) => void }) {
+/** Why the code step asks for a code sent earlier. */
+type Note = "useLatestCode";
+
+function EmailStep({
+  onSent,
+}: {
+  onSent: (email: string, note?: Note) => void;
+}) {
   const t = useTranslations("signin");
   const [error, setError] = useState<string | null>(null);
   const form = useForm({
@@ -53,7 +64,9 @@ function EmailStep({ onSent }: { onSent: (email: string) => void }) {
         type: "sign-in",
       });
       if (failure) {
-        setError(t(codeErrorKey(failure)));
+        const next = afterRefusedCode(failure);
+        if (next.step === "code") onSent(value.email, next.note);
+        else setError(t(next.error));
         return;
       }
       onSent(value.email);
@@ -103,7 +116,15 @@ function EmailStep({ onSent }: { onSent: (email: string) => void }) {
   );
 }
 
-function CodeStep({ email, onBack }: { email: string; onBack: () => void }) {
+function CodeStep({
+  email,
+  note,
+  onBack,
+}: {
+  email: string;
+  note?: Note;
+  onBack: () => void;
+}) {
   const t = useTranslations("signin");
   const search = Route.useSearch();
   const router = useRouter();
@@ -150,6 +171,11 @@ function CodeStep({ email, onBack }: { email: string; onBack: () => void }) {
       <p className="text-muted-foreground text-sm">
         {t("codeSentTo", { email })}
       </p>
+      {note && (
+        <p className="text-sm" role="status">
+          {t(note)}
+        </p>
+      )}
       <form.Field name="code">
         {(field) => (
           <div className="flex flex-col gap-2">

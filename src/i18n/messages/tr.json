@@ -49,7 +49,8 @@
     "tooManyAttempts": "Çok fazla deneme yapıldı. Bir dakika bekleyip yeni bir kod isteyin.",
     "useAnotherEmail": "Başka bir e-posta kullan",
     "codeLimit": "Bu adrese çok fazla kod gönderildi. Birkaç dakika sonra tekrar deneyin.",
-    "emailBudget": "Pano bugün gönderebileceği tüm e-postaları gönderdi. Yarın tekrar deneyin."
+    "emailBudget": "Pano bugün gönderebileceği tüm e-postaları gönderdi. Yarın tekrar deneyin.",
+    "useLatestCode": "Bu adrese son on dakikada üç kod gönderildi. En son geleni girin ya da birkaç dakika sonra yeni kod isteyin."
   },
   "newWorkspace": {
     "title": "Çalışma alanınızı oluşturun",
