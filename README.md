@@ -151,7 +151,9 @@ on free plans. One-time setup:
 
    In Brevo, also turn off blocking of unknown IP addresses for the key:
    Workers send from changing addresses.
-5. `DATABASE_URL="$NEON_URL" bun run db:migrate`
+5. Keep the direct connection string in `.env` as `NEON_DATABASE_URL`, then
+   `bun run db:migrate:prod`. `DATABASE_URL` stays on your local database,
+   so the everyday `bun run db:migrate` can't reach production.
 6. `DATABASE_URL="$NEON_URL" PANO_OWNER_EMAIL=you@example.com bun run seed`
    builds the demo and makes `/pano`, owned by whoever signs in with that
    address.
@@ -159,3 +161,7 @@ on free plans. One-time setup:
 Then `bun run deploy`, and check the live site with
 `E2E_BASE_URL=… bun run e2e`. `vars` in `wrangler.jsonc` hold production's
 `ENVIRONMENT` and `BETTER_AUTH_URL`; `.dev.vars` overrides both locally.
+
+A release that adds migrations: `bun run db:migrate:prod` first, then
+`bun run deploy`. Pano's migrations only add, so the running Worker keeps
+working against the new schema until the deploy lands.
