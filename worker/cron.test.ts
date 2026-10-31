@@ -1,10 +1,15 @@
+import { eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
 import { EVERY_FIVE_MINUTES, NIGHTLY, runScheduled } from "./cron";
+import { createDb } from "./db/client";
+import { emailCounters } from "./db/schema";
 import type { resetDemo } from "./services/demo-reset";
 import {
   markOutboxPending,
   OUTBOX_BATCH,
+  OUTBOX_PAUSED,
   OUTBOX_PENDING,
+  pauseOutboxUntilTomorrow,
   type sendQueuedEmails,
 } from "./services/outbox";
 import { capturingMailer } from "./test/app";
@@ -34,7 +39,7 @@ describe("runScheduled", () => {
     expect(send).toHaveBeenCalledOnce();
     const [, usedMailer, options] = send.mock.calls[0]!;
     expect(usedMailer).toBe(mailer);
-    expect(options).toEqual({ origin: "http://localhost" });
+    expect(options).toEqual({ origin: "http://localhost", budget: false });
   });
 
   it("leaves the database alone when no flag is up", async () => {
@@ -43,6 +48,66 @@ describe("runScheduled", () => {
     await runScheduled(EVERY_FIVE_MINUTES, env, { send });
     expect(send).not.toHaveBeenCalled();
     expect(await env.FLAGS.get(OUTBOX_PENDING)).toBeNull();
+  });
+
+  it("draws on the day's email budget in production", async () => {
+    const { env } = testEnv();
+    await markOutboxPending(env.FLAGS);
+    const send = nothingToSend();
+    const production = { ...env, ENVIRONMENT: "production" };
+    await runScheduled(EVERY_FIVE_MINUTES, production, {
+      mailer: capturingMailer().mailer,
+      send,
+    });
+    expect(send.mock.calls[0]![2]).toMatchObject({ budget: true });
+  });
+
+  it("pauses until the next UTC day once the day's email is spent", async () => {
+    const { env } = testEnv();
+    await markOutboxPending(env.FLAGS);
+    const put = vi.spyOn(env.FLAGS, "put");
+    const send = vi.fn<typeof sendQueuedEmails>(async () => ({
+      sent: 2,
+      failed: 0,
+      budgetSpent: true,
+    }));
+    const logged = vi.spyOn(console, "log").mockImplementation(() => {});
+    await runScheduled(EVERY_FIVE_MINUTES, env, { send });
+    logged.mockRestore();
+    expect(put).toHaveBeenCalledOnce();
+    expect(put.mock.calls[0]![0]).toBe(OUTBOX_PAUSED);
+    const expiration = put.mock.calls[0]![2]?.expiration ?? 0;
+    expect(expiration * 1000).toBeGreaterThan(Date.now());
+    expect(expiration * 1000).toBeLessThanOrEqual(Date.now() + 86_400_000);
+  });
+
+  it("leaves the database alone while the day's email is spent", async () => {
+    const env = offlineEnv();
+    await markOutboxPending(env.FLAGS);
+    await pauseOutboxUntilTomorrow(env.FLAGS);
+    const send = nothingToSend();
+    await runScheduled(EVERY_FIVE_MINUTES, env, { send });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("prunes old email counters every night", async () => {
+    const { env } = testEnv();
+    const { db, close } = createDb(env.HYPERDRIVE.connectionString);
+    await db.insert(emailCounters).values({
+      key: "cron-test",
+      windowStart: new Date(Date.now() - 3 * 86_400_000),
+      count: 1,
+    });
+    await runScheduled(NIGHTLY, env, {
+      send: nothingToSend(),
+      reset: fakeReset(),
+    });
+    const left = await db
+      .select()
+      .from(emailCounters)
+      .where(eq(emailCounters.key, "cron-test"));
+    await close();
+    expect(left).toEqual([]);
   });
 
   it("resets the demo every night, then sends what's queued", async () => {

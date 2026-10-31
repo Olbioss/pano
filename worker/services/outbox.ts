@@ -10,6 +10,7 @@ import {
 } from "../db/schema";
 import type { Flags } from "../env";
 import type { Mailer } from "../mail/mailer";
+import { claimDailyEmail, nextUtcMidnight } from "./email-budget";
 
 /**
  * Queues a Shipped email to each of the post's subscribers but the person
@@ -68,6 +69,25 @@ export function markOutboxPending(flags: Flags) {
   return flags.put(OUTBOX_PENDING, "1", { expirationTtl: 30 * 60 });
 }
 
+/** The flag that holds the five-minute cron back until the next UTC day. */
+export const OUTBOX_PAUSED = "outbox:paused";
+
+/**
+ * The day's email is spent: the five-minute cron stops connecting until the
+ * next UTC midnight, so Neon can sleep meanwhile. The 01:00 run sends the
+ * next batch, and raises the pending flag again if it was a full one.
+ */
+export function pauseOutboxUntilTomorrow(flags: Flags, now = new Date()) {
+  // KV wants an expiry at least a minute away.
+  const until = Math.max(
+    nextUtcMidnight(now).getTime(),
+    now.getTime() + 60_000
+  );
+  return flags.put(OUTBOX_PAUSED, "1", {
+    expiration: Math.ceil(until / 1000),
+  });
+}
+
 /** A post moved back out of Shipped: drop its emails that haven't gone out. */
 export async function takeBackShippedEmails(tx: Transaction, postId: number) {
   await tx
@@ -98,12 +118,23 @@ export const OUTBOX_BATCH = 20;
  * later runs. `postIds` limits a run to those posts' emails; the cron sends
  * them all, and tests pass their own posts so test files running at once
  * leave each other's emails alone.
+ *
+ * With `budget` (production), each email first takes one of the day's
+ * emails. Once the day's share is spent, the run stops: the rest wait for
+ * tomorrow without this run counting as one of their tries, and the result
+ * says `budgetSpent`.
  */
 export async function sendQueuedEmails(
   db: Database,
   mailer: Mailer,
-  options: { origin: string; batch?: number; postIds?: number[] }
-) {
+  options: {
+    origin: string;
+    batch?: number;
+    postIds?: number[];
+    budget?: boolean;
+    now?: Date;
+  }
+): Promise<{ sent: number; failed: number; budgetSpent?: true }> {
   const due = db
     .select({ id: emailOutbox.id })
     .from(emailOutbox)
@@ -147,8 +178,24 @@ export async function sendQueuedEmails(
     ).map((row) => [row.id, row.email])
   );
   let sent = 0;
+  const inOrder = claimed.sort((a, b) => a.id - b.id);
   // One at a time: a run stays well inside the Workers subrequest limit.
-  for (const email of claimed.sort((a, b) => a.id - b.id)) {
+  for (const [index, email] of inOrder.entries()) {
+    if (options.budget && !(await claimDailyEmail(db, "notice", options.now))) {
+      await db
+        .update(emailOutbox)
+        .set({
+          claimedAt: null,
+          attempts: sql`${emailOutbox.attempts} - 1`,
+        })
+        .where(
+          inArray(
+            emailOutbox.id,
+            inOrder.slice(index).map((row) => row.id)
+          )
+        );
+      return { sent, failed: index - sent, budgetSpent: true };
+    }
     try {
       const to = recipients.get(email.userId);
       if (!to) throw new Error("the recipient has no email address");

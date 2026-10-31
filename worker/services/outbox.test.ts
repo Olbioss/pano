@@ -1,11 +1,17 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import { afterAll, describe, expect, it } from "vitest";
-import { emailOutbox, user as users } from "../db/schema";
+import { afterAll, describe, expect, it, vi } from "vitest";
+import { emailCounters, emailOutbox, user as users } from "../db/schema";
 import type { Mailer, ShippedNotice } from "../mail/mailer";
 import { capturingMailer, testApp } from "../test/app";
 import { testDb } from "../test/db";
+import { memoryFlags } from "../test/env";
 import { setupWorkspace, submitPost } from "../test/fixtures";
-import { sendQueuedEmails } from "./outbox";
+import { NOTICE_EMAILS, utcDay } from "./email-budget";
+import {
+  OUTBOX_PAUSED,
+  pauseOutboxUntilTomorrow,
+  sendQueuedEmails,
+} from "./outbox";
 
 const { db, close } = testDb();
 afterAll(() => close());
@@ -170,6 +176,50 @@ describe("sendQueuedEmails", () => {
     expect(await sendQueuedEmails(db, mail.mailer, options)).toEqual({
       sent: 1,
       failed: 0,
+    });
+  });
+
+  it("stops once the day's email is spent, and the rest wait without losing a try", async () => {
+    const { postId } = await queued(3);
+    // A day of its own, with room for one more invitation or Shipped email.
+    const now = new Date(Date.UTC(2101, 5, 1, 12));
+    await db.insert(emailCounters).values({
+      key: "daily",
+      windowStart: utcDay(now),
+      count: NOTICE_EMAILS - 1,
+    });
+    const mail = capturingMailer();
+    const options = { origin: ORIGIN, postIds: [postId], budget: true, now };
+    expect(await sendQueuedEmails(db, mail.mailer, options)).toEqual({
+      sent: 1,
+      failed: 0,
+      budgetSpent: true,
+    });
+    expect(mail.shipped).toHaveLength(1);
+    expect((await rowsOf(postId)).slice(1)).toMatchObject([
+      { sentAt: null, attempts: 0, claimedAt: null },
+      { sentAt: null, attempts: 0, claimedAt: null },
+    ]);
+  });
+});
+
+describe("pauseOutboxUntilTomorrow", () => {
+  it("holds the cron back until the next UTC midnight", async () => {
+    const flags = memoryFlags();
+    const put = vi.spyOn(flags, "put");
+    await pauseOutboxUntilTomorrow(flags, new Date(Date.UTC(2026, 9, 30, 15)));
+    expect(put).toHaveBeenCalledWith(OUTBOX_PAUSED, "1", {
+      expiration: Date.UTC(2026, 9, 31) / 1000,
+    });
+  });
+
+  it("keeps the expiry at least a minute away, as KV requires", async () => {
+    const flags = memoryFlags();
+    const put = vi.spyOn(flags, "put");
+    const now = new Date(Date.UTC(2026, 9, 30, 23, 59, 30));
+    await pauseOutboxUntilTomorrow(flags, now);
+    expect(put).toHaveBeenCalledWith(OUTBOX_PAUSED, "1", {
+      expiration: (now.getTime() + 60_000) / 1000,
     });
   });
 });

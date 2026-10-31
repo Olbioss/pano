@@ -28,7 +28,8 @@ export type Flags = {
   put(
     key: string,
     value: string,
-    options?: { expirationTtl?: number }
+    /** `expirationTtl` in seconds from now; `expiration` in Unix seconds. */
+    options?: { expirationTtl?: number; expiration?: number }
   ): Promise<void>;
 };
 
