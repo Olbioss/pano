@@ -90,3 +90,57 @@ export function shippedEmail(notice: Omit<ShippedNotice, "to">) {
   ].join("");
   return { subject: c.subject(title), text, html };
 }
+
+/** An invitation to a workspace's team, for the invited address. */
+export type InvitationNotice = {
+  to: string;
+  locale: Locale;
+  /** Who's inviting: their display name, or the workspace's when they have none. */
+  inviter: string;
+  workspaceName: string;
+  role: "admin" | "member";
+  /** The invitation's page on Pano. */
+  url: string;
+  expiresAt: Date;
+};
+
+const invitationCopy = {
+  en: {
+    subject: (inviter: string, workspace: string) =>
+      `${inviter} invited you to ${workspace} on Pano`,
+    intro: (inviter: string, workspace: string, role: "admin" | "member") =>
+      `${inviter} invited you to join ${workspace}'s team on Pano as ${role === "admin" ? "an admin" : "a member"}.`,
+    link: "Join the team",
+    expiry: (date: string) =>
+      `The link works until ${date}. If you weren't expecting this, you can ignore it.`,
+  },
+  tr: {
+    subject: (inviter: string, workspace: string) =>
+      `${inviter} sizi Pano'da ${workspace} ekibine davet etti`,
+    intro: (inviter: string, workspace: string, role: "admin" | "member") =>
+      `${inviter} sizi Pano'da ${workspace} ekibine ${role === "admin" ? "yönetici" : "üye"} olarak katılmaya davet etti.`,
+    link: "Ekibe katılın",
+    expiry: (date: string) =>
+      `Bağlantı ${date} tarihine kadar geçerli. Bu daveti beklemiyorsanız görmezden gelebilirsiniz.`,
+  },
+} satisfies Record<Locale, unknown>;
+
+/** The email an invited address gets, in the workspace's language. */
+export function invitationEmail(notice: Omit<InvitationNotice, "to">) {
+  const c = invitationCopy[notice.locale];
+  // Names are people's text; a subject is one line.
+  const inviter = notice.inviter.replace(/\s+/g, " ");
+  const workspace = notice.workspaceName.replace(/\s+/g, " ");
+  const date = new Intl.DateTimeFormat(notice.locale, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(notice.expiresAt);
+  const intro = c.intro(inviter, workspace, notice.role);
+  const text = [intro, `${c.link}: ${notice.url}`, c.expiry(date)].join("\n\n");
+  const html = [
+    `<p>${escapeHtml(intro)}</p>`,
+    `<p><a href="${escapeHtml(notice.url)}">${escapeHtml(c.link)}</a></p>`,
+    `<p style="color:#666;font-size:12px">${escapeHtml(c.expiry(date))}</p>`,
+  ].join("");
+  return { subject: c.subject(inviter, workspace), text, html };
+}

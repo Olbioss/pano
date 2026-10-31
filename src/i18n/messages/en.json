@@ -232,7 +232,10 @@
     "CODE_LIMIT": "Too many codes went to this address. Try again in a few minutes.",
     "EMAIL_BUDGET": "Pano has sent all the email it can today. Try again tomorrow.",
     "ADMINS_ONLY": "Only the workspace's owner and admins can do that.",
-    "OWNER_PROTECTED": "The workspace's owner stays its owner: they can't be changed, removed or leave."
+    "OWNER_PROTECTED": "The workspace's owner stays its owner: they can't be changed, removed or leave.",
+    "ALREADY_ON_TEAM": "That person is already on the team.",
+    "TOO_MANY_INVITATIONS": "This workspace has 20 invitations waiting. Cancel some, or wait for them to be accepted.",
+    "TEAM_FULL": "The team is full: a workspace can have 50 people."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Use lowercase letters, numbers and single hyphens.",

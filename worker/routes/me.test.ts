@@ -182,6 +182,7 @@ describe("email-code sign-in", () => {
         async sendSignInCode() {
           throw new Error("Brevo refused the email: 401 unauthorized");
         },
+        async sendInvitation() {},
       },
     });
     const { env, ctx, settle } = testEnv();

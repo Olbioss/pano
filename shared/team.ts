@@ -34,3 +34,18 @@ export type TeamView = {
   members: TeamMember[];
   invitations: PendingInvitation[];
 };
+
+/** The most people a workspace's team can have. */
+export const TEAM_SIZE = 50;
+
+/** The most invitations a workspace can have waiting at once. */
+export const PENDING_INVITATIONS = 20;
+
+/** How long an invitation's link works. */
+export const INVITATION_DAYS = 7;
+
+/** An invitation sent, or sent again, and whether its email went out. */
+export type SentInvitation = {
+  invitation: PendingInvitation;
+  emailSent: boolean;
+};

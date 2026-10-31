@@ -1,18 +1,28 @@
 import type { Locale } from "@/shared/locale";
 import type { Bindings } from "../env";
-import { type ShippedNotice, shippedEmail, signInCodeEmail } from "./templates";
+import {
+  type InvitationNotice,
+  invitationEmail,
+  type ShippedNotice,
+  shippedEmail,
+  signInCodeEmail,
+} from "./templates";
 
-export type { ShippedNotice } from "./templates";
+export type { InvitationNotice, ShippedNotice } from "./templates";
 
 export type SignInCode = { to: string; code: string; locale: Locale };
 
 export interface Mailer {
   sendSignInCode(message: SignInCode): Promise<void>;
   sendShipped(message: ShippedNotice): Promise<void>;
+  sendInvitation(message: InvitationNotice): Promise<void>;
 }
 
 /** What sign-in needs from a mailer. */
 export type CodeMailer = Pick<Mailer, "sendSignInCode">;
+
+/** What the API's routes send: sign-in codes and invitations. */
+export type AppMailer = Pick<Mailer, "sendSignInCode" | "sendInvitation">;
 
 /** Local dev: emails go to the terminal instead of an inbox. */
 export const consoleMailer: Mailer = {
@@ -21,6 +31,9 @@ export const consoleMailer: Mailer = {
   },
   async sendShipped({ to, title, url }) {
     console.log(`[mail] shipped notice for ${to}: ${title} ${url}`);
+  },
+  async sendInvitation({ to, url }) {
+    console.log(`[mail] invitation for ${to}: ${url}`);
   },
 };
 
@@ -68,6 +81,7 @@ export function brevoMailer(
     sendSignInCode: ({ to, code, locale }) =>
       deliver(to, signInCodeEmail(code, locale)),
     sendShipped: (message) => deliver(message.to, shippedEmail(message)),
+    sendInvitation: (message) => deliver(message.to, invitationEmail(message)),
   };
 }
 

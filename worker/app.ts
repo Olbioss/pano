@@ -3,18 +3,20 @@ import { csrf } from "hono/csrf";
 import type { ErrorResponse } from "@/shared/envelope";
 import type { AppEnv } from "./env";
 import { handleError, handleNotFound } from "./lib/errors";
-import type { CodeMailer } from "./mail/mailer";
+import type { AppMailer } from "./mail/mailer";
 import { withAuth } from "./middleware/auth";
 import { withDb } from "./middleware/db";
+import { withMailer } from "./middleware/mailer";
 import { commentRoutes, postCommentRoutes } from "./routes/comments";
 import { healthRoutes } from "./routes/health";
+import { workspaceInvitationRoutes } from "./routes/invitations";
 import { meRoutes } from "./routes/me";
 import { postRoutes, workspacePostRoutes } from "./routes/posts";
 import { workspaceRoadmapRoutes } from "./routes/roadmap";
 import { workspaceTeamRoutes } from "./routes/team";
 import { workspaceRoutes } from "./routes/workspaces";
 
-export type AppDeps = { mailer?: CodeMailer };
+export type AppDeps = { mailer?: AppMailer };
 
 /**
  * The whole API as one chained Hono app, so AppType carries every route.
@@ -29,7 +31,8 @@ export function createApp(deps: AppDeps = {}) {
     // preflight, which a foreign site can't pass.
     .use(csrf())
     .use(withDb)
-    .use(withAuth(deps.mailer))
+    .use(withMailer(deps.mailer))
+    .use(withAuth)
     // Workspaces are made and changed through /workspaces, which enforces
     // Pano's address rules; the server calls the organization plugin through
     // auth.api. Its HTTP routes would skip those rules, so they don't exist.
@@ -73,6 +76,7 @@ export function createApp(deps: AppDeps = {}) {
     .route("/workspaces", workspacePostRoutes)
     .route("/workspaces", workspaceRoadmapRoutes)
     .route("/workspaces", workspaceTeamRoutes)
+    .route("/workspaces", workspaceInvitationRoutes)
     .route("/posts", postRoutes)
     .route("/posts", postCommentRoutes)
     .route("/comments", commentRoutes);

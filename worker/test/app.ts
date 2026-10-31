@@ -2,7 +2,12 @@ import { testClient } from "hono/testing";
 import type { DemoRole } from "@/shared/demo";
 import { createApp } from "../app";
 import type { Bindings } from "../env";
-import type { Mailer, ShippedNotice, SignInCode } from "../mail/mailer";
+import type {
+  InvitationNotice,
+  Mailer,
+  ShippedNotice,
+  SignInCode,
+} from "../mail/mailer";
 import { testEnv } from "./env";
 
 /** Matches BETTER_AUTH_URL in testEnv, so Better Auth trusts the requests. */
@@ -12,6 +17,7 @@ export const ORIGIN = "http://localhost";
 export function capturingMailer() {
   const sent: SignInCode[] = [];
   const shipped: ShippedNotice[] = [];
+  const invited: InvitationNotice[] = [];
   const mailer: Mailer = {
     async sendSignInCode(message) {
       sent.push(message);
@@ -19,8 +25,11 @@ export function capturingMailer() {
     async sendShipped(message) {
       shipped.push(message);
     },
+    async sendInvitation(message) {
+      invited.push(message);
+    },
   };
-  return { mailer, sent, shipped };
+  return { mailer, sent, shipped, invited };
 }
 
 /** The Cookie header a browser would send after this response. */

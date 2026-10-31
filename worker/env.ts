@@ -1,5 +1,6 @@
 import type { Auth } from "./auth";
 import type { Database } from "./db/client";
+import type { AppMailer } from "./mail/mailer";
 
 /**
  * Bindings are typed structurally, not with the generated Workers types. That
@@ -38,6 +39,8 @@ export type AppEnv = {
   Variables: {
     db: Database;
     auth: Auth;
+    /** Sign-in codes and invitations go out through this. */
+    mailer: AppMailer;
     /**
      * This request's sign-in code email: `failed` when sending it failed,
      * `refused` when a limit kept it from being sent.

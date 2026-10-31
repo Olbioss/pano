@@ -163,3 +163,9 @@ export const subscriptionSchema = z.object({ subscribed: z.boolean() });
 
 /** A role change on Settings → Team: admin or member, never owner. */
 export const changeRoleSchema = z.object({ role: z.enum(ASSIGNABLE_ROLES) });
+
+/** An invitation from Settings → Team. */
+export const inviteSchema = z.object({
+  email: z.email(),
+  role: z.enum(ASSIGNABLE_ROLES),
+});

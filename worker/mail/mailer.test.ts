@@ -56,6 +56,25 @@ describe("brevoMailer", () => {
     expect(body.textContent).toContain("https://pano.example/p/7-dark-mode");
   });
 
+  it("sends an invitation through Brevo", async () => {
+    const send = vi.fn<SendFn>(accepted);
+    await brevoMailer("k", "hello@pano.example", send).sendInvitation({
+      to: "sam@studio.dev",
+      locale: "en",
+      inviter: "Defne",
+      workspaceName: "Inkwell",
+      role: "member",
+      url: "https://pano.example/invite/abc123",
+      expiresAt: new Date(Date.UTC(2026, 10, 6)),
+    });
+    const body = JSON.parse(String(send.mock.calls[0]![1].body));
+    expect(body).toMatchObject({
+      to: [{ email: "sam@studio.dev" }],
+      subject: "Defne invited you to Inkwell on Pano",
+    });
+    expect(body.textContent).toContain("https://pano.example/invite/abc123");
+  });
+
   it("fails when Brevo refuses the email", async () => {
     const send: SendFn = async () =>
       new Response('{"message":"unauthorized"}', { status: 401 });

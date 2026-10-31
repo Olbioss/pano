@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, organization } from "better-auth/plugins";
 import { and, eq } from "drizzle-orm";
 import { isDemoEmail } from "@/shared/demo";
+import { INVITATION_DAYS, PENDING_INVITATIONS, TEAM_SIZE } from "@/shared/team";
 import type { Database } from "./db/client";
 import * as schema from "./db/schema";
 import { demoSignIn } from "./demo/sign-in";
@@ -103,6 +104,11 @@ export function createAuth({ db, env, mailer }: AuthDeps) {
             .limit(1);
           return owned !== undefined;
         },
+        // Pano's routes check these first and say why; Better Auth's own
+        // checks back them up. Pano sends the invitation emails itself.
+        invitationExpiresIn: INVITATION_DAYS * 24 * 60 * 60,
+        invitationLimit: PENDING_INVITATIONS,
+        membershipLimit: TEAM_SIZE,
       }),
       demoSignIn({ db }),
     ],

@@ -18,7 +18,10 @@ export type ApiErrorCode =
   | "CODE_LIMIT"
   | "EMAIL_BUDGET"
   | "ADMINS_ONLY"
-  | "OWNER_PROTECTED";
+  | "OWNER_PROTECTED"
+  | "ALREADY_ON_TEAM"
+  | "TOO_MANY_INVITATIONS"
+  | "TEAM_FULL";
 
 export type SuccessResponse<T> = { success: true; data: T };
 
