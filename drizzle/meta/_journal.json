@@ -92,6 +92,13 @@
       "when": 1793443096844,
       "tag": "0012_one_owned_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793444768754,
+      "tag": "0013_changelog_index",
+      "breakpoints": true
     }
   ]
 }

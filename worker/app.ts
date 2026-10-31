@@ -7,6 +7,7 @@ import type { AppMailer } from "./mail/mailer";
 import { withAuth } from "./middleware/auth";
 import { withDb } from "./middleware/db";
 import { withMailer } from "./middleware/mailer";
+import { workspaceChangelogRoutes } from "./routes/changelog";
 import { commentRoutes, postCommentRoutes } from "./routes/comments";
 import { healthRoutes } from "./routes/health";
 import {
@@ -78,6 +79,7 @@ export function createApp(deps: AppDeps = {}) {
     .route("/workspaces", workspaceRoutes)
     .route("/workspaces", workspacePostRoutes)
     .route("/workspaces", workspaceRoadmapRoutes)
+    .route("/workspaces", workspaceChangelogRoutes)
     .route("/workspaces", workspaceTeamRoutes)
     .route("/workspaces", workspaceInvitationRoutes)
     .route("/posts", postRoutes)

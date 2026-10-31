@@ -1,0 +1,1 @@
+CREATE INDEX "posts_organization_status_changed_idx" ON "posts" USING btree ("organization_id","status","status_changed_at");

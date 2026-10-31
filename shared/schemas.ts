@@ -169,3 +169,8 @@ export const inviteSchema = z.object({
   email: z.email(),
   role: z.enum(ASSIGNABLE_ROLES),
 });
+
+/** A page of a workspace's changelog. */
+export const changelogQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+});

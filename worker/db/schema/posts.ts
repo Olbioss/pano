@@ -80,6 +80,13 @@ export const posts = pgTable(
       table.organizationId,
       table.voteCount
     ),
+    // The changelog and the roadmap's Shipped column: a workspace's posts in
+    // one status, by when they moved there.
+    index("posts_organization_status_changed_idx").on(
+      table.organizationId,
+      table.status,
+      table.statusChangedAt
+    ),
     index("posts_search_idx").using("gin", table.search),
     index("posts_title_trgm_idx").using(
       "gin",
