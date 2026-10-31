@@ -302,5 +302,22 @@
       "admin": "Yönetici",
       "member": "Üye"
     }
+  },
+  "invitation": {
+    "title": "Ekip daveti",
+    "loading": "Davet yükleniyor…",
+    "heading": "{inviter} sizi {workspace} ekibine davet etti",
+    "details": "{role} olarak katılırsınız. Davet {email} adresine gönderildi.",
+    "roles": {
+      "admin": "Yönetici",
+      "member": "Üye"
+    },
+    "signInHint": "Davetin gönderildiği adresle giriş yapın.",
+    "signIn": "Katılmak için giriş yapın",
+    "wrongAddress": "Bu davet {email} adresine gönderildi. Çıkış yapıp o adresle giriş yapın.",
+    "signOut": "Çıkış yap",
+    "join": "{workspace} ekibine katıl",
+    "onTeam": "{workspace} ekibindesiniz.",
+    "open": "{workspace} panosunu açın"
   }
 }

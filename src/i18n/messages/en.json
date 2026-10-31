@@ -302,5 +302,22 @@
       "admin": "Admin",
       "member": "Member"
     }
+  },
+  "invitation": {
+    "title": "Team invitation",
+    "loading": "Loading the invitation…",
+    "heading": "{inviter} invited you to {workspace}'s team",
+    "details": "You'd join as {role}. The invitation went to {email}.",
+    "roles": {
+      "admin": "an admin",
+      "member": "a member"
+    },
+    "signInHint": "Sign in with the address the invitation went to.",
+    "signIn": "Sign in to join",
+    "wrongAddress": "This invitation went to {email}. Sign out, then sign in with that address.",
+    "signOut": "Sign out",
+    "join": "Join {workspace}",
+    "onTeam": "You're on {workspace}'s team.",
+    "open": "Open {workspace}"
   }
 }

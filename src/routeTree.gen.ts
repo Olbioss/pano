@@ -18,6 +18,7 @@ import { Route as WsChangelogRouteImport } from './routes/$ws/changelog'
 import { Route as WsNewRouteImport } from './routes/$ws/new'
 import { Route as WsRoadmapRouteImport } from './routes/$ws/roadmap'
 import { Route as WsSettingsRouteImport } from './routes/$ws/settings'
+import { Route as InviteIdRouteImport } from './routes/invite/$id'
 import { Route as PRefRouteImport } from './routes/p/$ref'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +66,11 @@ const WsSettingsRoute = WsSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => WsRoute,
 } as any)
+const InviteIdRoute = InviteIdRouteImport.update({
+  id: '/invite/$id',
+  path: '/invite/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PRefRoute = PRefRouteImport.update({
   id: '/p/$ref',
   path: '/p/$ref',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/$ws/new': typeof WsNewRoute
   '/$ws/roadmap': typeof WsRoadmapRoute
   '/$ws/settings': typeof WsSettingsRoute
+  '/invite/$id': typeof InviteIdRoute
   '/p/$ref': typeof PRefRoute
   '/$ws/': typeof WsIndexRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/$ws/new': typeof WsNewRoute
   '/$ws/roadmap': typeof WsRoadmapRoute
   '/$ws/settings': typeof WsSettingsRoute
+  '/invite/$id': typeof InviteIdRoute
   '/p/$ref': typeof PRefRoute
   '/$ws': typeof WsIndexRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/$ws/new': typeof WsNewRoute
   '/$ws/roadmap': typeof WsRoadmapRoute
   '/$ws/settings': typeof WsSettingsRoute
+  '/invite/$id': typeof InviteIdRoute
   '/p/$ref': typeof PRefRoute
   '/$ws/': typeof WsIndexRoute
 }
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/$ws/new'
     | '/$ws/roadmap'
     | '/$ws/settings'
+    | '/invite/$id'
     | '/p/$ref'
     | '/$ws/'
   fileRoutesByTo: FileRoutesByTo
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/$ws/new'
     | '/$ws/roadmap'
     | '/$ws/settings'
+    | '/invite/$id'
     | '/p/$ref'
     | '/$ws'
   id:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/$ws/new'
     | '/$ws/roadmap'
     | '/$ws/settings'
+    | '/invite/$id'
     | '/p/$ref'
     | '/$ws/'
   fileRoutesById: FileRoutesById
@@ -150,6 +162,7 @@ export interface RootRouteChildren {
   WsRoute: typeof WsRouteWithChildren
   NewWorkspaceRoute: typeof NewWorkspaceRoute
   SigninRoute: typeof SigninRoute
+  InviteIdRoute: typeof InviteIdRoute
   PRefRoute: typeof PRefRoute
 }
 
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WsSettingsRouteImport
       parentRoute: typeof WsRoute
     }
+    '/invite/$id': {
+      id: '/invite/$id'
+      path: '/invite/$id'
+      fullPath: '/invite/$id'
+      preLoaderRoute: typeof InviteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/p/$ref': {
       id: '/p/$ref'
       path: '/p/$ref'
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   WsRoute: WsRouteWithChildren,
   NewWorkspaceRoute: NewWorkspaceRoute,
   SigninRoute: SigninRoute,
+  InviteIdRoute: InviteIdRoute,
   PRefRoute: PRefRoute,
 }
 export const routeTree = rootRouteImport
