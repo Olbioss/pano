@@ -20,7 +20,7 @@ export default async function setup() {
     // Every run starts from empty tables. Tests use unique emails and slugs,
     // so files within a run don't collide either.
     await client.unsafe(
-      'TRUNCATE TABLE "user", "organization", "verification", "rate_limit" RESTART IDENTITY CASCADE'
+      'TRUNCATE TABLE "user", "organization", "verification", "rate_limit", "email_counters" RESTART IDENTITY CASCADE'
     );
   } finally {
     await client.end();

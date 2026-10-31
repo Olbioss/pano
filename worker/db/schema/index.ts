@@ -3,6 +3,7 @@
 export * from "./auth";
 export * from "./boards";
 export * from "./comments";
+export * from "./email-counters";
 export * from "./email-outbox";
 export * from "./posts";
 export * from "./rate-limits";

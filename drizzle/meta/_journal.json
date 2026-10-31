@@ -78,6 +78,13 @@
       "when": 1792690377692,
       "tag": "0010_demo_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793441982880,
+      "tag": "0011_email_counters",
+      "breakpoints": true
     }
   ]
 }
