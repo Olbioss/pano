@@ -1,5 +1,7 @@
 /** Postgres error codes the app reacts to by name rather than by message. */
 export const UNIQUE_VIOLATION = "23505";
+/** A query named a table that doesn't exist, such as before the migrations. */
+export const UNDEFINED_TABLE = "42P01";
 
 /** The unique index that lets an account own one workspace (migration 0012). */
 export const ONE_OWNED_WORKSPACE = "member_one_owned_workspace_idx";

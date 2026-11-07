@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { testClient } from "hono/testing";
+import postgres from "postgres";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "../app";
 import { testEnv } from "../test/env";
@@ -26,6 +27,30 @@ describe("GET /api/health", () => {
       data: { db: "up", migration: newestMigration() },
     });
     await settle();
+  });
+
+  it("still answers on a database with no migrations yet", async () => {
+    // As CI's browser tests start: Playwright waits for this route before
+    // its setup migrates the database.
+    const testUrl = String(process.env.TEST_DATABASE_URL);
+    const admin = postgres(testUrl, { max: 1, onnotice: () => {} });
+    const name = `pano_health_${crypto.randomUUID().slice(0, 8)}`;
+    await admin.unsafe(`create database ${name}`);
+    try {
+      const url = new URL(testUrl);
+      url.pathname = `/${name}`;
+      const { env, ctx, settle } = testEnv(url.toString());
+      const res = await testClient(app, env, ctx).api.health.$get();
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({
+        success: true,
+        data: { db: "up", migration: null },
+      });
+      await settle();
+    } finally {
+      await admin.unsafe(`drop database if exists ${name} with (force)`);
+      await admin.end();
+    }
   });
 
   it("answers a generic 500 when the database is unreachable", async () => {
