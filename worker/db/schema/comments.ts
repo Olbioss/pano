@@ -55,6 +55,8 @@ export const comments = pgTable(
       table.parentId,
       table.id
     ),
+    // Deleting a comment finds its replies through this, not a scan.
+    index("comments_parent_idx").on(table.parentId),
     check("comments_depth_check", sql`${table.depth} between 0 and 3`),
     check("comments_reply_count_check", sql`${table.replyCount} >= 0`),
   ]

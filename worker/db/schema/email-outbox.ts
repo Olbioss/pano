@@ -51,6 +51,10 @@ export const emailOutbox = pgTable(
     claimedAt: timestamp("claimed_at", { withTimezone: true }),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     attempts: integer("attempts").notNull().default(0),
+    // A failed email waits longer after each try; a run sends only due ones.
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
     lastError: text("last_error"),
   },
   (table) => [

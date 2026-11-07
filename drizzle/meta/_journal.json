@@ -99,6 +99,13 @@
       "when": 1793444768754,
       "tag": "0013_changelog_index",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794081765661,
+      "tag": "0014_outbox_retries_and_indexes",
+      "breakpoints": true
     }
   ]
 }

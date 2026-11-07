@@ -50,4 +50,30 @@ describe("migrations", () => {
     const second = await join(await workspace(), "owner").catch((err) => err);
     expect(pgConstraint(second)).toBe(ONE_OWNED_WORKSPACE);
   });
+
+  it("index the columns that point at a comment, so deleting a post doesn't scan", async () => {
+    const rows = await db.execute<{ indexname: string; indexdef: string }>(
+      sql`select indexname, indexdef from pg_indexes
+          where indexname in ('comments_parent_idx', 'posts_pinned_comment_idx')
+          order by indexname`
+    );
+    expect(rows.map((row) => row.indexname)).toEqual([
+      "comments_parent_idx",
+      "posts_pinned_comment_idx",
+    ]);
+    expect(rows[1]!.indexdef).toContain(
+      "WHERE (pinned_comment_id IS NOT NULL)"
+    );
+  });
+
+  it("give each queued email the time it's due, now unless set", async () => {
+    const rows = await db.execute<{
+      column_default: string;
+      is_nullable: string;
+    }>(
+      sql`select column_default, is_nullable from information_schema.columns
+          where table_name = 'email_outbox' and column_name = 'next_attempt_at'`
+    );
+    expect([...rows]).toEqual([{ column_default: "now()", is_nullable: "NO" }]);
+  });
 });

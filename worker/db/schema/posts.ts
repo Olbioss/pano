@@ -92,6 +92,10 @@ export const posts = pgTable(
       "gin",
       sql`pano_fold(${table.title}) gin_trgm_ops`
     ),
+    // Deleting a comment finds the post that pins it through this.
+    index("posts_pinned_comment_idx")
+      .on(table.pinnedCommentId)
+      .where(sql`${table.pinnedCommentId} is not null`),
     check("posts_vote_count_check", sql`${table.voteCount} >= 0`),
     check("posts_comment_count_check", sql`${table.commentCount} >= 0`),
     check(
