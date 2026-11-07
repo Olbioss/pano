@@ -10,6 +10,7 @@ import {
   OUTBOX_BATCH,
   OUTBOX_PAUSED,
   OUTBOX_PENDING,
+  OUTBOX_RETRY,
   pauseOutboxUntilTomorrow,
   type sendQueuedEmails,
 } from "./services/outbox";
@@ -160,16 +161,42 @@ describe("runScheduled", () => {
     });
   });
 
-  it("keeps the flag up while emails failed, for their next try", async () => {
+  it("notes when a failed email's next try is due, instead of keeping the flag up", async () => {
     const { env } = testEnv();
     await markOutboxPending(env.FLAGS);
     const put = vi.spyOn(env.FLAGS, "put");
+    const due = new Date(Date.now() + 5 * 60_000);
     const send = vi.fn<typeof sendQueuedEmails>(async () => ({
       sent: 3,
       failed: 2,
+      nextRetryAt: due,
     }));
     await runScheduled(EVERY_FIVE_MINUTES, env, { send });
-    expect(put).toHaveBeenCalledOnce();
+    expect(put).toHaveBeenCalledExactlyOnceWith(
+      OUTBOX_RETRY,
+      String(due.getTime()),
+      { expiration: Math.ceil((due.getTime() + 30 * 60_000) / 1000) }
+    );
+  });
+
+  it("leaves the database alone until a retry is due", async () => {
+    const env = offlineEnv();
+    await env.FLAGS.put(OUTBOX_RETRY, String(Date.now() + 60_000));
+    const send = nothingToSend();
+    await runScheduled(EVERY_FIVE_MINUTES, env, { send });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("sends once a retry is due, and clears the note when nothing waits", async () => {
+    const { env } = testEnv();
+    await env.FLAGS.put(OUTBOX_RETRY, String(Date.now() - 1000));
+    const send = vi.fn<typeof sendQueuedEmails>(async () => ({
+      sent: 1,
+      failed: 0,
+    }));
+    await runScheduled(EVERY_FIVE_MINUTES, env, { send });
+    expect(send).toHaveBeenCalledOnce();
+    expect(await env.FLAGS.get(OUTBOX_RETRY)).toBeNull();
   });
 
   it("lets the flag lapse once a run leaves nothing behind", async () => {

@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
-import { posts } from "../db/schema";
+import { emailOutbox, posts, user as users } from "../db/schema";
 import { testApp } from "../test/app";
 import { testDb } from "../test/db";
 import {
@@ -83,6 +83,53 @@ describe("subscriptions", () => {
       expect(await res.json()).toEqual({ success: true, data: { subscribed } });
       expect(await isSubscribed(t, post.id, owner.cookie)).toBe(subscribed);
     }
+    await t.settle();
+  });
+
+  it("takes back the Shipped email waiting for someone who unsubscribes", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const leaving = await t.signIn();
+    const staying = await t.signIn();
+    const midSend = await t.signIn();
+    for (const person of [leaving, staying, midSend]) {
+      await voteFor(t, person.cookie, post.id);
+    }
+    await t.client.api.posts[":id"].status.$patch(
+      { param: { id: String(post.id) }, json: { status: "shipped" } },
+      { headers: { cookie: owner.cookie } }
+    );
+    const ids = new Map(
+      (
+        await db
+          .select({ id: users.id, email: users.email })
+          .from(users)
+          .where(
+            inArray(users.email, [leaving.email, staying.email, midSend.email])
+          )
+      ).map((row) => [row.email, row.id])
+    );
+    // A run is sending this one right now: it still goes out.
+    await db
+      .update(emailOutbox)
+      .set({ claimedAt: new Date() })
+      .where(
+        and(
+          eq(emailOutbox.postId, post.id),
+          eq(emailOutbox.userId, ids.get(midSend.email)!)
+        )
+      );
+
+    await subscribe(t, leaving.cookie, post.id, false);
+    await subscribe(t, midSend.cookie, post.id, false);
+
+    const waiting = await db
+      .select({ userId: emailOutbox.userId })
+      .from(emailOutbox)
+      .where(eq(emailOutbox.postId, post.id));
+    expect(waiting.map((row) => row.userId).sort()).toEqual(
+      [ids.get(staying.email), ids.get(midSend.email)].sort()
+    );
     await t.settle();
   });
 

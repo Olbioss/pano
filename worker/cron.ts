@@ -7,9 +7,11 @@ import { resetDemo } from "./services/demo-reset";
 import { pruneEmailCounters } from "./services/email-budget";
 import {
   markOutboxPending,
+  markOutboxRetry,
   OUTBOX_BATCH,
   OUTBOX_PAUSED,
   OUTBOX_PENDING,
+  OUTBOX_RETRY,
   pauseOutboxUntilTomorrow,
   sendQueuedEmails,
 } from "./services/outbox";
@@ -32,8 +34,9 @@ type CronDeps = {
  *   hours its database is awake, and the database sleeps after five quiet
  *   minutes, so a query every five minutes would keep it awake all month.
  *   The cron connects only while a status change's flag says emails wait,
- *   and puts the flag back up while some are left. Once the day's email is
- *   spent, a second flag keeps it from connecting until the next UTC day.
+ *   or once a failed email's next try is due, and puts the flag back up
+ *   while a full batch left some behind. Once the day's email is spent, a
+ *   third flag keeps it from connecting until the next UTC day.
  * - Every night: reset the demo workspace, prune old email counters, then
  *   send whatever is queued, in case a flag was lost.
  */
@@ -44,8 +47,12 @@ export async function runScheduled(
 ) {
   if (cron === EVERY_FIVE_MINUTES) {
     if (await env.FLAGS.get(OUTBOX_PAUSED)) return;
-    if (!(await env.FLAGS.get(OUTBOX_PENDING))) return;
-    await withDb(env, (db) => sendOutbox(db, env, mailer, send));
+    const pending = await env.FLAGS.get(OUTBOX_PENDING);
+    const retry = await env.FLAGS.get(OUTBOX_RETRY);
+    if (!pending && !(retry && Number(retry) <= Date.now())) return;
+    await withDb(env, (db) =>
+      sendOutbox(db, env, mailer, send, retry !== null)
+    );
   } else if (cron === NIGHTLY) {
     await withDb(env, async (db) => {
       try {
@@ -63,7 +70,8 @@ export async function runScheduled(
       } catch (error) {
         console.error("[email] pruning counters failed:", error);
       }
-      await sendOutbox(db, env, mailer, send);
+      const retry = await env.FLAGS.get(OUTBOX_RETRY);
+      await sendOutbox(db, env, mailer, send, retry !== null);
     });
   }
 }
@@ -77,11 +85,13 @@ async function withDb(env: Bindings, run: (db: Database) => Promise<void>) {
   }
 }
 
+/** `retryNoted`: OUTBOX_RETRY was set, so a run that leaves none clears it. */
 async function sendOutbox(
   db: Database,
   env: Bindings,
   mailer: Mailer | undefined,
-  send: typeof sendQueuedEmails
+  send: typeof sendQueuedEmails,
+  retryNoted: boolean
 ) {
   const result = await send(db, mailer ?? mailerFor(env), {
     origin: env.BETTER_AUTH_URL,
@@ -95,10 +105,12 @@ async function sendOutbox(
     await pauseOutboxUntilTomorrow(env.FLAGS);
     return;
   }
-  // A full batch may have left more behind, and a failed email gets another
-  // try: keep the five-minute cron looking. One KV write a run, only while
-  // emails are waiting.
-  if (result.sent + result.failed >= OUTBOX_BATCH || result.failed > 0) {
+  // A full batch may have left more behind: keep the five-minute cron
+  // looking. One KV write a run, only while emails are waiting.
+  if (result.sent + result.failed >= OUTBOX_BATCH) {
     await markOutboxPending(env.FLAGS);
   }
+  // A failed email waits for its next try; until then the cron reads KV.
+  if (result.nextRetryAt) await markOutboxRetry(env.FLAGS, result.nextRetryAt);
+  else if (retryNoted) await env.FLAGS.delete(OUTBOX_RETRY);
 }

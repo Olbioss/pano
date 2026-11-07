@@ -3,6 +3,7 @@ import type { SubscriptionResult } from "@/shared/posts";
 import type { Database, Transaction } from "../db/client";
 import { posts, subscriptions } from "../db/schema";
 import { AppError } from "../lib/errors";
+import { takeBackEmailsTo } from "./outbox";
 
 /**
  * Subscribes someone to a post unless they already are. Posting, voting and
@@ -22,7 +23,8 @@ export async function subscribe(
 
 /**
  * Sets whether someone follows a post. Like a vote, it sends the state
- * wanted, so repeating it changes nothing.
+ * wanted, so repeating it changes nothing. Unfollowing also takes back the
+ * person's queued emails about it.
  */
 export async function setSubscription(
   db: Database,
@@ -53,6 +55,7 @@ export async function setSubscription(
             eq(subscriptions.userId, input.userId)
           )
         );
+      await takeBackEmailsTo(tx, input);
     }
     return { subscribed: input.subscribed };
   });

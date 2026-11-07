@@ -1,4 +1,16 @@
-import { and, asc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  min,
+  or,
+  sql,
+} from "drizzle-orm";
 import { postRef } from "@/shared/ref";
 import type { Database, Transaction } from "../db/client";
 import {
@@ -61,12 +73,27 @@ export async function queueShippedEmails(
 export const OUTBOX_PENDING = "outbox:pending";
 
 /**
- * Raises that flag for half an hour: long enough for every try at a batch
- * (5 tries, 5 minutes apart). It lapses by itself, so it never needs
- * clearing, and two status changes at once can't lose each other's emails.
+ * Raises that flag for half an hour: long enough for a batch's first try,
+ * and for a full batch to hand the rest on. It lapses by itself, so it never
+ * needs clearing, and two status changes at once can't lose each other's
+ * emails.
  */
 export function markOutboxPending(flags: Flags) {
   return flags.put(OUTBOX_PENDING, "1", { expirationTtl: 30 * 60 });
+}
+
+/**
+ * When the earliest failed email is due for its next try, in epoch
+ * milliseconds. Only the cron writes it, so a status change's flag and this
+ * can't overwrite each other's times; until then the cron leaves Neon asleep.
+ */
+export const OUTBOX_RETRY = "outbox:retry";
+
+/** Notes when the next retry is due; the note lapses half an hour after. */
+export function markOutboxRetry(flags: Flags, at: Date) {
+  return flags.put(OUTBOX_RETRY, String(at.getTime()), {
+    expiration: Math.ceil((at.getTime() + 30 * 60_000) / 1000),
+  });
 }
 
 /** The flag that holds the five-minute cron back until the next UTC day. */
@@ -102,8 +129,34 @@ export async function takeBackShippedEmails(tx: Transaction, postId: number) {
     );
 }
 
+/**
+ * Someone stopped following a post: drop their emails about it that no run
+ * has picked up. One already being sent still goes out.
+ */
+export async function takeBackEmailsTo(
+  tx: Transaction,
+  input: { postId: number; userId: string }
+) {
+  await tx
+    .delete(emailOutbox)
+    .where(
+      and(
+        eq(emailOutbox.postId, input.postId),
+        eq(emailOutbox.userId, input.userId),
+        isNull(emailOutbox.sentAt),
+        isNull(emailOutbox.claimedAt)
+      )
+    );
+}
+
 /** After this many failed tries, an email stays unsent with its last error. */
 const MAX_ATTEMPTS = 5;
+
+/**
+ * How long a failed email waits before its next try, by how many tries it
+ * has had: it rides out a Brevo outage of about ten hours.
+ */
+export const RETRY_MINUTES = [5, 30, 120, 480] as const;
 
 /** The most emails one run sends. */
 export const OUTBOX_BATCH = 20;
@@ -114,10 +167,11 @@ export const OUTBOX_BATCH = 20;
  *
  * Each email is claimed before it's sent, skipping rows another run has
  * locked, so overlapping runs send different ones. A claim left by a run
- * that died lapses after ten minutes. A failed email is tried again on
- * later runs. `postIds` limits a run to those posts' emails; the cron sends
- * them all, and tests pass their own posts so test files running at once
- * leave each other's emails alone.
+ * that died lapses after ten minutes. A failed email waits longer after
+ * each try (RETRY_MINUTES), and the result's `nextRetryAt` says when the
+ * earliest waiting one is due. `postIds` limits a run to those posts'
+ * emails; the cron sends them all, and tests pass their own posts so test
+ * files running at once leave each other's emails alone.
  *
  * With `budget` (production), each email first takes one of the day's
  * emails. Once the day's share is spent, the run stops: the rest wait for
@@ -134,7 +188,12 @@ export async function sendQueuedEmails(
     budget?: boolean;
     now?: Date;
   }
-): Promise<{ sent: number; failed: number; budgetSpent?: true }> {
+): Promise<{
+  sent: number;
+  failed: number;
+  budgetSpent?: true;
+  nextRetryAt?: Date;
+}> {
   const due = db
     .select({ id: emailOutbox.id })
     .from(emailOutbox)
@@ -142,6 +201,7 @@ export async function sendQueuedEmails(
       and(
         isNull(emailOutbox.sentAt),
         lt(emailOutbox.attempts, MAX_ATTEMPTS),
+        lte(emailOutbox.nextAttemptAt, sql`now()`),
         or(
           isNull(emailOutbox.claimedAt),
           lt(emailOutbox.claimedAt, sql`now() - interval '10 minutes'`)
@@ -165,8 +225,11 @@ export async function sendQueuedEmails(
       id: emailOutbox.id,
       userId: emailOutbox.userId,
       payload: emailOutbox.payload,
+      attempts: emailOutbox.attempts,
     });
-  if (claimed.length === 0) return { sent: 0, failed: 0 };
+  if (claimed.length === 0) {
+    return withNextRetry(db, { sent: 0, failed: 0 }, options.postIds);
+  }
   const recipients = new Map(
     (
       await db
@@ -215,11 +278,41 @@ export async function sendQueuedEmails(
       sent += 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      const minutes = RETRY_MINUTES[email.attempts - 1] ?? 0;
       await db
         .update(emailOutbox)
-        .set({ claimedAt: null, lastError: message.slice(0, 500) })
+        .set({
+          claimedAt: null,
+          lastError: message.slice(0, 500),
+          nextAttemptAt: sql`now() + make_interval(mins => ${minutes})`,
+        })
         .where(eq(emailOutbox.id, email.id));
     }
   }
-  return { sent, failed: claimed.length - sent };
+  return withNextRetry(
+    db,
+    { sent, failed: claimed.length - sent },
+    options.postIds
+  );
+}
+
+/** Adds when the earliest email waiting for another try is due, if any. */
+async function withNextRetry<T extends { sent: number; failed: number }>(
+  db: Database,
+  result: T,
+  postIds?: number[]
+): Promise<T & { nextRetryAt?: Date }> {
+  const [row] = await db
+    .select({ at: min(emailOutbox.nextAttemptAt) })
+    .from(emailOutbox)
+    .where(
+      and(
+        isNull(emailOutbox.sentAt),
+        gt(emailOutbox.attempts, 0),
+        lt(emailOutbox.attempts, MAX_ATTEMPTS),
+        gt(emailOutbox.nextAttemptAt, sql`now()`),
+        postIds ? inArray(emailOutbox.postId, postIds) : undefined
+      )
+    );
+  return row?.at ? { ...result, nextRetryAt: row.at } : result;
 }

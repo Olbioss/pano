@@ -58,6 +58,7 @@ const rowsOf = (postId: number) =>
       attempts: emailOutbox.attempts,
       lastError: emailOutbox.lastError,
       claimedAt: emailOutbox.claimedAt,
+      nextAttemptAt: emailOutbox.nextAttemptAt,
     })
     .from(emailOutbox)
     .where(eq(emailOutbox.postId, postId))
@@ -92,15 +93,33 @@ describe("sendQueuedEmails", () => {
     expect(mail.shipped).toHaveLength(2);
   });
 
-  it("tries a failed email again on later runs, five times at most", async () => {
+  it("waits longer after each failed try, and tries five times at most", async () => {
     const { postId } = await queued(1);
     const options = { origin: ORIGIN, postIds: [postId] };
-    for (let run = 1; run <= 5; run++) {
-      expect(await sendQueuedEmails(db, failing, options)).toEqual({
+    for (const minutes of [5, 30, 120, 480]) {
+      expect(await sendQueuedEmails(db, failing, options)).toMatchObject({
         sent: 0,
         failed: 1,
       });
+      const [row] = await rowsOf(postId);
+      const wait = row!.nextAttemptAt.getTime() - Date.now();
+      expect(wait).toBeGreaterThan((minutes - 1) * 60_000);
+      expect(wait).toBeLessThanOrEqual(minutes * 60_000);
+      // Not due yet: a run leaves it be, and says when it will be.
+      expect(await sendQueuedEmails(db, failing, options)).toEqual({
+        sent: 0,
+        failed: 0,
+        nextRetryAt: row!.nextAttemptAt,
+      });
+      await db
+        .update(emailOutbox)
+        .set({ nextAttemptAt: sql`now()` })
+        .where(eq(emailOutbox.postId, postId));
     }
+    expect(await sendQueuedEmails(db, failing, options)).toEqual({
+      sent: 0,
+      failed: 1,
+    });
     expect(await rowsOf(postId)).toMatchObject([
       {
         sentAt: null,
