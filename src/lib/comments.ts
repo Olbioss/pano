@@ -1,12 +1,11 @@
 import { infiniteQueryOptions } from "@tanstack/react-query";
+import { COMMENT_PAGE_SIZE } from "@/shared/schemas";
 import { api, unwrap } from "./api";
 import { commentKeys } from "./keys";
 
-const PAGE_SIZE = 20;
-
 /** The API's paging query: the page before the comment `before`, if any. */
 const pageQuery = (before: number | null) => ({
-  limit: String(PAGE_SIZE),
+  limit: String(COMMENT_PAGE_SIZE),
   ...(before === null ? {} : { before: String(before) }),
 });
 

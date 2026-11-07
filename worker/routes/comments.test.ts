@@ -497,6 +497,64 @@ describe("GET /api/posts/:id/comments", () => {
     }
     await t.settle();
   });
+
+  it("takes at most 20 comments a page", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const top = await commentOn(t, owner.cookie, post.id, "Top");
+    const thread = (limit: string) =>
+      t.client.api.posts[":id"].comments.$get({
+        param: { id: String(post.id) },
+        query: { limit },
+      });
+    const replies = (limit: string) =>
+      t.client.api.comments[":id"].replies.$get({
+        param: { id: String(top.comment.id) },
+        query: { limit },
+      });
+    expect((await thread("20")).status).toBe(200);
+    expect((await thread("21")).status).toBe(400);
+    expect((await replies("20")).status).toBe(200);
+    expect((await replies("21")).status).toBe(400);
+    await t.settle();
+  });
+
+  it("stops at the deepest level, even when the rows go deeper", async () => {
+    const t = testApp();
+    const { owner, post } = await postByOwner(t);
+    const chain: number[] = [];
+    for (const body of ["Top", "Reply", "Deeper", "Deepest"]) {
+      const { comment } = await commentOn(
+        t,
+        owner.cookie,
+        post.id,
+        body,
+        chain.at(-1)
+      );
+      chain.push(comment.id);
+    }
+    // A reply under the deepest comment, which the API never writes.
+    const deepest = chain.at(-1)!;
+    await db
+      .insert(comments)
+      .values({ postId: post.id, parentId: deepest, depth: 3, body: "Below" });
+    await db
+      .update(comments)
+      .set({ replyCount: 1 })
+      .where(eq(comments.id, deepest));
+    const { items } = await readThread(t, post.id);
+    expect(items[0]!.replies[0]!.replies[0]!.replies[0]).toMatchObject({
+      body: "Deepest",
+      replyCount: 1,
+      replies: [],
+    });
+    const page = await readReplies(t, chain[1]!);
+    expect(page.items[0]!.replies[0]).toMatchObject({
+      body: "Deepest",
+      replies: [],
+    });
+    await t.settle();
+  });
 });
 
 describe("GET /api/comments/:id/replies", () => {

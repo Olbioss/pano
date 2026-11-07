@@ -132,6 +132,13 @@ export const createCommentSchema = z.object({
   parentId: idSchema.optional(),
 });
 
+/**
+ * Comments a page holds at most, and what the app asks for: a page brings
+ * every comment's latest replies at each level, and 50 full threads cost a
+ * Worker more CPU than it has.
+ */
+export const COMMENT_PAGE_SIZE = 20;
+
 /** Keyset paging: the page of comments before the id `before`. */
 export const commentPageQuerySchema = z.object({
   before: z.coerce
@@ -140,7 +147,12 @@ export const commentPageQuerySchema = z.object({
     .positive()
     .max(Number.MAX_SAFE_INTEGER)
     .optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(COMMENT_PAGE_SIZE)
+    .default(COMMENT_PAGE_SIZE),
 });
 
 export const pinSchema = z.object({ commentId: idSchema.nullable() });

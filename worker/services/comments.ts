@@ -3,6 +3,7 @@ import {
   type CommentChange,
   type CommentPage,
   type CommentView,
+  MAX_COMMENT_DEPTH,
   replyDepth,
   replyParentId,
 } from "@/shared/comments";
@@ -273,18 +274,25 @@ async function latestReplies(
  * The rows as views, each carrying its latest replies, and those replies
  * theirs, down to the deepest level: a reply someone just wrote under a
  * shown comment is its newest, so it stays shown when the thread is read
- * again. One query per level; depth-3 comments have no replies, so it ends.
+ * again. One query per level, for at most `levels` levels below the rows:
+ * the API never nests deeper, and rows that do can't make a page grow.
  */
 async function withReplies(
   db: Database,
   postId: number,
   rows: CommentRow[],
-  viewer: Viewer
+  viewer: Viewer,
+  levels: number
 ): Promise<CommentView[]> {
-  const parents = rows.filter((row) => row.replyCount > 0).map((row) => row.id);
+  const parents =
+    levels > 0
+      ? rows.filter((row) => row.replyCount > 0).map((row) => row.id)
+      : [];
   const replies = await latestReplies(db, postId, parents);
   const shown =
-    replies.length === 0 ? [] : await withReplies(db, postId, replies, viewer);
+    replies.length === 0
+      ? []
+      : await withReplies(db, postId, replies, viewer, levels - 1);
   return rows.map((row) =>
     toView(
       row,
@@ -307,7 +315,13 @@ export async function listComments(
   if (!viewer) throw new AppError(404, "NOT_FOUND", "Post not found");
   const page = await pageOf(db, { ...input, parentId: null });
   return {
-    items: await withReplies(db, input.postId, page.rows, viewer),
+    items: await withReplies(
+      db,
+      input.postId,
+      page.rows,
+      viewer,
+      MAX_COMMENT_DEPTH
+    ),
     hasMore: page.hasMore,
   };
 }
@@ -322,7 +336,7 @@ export async function listReplies(
   }
 ): Promise<CommentPage> {
   const [parent] = await db
-    .select({ postId: comments.postId })
+    .select({ postId: comments.postId, depth: comments.depth })
     .from(comments)
     .where(eq(comments.id, input.commentId))
     .limit(1);
@@ -340,7 +354,13 @@ export async function listReplies(
   });
   // The query brings the newest first; a page of replies reads oldest first.
   return {
-    items: await withReplies(db, parent.postId, page.rows.reverse(), viewer),
+    items: await withReplies(
+      db,
+      parent.postId,
+      page.rows.reverse(),
+      viewer,
+      MAX_COMMENT_DEPTH - parent.depth - 1
+    ),
     hasMore: page.hasMore,
   };
 }
