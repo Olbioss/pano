@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { testClient } from "hono/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "../app";
@@ -7,12 +8,23 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** When the repo's newest migration was made, as drizzle-kit records it. */
+function newestMigration(): number {
+  const journal = JSON.parse(
+    readFileSync("drizzle/meta/_journal.json", "utf8")
+  ) as { entries: { when: number }[] };
+  return journal.entries.at(-1)!.when;
+}
+
 describe("GET /api/health", () => {
-  it("reports the database as up", async () => {
+  it("reports the database as up, with the newest migration it has", async () => {
     const { env, ctx, settle } = testEnv();
     const res = await testClient(app, env, ctx).api.health.$get();
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ success: true, data: { db: "up" } });
+    expect(await res.json()).toEqual({
+      success: true,
+      data: { db: "up", migration: newestMigration() },
+    });
     await settle();
   });
 

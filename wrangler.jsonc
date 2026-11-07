@@ -15,6 +15,10 @@
   "observability": {
     "enabled": true
   },
+  // Only the deployed version answers, at workers.dev: a preview URL per
+  // upload would keep old code running against production's KV and Neon.
+  "preview_urls": false,
+  "workers_dev": true,
   // Production's settings. Local dev and the tests take theirs from
   // .dev.vars, which wins over these.
   "vars": {

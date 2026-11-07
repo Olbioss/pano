@@ -157,11 +157,20 @@ on free plans. One-time setup:
 6. `DATABASE_URL="$NEON_URL" PANO_OWNER_EMAIL=you@example.com bun run seed`
    builds the demo and makes `/pano`, owned by whoever signs in with that
    address.
+7. For deploys from GitHub: a Cloudflare API token from the "Edit Cloudflare
+   Workers" template, limited to your account, and a GitHub environment
+   named `production`, limited to `main`, holding `CLOUDFLARE_API_TOKEN`
+   and `CLOUDFLARE_ACCOUNT_ID`.
 
-Then `bun run deploy`, and check the live site with
+Then `bun run deploy` once, and check the live site with
 `E2E_BASE_URL=… bun run e2e`. `vars` in `wrangler.jsonc` hold production's
 `ENVIRONMENT` and `BETTER_AUTH_URL`; `.dev.vars` overrides both locally.
 
-A release that adds migrations: `bun run db:migrate:prod` first, then
-`bun run deploy`. Pano's migrations only add, so the running Worker keeps
-working against the new schema until the deploy lands.
+After that, a push to `main` deploys itself: CI's `deploy` job runs once
+`verify` and `e2e` pass. `bun run deploy` stays for deploying by hand.
+
+A release that adds migrations: `bun run db:migrate:prod` first, then push.
+Pano's migrations only add, so the running Worker keeps working against the
+new schema until the deploy lands. The deploy job checks first
+(`scripts/check-migrations.ts`): if production lacks a migration the commit
+has, it stops and names it. Migrate, then re-run the job.

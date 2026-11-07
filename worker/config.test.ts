@@ -6,6 +6,8 @@ type WranglerConfig = {
   triggers: { crons: string[] };
   kv_namespaces: { binding: string }[];
   vars?: Record<string, string>;
+  preview_urls?: boolean;
+  workers_dev?: boolean;
 };
 
 /**
@@ -38,5 +40,13 @@ describe("wrangler.jsonc", () => {
     // sign-in codes to the log instead of failing.
     expect(vars?.ENVIRONMENT).toBe("production");
     expect(vars?.BETTER_AUTH_URL).toBe("https://pano.olbios88.workers.dev");
+  });
+
+  it("serves only the deployed version, at workers.dev", () => {
+    // Every uploaded version would otherwise get its own URL, running its
+    // code against production's KV and database long after a fix shipped.
+    const config = wranglerConfig();
+    expect(config.preview_urls).toBe(false);
+    expect(config.workers_dev).toBe(true);
   });
 });
