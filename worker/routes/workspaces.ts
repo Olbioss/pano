@@ -27,6 +27,7 @@ import { validate } from "../lib/validate";
 import { confineDemo, readOnlyInDemo } from "../middleware/demo";
 import { requireUser } from "../middleware/session";
 import { requireAdmin, requireTeam } from "../middleware/team";
+import { dropChangelog } from "../services/changelog";
 
 export type WorkspaceSummary = {
   id: string;
@@ -220,6 +221,8 @@ export const workspaceRoutes = new Hono<AppEnv>()
             set: { defaultLocale },
           });
       }
+      // The feed's title and language come from these.
+      c.executionCtx.waitUntil(dropChangelog(c.env.FLAGS, slug));
       return c.json<SuccessResponse<WorkspaceSummary>>({
         success: true,
         data: await findWorkspace(c.var.db, slug),
@@ -305,6 +308,10 @@ export const workspaceRoutes = new Hono<AppEnv>()
         )
         .returning({ id: boards.id });
       if (!deleted) throw boardNotFound();
+      // Its requests went with it, shipped ones included.
+      c.executionCtx.waitUntil(
+        dropChangelog(c.env.FLAGS, c.var.workspace.slug)
+      );
       return c.json<SuccessResponse<{ id: string }>>({
         success: true,
         data: deleted,

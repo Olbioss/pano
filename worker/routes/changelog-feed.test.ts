@@ -61,6 +61,24 @@ describe("GET /api/workspaces/:slug/changelog.atom", () => {
     await t.settle();
   });
 
+  it("leaves out characters XML forbids, so one odd title can't break it", async () => {
+    const t = testApp();
+    const { owner, slug, boards } = await setupWorkspace(t);
+    const post = await submitPost(t, owner.cookie, slug, {
+      boardId: boards[0]!.id,
+      title: "Bell\u0007 and tab\u000b mode",
+    });
+    await moveTo(t, owner.cookie, post.id, "shipped", "Rings\u0001 now");
+    const feed = await (await readFeed(t, slug)).text();
+    expect(feed).not.toMatch(
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: what XML forbids
+      /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/
+    );
+    expect(feed).toContain("<title>Bell and tab mode</title>");
+    expect(feed).toContain("<summary>Rings now</summary>");
+    await t.settle();
+  });
+
   it("is titled in the workspace's language", async () => {
     const t = testApp();
     const { slug } = await setupWorkspace(t, { defaultLocale: "tr" });
@@ -112,6 +130,33 @@ describe("the cached feed", () => {
     await t.settle();
     return (await t.env.FLAGS.get(changelogKey(slug))) === null;
   }
+
+  it("is dropped when the workspace's name or language changes, or a board goes", async () => {
+    const t = testApp();
+    const { owner, slug, boards } = await setupWorkspace(t);
+    const headers = { headers: { cookie: owner.cookie } };
+    for (const json of [
+      { name: "Acme Inc" },
+      { defaultLocale: "tr" as const },
+    ]) {
+      expect(
+        await drops(t, slug, () =>
+          t.client.api.workspaces[":slug"].$patch(
+            { param: { slug }, json },
+            headers
+          )
+        )
+      ).toBe(true);
+    }
+    expect(
+      await drops(t, slug, () =>
+        t.client.api.workspaces[":slug"].boards[":boardId"].$delete(
+          { param: { slug, boardId: boards[0]!.id } },
+          headers
+        )
+      )
+    ).toBe(true);
+  });
 
   it("is dropped when the changelog changes, and only then", async () => {
     const t = testApp();

@@ -115,7 +115,7 @@ export const workspaceInvitationRoutes = new Hono<AppEnv>()
     readOnlyInDemo,
     requireAdmin,
     validate("json", inviteSchema),
-    rateLimit("invite", INVITES_PER_HOUR, 3600),
+    rateLimit("invite", INVITES_PER_HOUR, 3600, "INVITE_LIMIT"),
     async (c) => {
       const { email, role } = c.req.valid("json");
       const workspace = c.var.workspace;
@@ -148,7 +148,7 @@ export const workspaceInvitationRoutes = new Hono<AppEnv>()
     requireTeam,
     readOnlyInDemo,
     requireAdmin,
-    rateLimit("invite", INVITES_PER_HOUR, 3600),
+    rateLimit("invite", INVITES_PER_HOUR, 3600, "INVITE_LIMIT"),
     async (c) => {
       const workspace = c.var.workspace;
       const pending = await findPending(

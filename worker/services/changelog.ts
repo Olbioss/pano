@@ -94,8 +94,14 @@ export async function changelogOf(
   return row?.slug ?? null;
 }
 
+// Characters XML 1.0 allows nowhere, not even escaped: one in a title would
+// make readers reject the whole feed.
+// biome-ignore lint/suspicious/noControlCharactersInRegex: these are the ones to drop
+const XML_FORBIDDEN = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g;
+
 function escapeXml(value: string) {
   return value
+    .replace(XML_FORBIDDEN, "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")

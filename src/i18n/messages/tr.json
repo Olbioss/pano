@@ -230,6 +230,7 @@
     "NOT_FOUND": "Aradığınız şey bulunamadı.",
     "CONFLICT": "Bu zaten kullanılıyor.",
     "RATE_LIMITED": "Çok fazla istek gönderildi. Bir dakika bekleyip tekrar deneyin.",
+    "INVITE_LIMIT": "Saatte en fazla on davet gönderebilirsiniz. Daha sonra tekrar deneyin.",
     "INTERNAL_ERROR": "Bizim tarafımızda bir sorun oluştu. Tekrar deneyin.",
     "WORKSPACE_LIMIT": "Şimdilik her hesap bir çalışma alanı açabilir.",
     "POST_MERGED": "Bu istek başka bir istekle birleştirildi.",

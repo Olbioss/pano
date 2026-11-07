@@ -253,7 +253,7 @@ describe("POST /api/workspaces/:slug/invitations", () => {
     }
     const res = await invite(t, slug, address(), owner.cookie);
     expect(res.status).toBe(429);
-    expect(await res.json()).toMatchObject({ code: "RATE_LIMITED" });
+    expect(await res.json()).toMatchObject({ code: "INVITE_LIMIT" });
     await t.settle();
   });
 });

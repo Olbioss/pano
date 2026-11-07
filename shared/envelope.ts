@@ -10,6 +10,7 @@ export type ApiErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "RATE_LIMITED"
+  | "INVITE_LIMIT"
   | "INTERNAL_ERROR"
   | "WORKSPACE_LIMIT"
   | "POST_MERGED"

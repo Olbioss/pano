@@ -230,6 +230,7 @@
     "NOT_FOUND": "We couldn't find that.",
     "CONFLICT": "That's already taken.",
     "RATE_LIMITED": "Too many requests. Wait a minute and try again.",
+    "INVITE_LIMIT": "You can send ten invitations an hour. Try again later.",
     "INTERNAL_ERROR": "Something went wrong on our side. Try again.",
     "WORKSPACE_LIMIT": "Each account can have one workspace for now.",
     "POST_MERGED": "This request was merged into another one.",
