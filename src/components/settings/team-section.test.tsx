@@ -17,6 +17,7 @@ import {
 import { IntlProvider } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "@/i18n/messages/en.json";
+import { meQueryOptions } from "@/lib/session";
 import type { PendingInvitation, TeamView } from "@/shared/team";
 import { TeamSection } from "./team-section";
 
@@ -161,6 +162,7 @@ async function renderTeam(viewer: { id: string; role: string }) {
     </IntlProvider>
   );
   await screen.findByRole("heading", { name: "Members" });
+  return qc;
 }
 
 const memberRow = (name: string) =>
@@ -171,6 +173,36 @@ const memberRow = (name: string) =>
   );
 
 describe("TeamSection", () => {
+  it("shows when each person joined", async () => {
+    fakeServer();
+    await renderTeam({ id: "u-owner", role: "owner" });
+    expect(memberRow("Defne").getByText("joined October 2, 2026")).toBeTruthy();
+  });
+
+  it("refreshes who you are when you change your own role, and only then", async () => {
+    fakeServer();
+    const qc = await renderTeam({ id: "u-defne", role: "admin" });
+    const me = { user: { id: "u-defne" }, workspaces: [] };
+    qc.setQueryData(meQueryOptions.queryKey, me as never);
+    const meInvalidated = () =>
+      qc.getQueryState(meQueryOptions.queryKey)?.isInvalidated;
+
+    fireEvent.change(screen.getByLabelText("Role for Jonas"), {
+      target: { value: "admin" },
+    });
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText("Role for Jonas") as HTMLSelectElement).value
+      ).toBe("admin")
+    );
+    expect(meInvalidated()).toBe(false);
+
+    fireEvent.change(screen.getByLabelText("Role for Defne"), {
+      target: { value: "member" },
+    });
+    await waitFor(() => expect(meInvalidated()).toBe(true));
+  });
+
   it("gives owners the invite form and every control but the owner's", async () => {
     fakeServer();
     await renderTeam({ id: "u-owner", role: "owner" });

@@ -1,10 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, unwrap } from "./api";
 
-/** What /invite/<id> shows; it depends on who's signed in. */
-export const invitationQueryOptions = (id: string) =>
+/**
+ * What /invite/<id> shows. It depends on who's signed in, so their id is in
+ * the key: signing in or out never shows one person another's answer.
+ */
+export const invitationQueryOptions = (id: string, viewerId: string | null) =>
   queryOptions({
-    queryKey: ["invitation", id],
+    queryKey: ["invitation", id, viewerId],
     queryFn: async () =>
       unwrap(await api.invitations[":id"].$get({ param: { id } })),
   });

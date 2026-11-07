@@ -297,6 +297,7 @@
     "confirmLeave": "Confirm leave",
     "expires": "expires {date}",
     "expired": "expired",
+    "joined": "joined {date}",
     "resend": "Resend",
     "resendLabel": "Send the invitation to {email} again",
     "cancel": "Cancel",

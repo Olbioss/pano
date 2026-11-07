@@ -239,6 +239,7 @@ function MemberRow({
 }) {
   const t = useTranslations("team");
   const tRoles = useTranslations("team.roles");
+  const format = useFormatter();
   const errorText = useErrorText();
   const refresh = useRefreshTeam(slug);
   const queryClient = useQueryClient();
@@ -248,7 +249,15 @@ function MemberRow({
   const label = isYou ? t("you", { name }) : name;
   const setRole = useMutation({
     mutationFn: (role: AssignableRole) => changeRole(slug, member.userId, role),
-    onSuccess: refresh,
+    onSuccess: async () => {
+      // Your own role sets which controls Settings shows you.
+      if (isYou) {
+        await queryClient.invalidateQueries({
+          queryKey: meQueryOptions.queryKey,
+        });
+      }
+      await refresh();
+    },
     onError: (error) => report(errorText(error)),
   });
   const remove = useMutation({
@@ -280,6 +289,15 @@ function MemberRow({
             {member.email}
           </span>
         )}
+        <span className="text-muted-foreground text-xs">
+          {t("joined", {
+            date: format.dateTime(new Date(member.joinedAt), {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }),
+          })}
+        </span>
       </div>
       {manages && member.role !== "owner" ? (
         <RoleSelect

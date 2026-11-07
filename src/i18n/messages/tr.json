@@ -297,6 +297,7 @@
     "confirmLeave": "Ayrılmayı onayla",
     "expires": "{date} tarihine kadar",
     "expired": "süresi doldu",
+    "joined": "{date} tarihinde katıldı",
     "resend": "Yeniden gönder",
     "resendLabel": "{email} davetini yeniden gönder",
     "cancel": "İptal et",

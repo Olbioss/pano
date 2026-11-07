@@ -12,6 +12,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { IntlProvider } from "use-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "@/i18n/messages/en.json";
+import { meQueryOptions } from "@/lib/session";
 import type { InvitationView } from "@/shared/invitations";
 import { InvitationPanel } from "./invitation-panel";
 
@@ -105,22 +106,20 @@ function renderPanel() {
     routeTree,
     history: createMemoryHistory({ initialEntries: ["/"] }),
   });
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
   render(
     <IntlProvider locale="en" messages={en} timeZone="UTC">
-      <QueryClientProvider
-        client={
-          new QueryClient({
-            defaultOptions: {
-              queries: { retry: false },
-              mutations: { retry: false },
-            },
-          })
-        }
-      >
+      <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
       </QueryClientProvider>
     </IntlProvider>
   );
+  return queryClient;
 }
 
 describe("InvitationPanel", () => {
@@ -170,6 +169,65 @@ describe("InvitationPanel", () => {
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Join Acme" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(
+      await screen.findByRole("link", { name: "Sign in to join" })
+    ).toBeTruthy();
+  });
+
+  it("never shows someone who just signed in the answer they got signed out", async () => {
+    session.signedIn = false;
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = new URL(String(input), "http://localhost");
+        const ok = (data: unknown) => Response.json({ success: true, data });
+        if (url.pathname === "/api/me") {
+          return ok({
+            user: session.signedIn
+              ? { id: "u-sam", name: "", email: "sam@studio.dev" }
+              : null,
+            workspaces: [],
+          });
+        }
+        // Signed out it can't be for you; signed in as Sam it is, slowly.
+        if (session.signedIn) await held;
+        return ok(view({ forYou: session.signedIn }));
+      })
+    );
+    const queryClient = renderPanel();
+    expect(
+      await screen.findByRole("link", { name: "Sign in to join" })
+    ).toBeTruthy();
+
+    session.signedIn = true;
+    await queryClient.invalidateQueries({ queryKey: meQueryOptions.queryKey });
+    expect(await screen.findByText("Loading the invitation…")).toBeTruthy();
+    expect(screen.queryByText(/This invitation went to/)).toBeNull();
+    release();
+    expect(
+      await screen.findByRole("button", { name: "Join Acme" })
+    ).toBeTruthy();
+  });
+
+  it("still shows the invitation when Pano can't tell who's signed in", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = new URL(String(input), "http://localhost");
+        if (url.pathname === "/api/me") {
+          return Response.json(
+            { success: false, code: "INTERNAL_ERROR", error: "down" },
+            { status: 500 }
+          );
+        }
+        return Response.json({ success: true, data: view({ forYou: false }) });
+      })
+    );
+    renderPanel();
     expect(
       await screen.findByRole("link", { name: "Sign in to join" })
     ).toBeTruthy();

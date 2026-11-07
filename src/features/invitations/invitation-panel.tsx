@@ -17,8 +17,12 @@ import type { InvitationView } from "@/shared/invitations";
 export function InvitationPanel({ id }: { id: string }) {
   const t = useTranslations("invitation");
   const tErrors = useTranslations("errors");
-  const invitation = useQuery(invitationQueryOptions(id));
   const me = useQuery(meQueryOptions);
+  // Asked once Pano knows who's signed in: the answer depends on it.
+  const invitation = useQuery({
+    ...invitationQueryOptions(id, me.data?.user?.id ?? null),
+    enabled: !me.isPending,
+  });
   if (invitation.isPending || me.isPending) {
     return (
       <>
