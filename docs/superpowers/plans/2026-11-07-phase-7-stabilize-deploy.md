@@ -705,7 +705,6 @@ In the same file, replace:
   );
   await next();
 });
-
 ```
 
 with:
@@ -721,7 +720,6 @@ with:
   });
   await next();
 });
-
 ```
 
 - [ ] **Step 4: Read the session cookies before asking Better Auth**
@@ -1487,7 +1485,6 @@ In `worker/db/migrations.test.ts`, replace:
     expect(pgConstraint(second)).toBe(ONE_OWNED_WORKSPACE);
   });
 });
-
 ```
 
 with:
@@ -1523,7 +1520,6 @@ with:
     expect([...rows]).toEqual([{ column_default: "now()", is_nullable: "NO" }]);
   });
 });
-
 ```
 
 - [ ] **Step 2: Run them to watch them fail**
@@ -2061,7 +2057,6 @@ In `worker/middleware/demo.test.ts`, replace:
     await t.settle();
   });
 });
-
 ```
 
 with:
@@ -2169,7 +2164,6 @@ describe("guests together", () => {
     }
   });
 });
-
 ```
 
 - [ ] **Step 2: Run them to watch two fail**
@@ -3005,7 +2999,6 @@ In the same file, replace:
 ```tsx
   });
 });
-
 ```
 
 with:
@@ -3055,7 +3048,6 @@ describe("a demo guest outside the demo", () => {
     expect(screen.queryByText(note)).toBeNull();
   });
 });
-
 ```
 
 - [ ] **Step 6: Run them to watch four fail**
@@ -4554,7 +4546,6 @@ In the same file, replace:
   }
   return { sent, failed: claimed.length - sent };
 }
-
 ```
 
 with:
@@ -4601,7 +4592,6 @@ async function withNextRetry<T extends { sent: number; failed: number }>(
     );
   return row?.at ? { ...result, nextRetryAt: row.at } : result;
 }
-
 ```
 
 - [ ] **Step 4: Let the cron sleep until then**
@@ -4765,7 +4755,6 @@ In the same file, replace:
     await markOutboxPending(env.FLAGS);
   }
 }
-
 ```
 
 with:
@@ -4783,7 +4772,6 @@ with:
   if (result.nextRetryAt) await markOutboxRetry(env.FLAGS, result.nextRetryAt);
   else if (retryNoted) await env.FLAGS.delete(OUTBOX_RETRY);
 }
-
 ```
 
 - [ ] **Step 5: Take back queued email when someone unfollows**
@@ -5872,7 +5860,6 @@ In the same file, replace:
     expect(vars?.BETTER_AUTH_URL).toBe("https://pano.olbios88.workers.dev");
   });
 });
-
 ```
 
 with:
@@ -5890,7 +5877,6 @@ with:
     expect(config.workers_dev).toBe(true);
   });
 });
-
 ```
 
 In `worker/routes/health.test.ts`, replace:
@@ -6272,7 +6258,6 @@ In the same file, replace:
 ```yaml
           path: playwright-report/
           retention-days: 7
-
 ```
 
 with:
@@ -6321,7 +6306,6 @@ with:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
 ```
 
 Check its shape:
@@ -6352,7 +6336,6 @@ Then `bun run deploy`, and check the live site with
 A release that adds migrations: `bun run db:migrate:prod` first, then
 `bun run deploy`. Pano's migrations only add, so the running Worker keeps
 working against the new schema until the deploy lands.
-
 ```
 
 with:
@@ -6378,7 +6361,6 @@ Pano's migrations only add, so the running Worker keeps working against the
 new schema until the deploy lands. The deploy job checks first
 (`scripts/check-migrations.ts`): if production lacks a migration the commit
 has, it stops and names it. Migrate, then re-run the job.
-
 ```
 
 - [ ] **Step 10: Build, and dry-run a deploy**
