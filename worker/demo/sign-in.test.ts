@@ -48,6 +48,15 @@ describe("demo sign-in", () => {
     await t.settle();
   });
 
+  it("names the guest in the demo's own language, not the browser's", async () => {
+    const t = testApp();
+    const guest = await t.signInDemo("member", {
+      "accept-language": "tr-TR,tr;q=0.9",
+    });
+    expect(guest.name).toMatch(/^Guest \d{4}$/);
+    await t.settle();
+  });
+
   it("refuses an unknown role", async () => {
     const t = testApp();
     const res = await t.post("/api/auth/demo/sign-in", { as: "owner" });

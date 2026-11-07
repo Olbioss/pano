@@ -8,9 +8,9 @@ import {
   DEMO_ROLES,
   DEMO_WORKSPACE_SLUG,
 } from "@/shared/demo";
+import { localeFromCookie } from "@/shared/locale";
 import type { Database } from "../db/client";
 import { member, organization, workspaceSettings } from "../db/schema";
-import { localeFromHeaders } from "../lib/request-locale";
 
 const GUEST = { en: "Guest", tr: "Misafir" } as const;
 
@@ -20,7 +20,9 @@ const GUEST = { en: "Guest", tr: "Misafir" } as const;
  * Every visit gets its own guest account, so each visitor's votes are their
  * own and their limits aren't shared with everyone else trying the demo.
  * A team guest joins the demo workspace's team. Guests have demo addresses,
- * which receive no email, and the nightly reset deletes them all.
+ * which receive no email, and the nightly reset deletes them all. A guest is
+ * named in the language the visitor chose, else the demo's own, as the rest
+ * of the demo speaks.
  *
  * Better Auth sets the session cookie, the same way its own sign-ins do, and
  * its per-address rate limit applies (see worker/auth.ts).
@@ -34,7 +36,10 @@ export function demoSignIn({ db }: { db: Database }) {
         { method: "POST", body: z.object({ as: z.enum(DEMO_ROLES) }) },
         async (ctx) => {
           const [demo] = await db
-            .select({ id: organization.id })
+            .select({
+              id: organization.id,
+              locale: workspaceSettings.defaultLocale,
+            })
             .from(organization)
             .innerJoin(
               workspaceSettings,
@@ -52,7 +57,9 @@ export function demoSignIn({ db }: { db: Database }) {
               message: "The demo workspace isn't set up",
             });
           }
-          const locale = localeFromHeaders(new Headers(ctx.headers));
+          const locale =
+            localeFromCookie(new Headers(ctx.headers).get("cookie")) ??
+            demo.locale;
           const number = 1000 + Math.floor(Math.random() * 9000);
           const user = await ctx.context.internalAdapter.createUser(
             {
