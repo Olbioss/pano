@@ -1,8 +1,8 @@
-import { and, eq, like, lt, sql } from "drizzle-orm";
+import { and, eq, gte, like, lt, sql } from "drizzle-orm";
 import { DEMO_EMAIL_DOMAIN, DEMO_WORKSPACE_SLUG } from "@/shared/demo";
 import type { PostStatus } from "@/shared/status";
 import type { Database } from "../db/client";
-import { organization, user as users } from "../db/schema";
+import { member, organization, user as users } from "../db/schema";
 import {
   DEMO_BOARDS,
   DEMO_PEOPLE,
@@ -37,8 +37,11 @@ export type DemoResetSummary = {
  * repair the workspace, it replaces it. Every write is scoped to the demo's
  * fixed workspace id and to demo addresses; nothing else is touched.
  *
+ * Requests keep fixed ids, so links to them outlive the reset, and team
+ * guests who stay the night are put back on the rebuilt team.
+ *
  * The nightly cron runs it, and the Workers free plan allows a cron 10 ms of
- * CPU. So it costs four statements: the rows are built here, sent as one
+ * CPU. So it costs five statements: the rows are built here, sent as one
  * JSON parameter, and unpacked by Postgres (`jsonb_to_recordset`).
  */
 export async function resetDemo(
@@ -46,6 +49,19 @@ export async function resetDemo(
   now = new Date()
 ): Promise<DemoResetSummary> {
   return db.transaction(async (tx) => {
+    const lastNight = new Date(now.getTime() - DAY);
+    // Guests on the team who stay the night (see below) rejoin it.
+    const teamGuests = await tx
+      .select({ userId: member.userId, role: member.role })
+      .from(member)
+      .innerJoin(users, eq(users.id, member.userId))
+      .where(
+        and(
+          eq(member.organizationId, DEMO_WORKSPACE_ID),
+          like(users.email, `%@${DEMO_EMAIL_DOMAIN}`),
+          gte(users.createdAt, lastNight)
+        )
+      );
     // Demo accounts more than a day old, with their sessions and votes: the
     // seeded people, and guests from before the last reset. A guest from
     // since keeps their account one more night, so a visitor mid-demo at
@@ -55,21 +71,19 @@ export async function resetDemo(
       .where(
         and(
           like(users.email, `%@${DEMO_EMAIL_DOMAIN}`),
-          lt(users.createdAt, new Date(now.getTime() - DAY))
+          lt(users.createdAt, lastNight)
         )
       );
     // The workspace, with its boards, requests and everything on them.
     await tx.delete(organization).where(eq(organization.id, DEMO_WORKSPACE_ID));
-    // Ids from the tables' own sequences, so votes and comments can point at
-    // their posts and parents before any of them exist.
-    const [ids] = await tx.execute<{ posts: number[]; comments: number[] }>(sql`
-      select
-        (select json_agg(nextval(pg_get_serial_sequence('posts', 'id'))) from generate_series(1, ${DEMO_POSTS.length})) as posts,
-        (select json_agg(nextval(pg_get_serial_sequence('comments', 'id'))) from generate_series(1, ${countComments(DEMO_POSTS)})) as comments`);
+    // Comment ids from the table's own sequence, so replies can point at
+    // their parents before any of them exist.
+    const [ids] = await tx.execute<{ comments: number[] }>(sql`
+      select (select json_agg(nextval(pg_get_serial_sequence('comments', 'id'))) from generate_series(1, ${countComments(DEMO_POSTS)})) as comments`);
     const rows = demoRows({
       now: now.getTime(),
-      postIds: ids!.posts,
       commentIds: ids!.comments,
+      teamGuests,
     });
     // One statement: foreign keys are checked when it ends, so the order of
     // its parts, and of rows within them, doesn't matter.
@@ -161,8 +175,8 @@ type Row = Record<string, string | number | boolean | null>;
  */
 function demoRows(input: {
   now: number;
-  postIds: number[];
   commentIds: number[];
+  teamGuests: { userId: string; role: string }[];
 }) {
   const { now } = input;
   const iso = (ms: number) => new Date(ms).toISOString();
@@ -178,11 +192,18 @@ function demoRows(input: {
       email: `${person.key}@${DEMO_EMAIL_DOMAIN}`,
       created_at: founded,
     })),
-    team: DEMO_TEAM.map((person, index) => ({
-      id: `mem_demo_${person.key}`,
-      user_id: personId(person.key),
-      role: index === 0 ? "owner" : "admin",
-    })),
+    team: [
+      ...DEMO_TEAM.map((person, index) => ({
+        id: `mem_demo_${person.key}`,
+        user_id: personId(person.key),
+        role: index === 0 ? "owner" : "admin",
+      })),
+      ...input.teamGuests.map((guest) => ({
+        id: crypto.randomUUID(),
+        user_id: guest.userId,
+        role: guest.role,
+      })),
+    ],
     boards: DEMO_BOARDS.map((board, position) => ({
       id: boardIds.get(board.slug)!,
       slug: board.slug,
@@ -197,8 +218,8 @@ function demoRows(input: {
   };
   const commentIds = [...input.commentIds];
 
-  DEMO_POSTS.forEach((post, index) => {
-    const postId = input.postIds[index]!;
+  DEMO_POSTS.forEach((post) => {
+    const postId = post.id;
     const created = now - post.daysAgo * DAY;
     // People follow a post from the first time they post, vote or comment.
     const followed = new Map<string, number>();

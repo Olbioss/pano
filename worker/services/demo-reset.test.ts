@@ -132,12 +132,67 @@ describe("resetDemo", () => {
       .from(users)
       .where(inArray(users.id, [old, recent]));
     expect(left).toEqual([{ id: recent }]);
-    // Still signed in, but off the rebuilt workspace's team.
+    // Still signed in, and back on the rebuilt workspace's team.
+    const teams = await db
+      .select({ organizationId: member.organizationId, role: member.role })
+      .from(member)
+      .where(eq(member.userId, recent));
+    expect(teams).toEqual([
+      { organizationId: DEMO_WORKSPACE_ID, role: "member" },
+    ]);
+  });
+
+  it("leaves a guest who wasn't on the team off it", async () => {
+    await resetDemo(db);
+    const id = crypto.randomUUID();
+    await db.insert(users).values({
+      id,
+      name: "Guest 5678",
+      email: `guest-${id}@demo.pano.invalid`,
+      emailVerified: true,
+    });
+
+    await resetDemo(db);
+
     const teams = await db
       .select({ id: member.id })
       .from(member)
-      .where(eq(member.userId, recent));
+      .where(eq(member.userId, id));
     expect(teams).toEqual([]);
+  });
+
+  it("numbers the demo's requests from 900001, each number once", () => {
+    const ids = DEMO_POSTS.map((post) => post.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(Math.min(...ids)).toBe(900_001);
+    expect(Math.max(...ids)).toBe(900_000 + ids.length);
+  });
+
+  it("gives the demo's requests the same ids after every reset, so links keep working", async () => {
+    const demoPosts = () =>
+      db
+        .select({ id: posts.id, title: posts.title })
+        .from(posts)
+        .where(eq(posts.organizationId, DEMO_WORKSPACE_ID))
+        .orderBy(posts.id);
+    await resetDemo(db);
+    const before = await demoPosts();
+    expect(before.map((post) => post.id)).toEqual(
+      DEMO_POSTS.map((post) => post.id)
+    );
+
+    await resetDemo(db);
+
+    expect(await demoPosts()).toEqual(before);
+    const t = testApp();
+    const res = await t.client.api.posts[":id"].$get({
+      param: { id: String(before[0]!.id) },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      data: { title: before[0]!.title },
+    });
+    await t.settle();
   });
 
   it("leaves other workspaces and their people alone", async () => {

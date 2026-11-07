@@ -80,6 +80,12 @@ export type DemoStatusChange = {
 };
 
 export type DemoPost = {
+  /**
+   * Fixed, from the block kept for the demo (900001 up), so a link to a
+   * demo request still opens after the nightly reset. A new request takes
+   * the next unused number; reordering the list moves no links.
+   */
+  id: number;
   board: DemoBoard;
   title: string;
   body: string;
@@ -96,6 +102,7 @@ export type DemoPost = {
 
 export const DEMO_POSTS: DemoPost[] = [
   {
+    id: 900001,
     board: "features",
     title: "Dark mode",
     body: "Writing at night with a bright white screen is rough. A dark theme, ideally one that follows the system setting, would make Inkwell so much nicer after sunset.",
@@ -163,6 +170,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900002,
     board: "features",
     title: "Export notebooks to PDF",
     body: "I need to send notes to people who don't use Inkwell. Exporting a note, or a whole notebook, as a clean PDF would cover it.",
@@ -205,6 +213,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900003,
     board: "features",
     title: "Tables in the editor",
     body: "Simple tables for comparing things side by side. Markdown tables are fine, as long as I don't have to line up the pipes by hand.",
@@ -229,6 +238,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900004,
     board: "features",
     title: "Offline mode on mobile",
     body: "On the metro I lose connection all the time. Let me keep writing offline and sync when I'm back.",
@@ -260,6 +270,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900005,
     board: "features",
     title: "Keyboard shortcut cheat sheet",
     body: "There are lots of shortcuts, but I can never remember them. A cheat sheet I can open from anywhere would help.",
@@ -285,6 +296,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900006,
     board: "features",
     title: "Daily notes template",
     body: "A button that creates today's note from a template: date as the title, a checklist, and a place for meeting notes.",
@@ -304,6 +316,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900007,
     board: "features",
     title: "Tags with colors",
     body: "Let me give each tag a color so I can scan the sidebar at a glance.",
@@ -325,6 +338,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900008,
     board: "features",
     title: "Version history for notes",
     body: "I overwrote a paragraph last week and had no way to get it back. Keeping older versions of a note would be a lifesaver.",
@@ -334,6 +348,7 @@ export const DEMO_POSTS: DemoPost[] = [
     recentVotes: 2,
   },
   {
+    id: 900009,
     board: "features",
     title: "Focus mode that hides everything but the text",
     body: "Hide the sidebar, the toolbar and everything else. Just me and the words.",
@@ -351,6 +366,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900010,
     board: "features",
     title: "Handwriting on iPad with Apple Pencil",
     body: "I take notes by hand in meetings. Drawing and handwriting right inside a note would let me drop my paper notebook.",
@@ -374,6 +390,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900011,
     board: "features",
     title: "Share a notebook with a read-only link",
     body: "I'd like to share a notebook with my team as a read-only page, without them needing an account.",
@@ -384,6 +401,7 @@ export const DEMO_POSTS: DemoPost[] = [
     timeline: [{ to: "under_review", daysAgo: 6, by: "jonas" }],
   },
   {
+    id: 900012,
     board: "features",
     title: "Pin notes to the top of a notebook",
     body: "Some notes I open every day. Pinning them above the rest would save a lot of scrolling.",
@@ -397,6 +415,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900013,
     board: "features",
     title: "Word count goal per note",
     body: "A small progress bar towards a word count goal, for drafts and essays.",
@@ -406,6 +425,7 @@ export const DEMO_POSTS: DemoPost[] = [
     recentVotes: 4,
   },
   {
+    id: 900014,
     board: "features",
     title: "Night theme for late writing sessions",
     body: "Could the app have a darker theme for writing late at night? The white background hurts my eyes.",
@@ -415,6 +435,7 @@ export const DEMO_POSTS: DemoPost[] = [
     recentVotes: 3,
   },
   {
+    id: 900015,
     board: "features",
     title: "Custom fonts in the editor",
     body: "I'd love to write in a serif font. Even a choice of three or four fonts would be enough.",
@@ -424,6 +445,7 @@ export const DEMO_POSTS: DemoPost[] = [
     recentVotes: 2,
   },
   {
+    id: 900016,
     board: "bugs",
     title: "Sync conflict duplicates a note after editing on two devices",
     body: "If I edit a note on my phone while offline and then on my laptop, I end up with two copies of the note, one with '(conflict)' in the title.",
@@ -455,6 +477,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900017,
     board: "bugs",
     title: "Search misses words with Turkish characters",
     body: "Searching for 'isler' doesn't find notes containing 'işler'. Search should treat ş and s, ğ and g, ı and i the same.",
@@ -494,6 +517,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900018,
     board: "bugs",
     title: "Images disappear from exported Markdown",
     body: "When I export a note with images to Markdown, the image links point to files that aren't in the export.",
@@ -504,6 +528,7 @@ export const DEMO_POSTS: DemoPost[] = [
     timeline: [{ to: "planned", daysAgo: 9, by: "jonas" }],
   },
   {
+    id: 900019,
     board: "bugs",
     title: "App freezes when pasting a very long table",
     body: "Pasting a table with a few hundred rows from a spreadsheet freezes the editor for about ten seconds.",
@@ -514,6 +539,7 @@ export const DEMO_POSTS: DemoPost[] = [
     timeline: [{ to: "under_review", daysAgo: 4, by: "jonas" }],
   },
   {
+    id: 900020,
     board: "bugs",
     title: "Checkboxes reset after reopening a note",
     body: "I tick items in a checklist, close the note, open it again, and some boxes are unticked.",
@@ -523,6 +549,7 @@ export const DEMO_POSTS: DemoPost[] = [
     recentVotes: 3,
   },
   {
+    id: 900021,
     board: "bugs",
     title: "Typo in the welcome email",
     body: "The welcome email says 'notbooks' instead of 'notebooks'.",
@@ -539,6 +566,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900022,
     board: "integrations",
     title: "Google Calendar: link notes to events",
     body: "Open a calendar event and see the meeting notes that belong to it, or create them in one click.",
@@ -563,6 +591,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900023,
     board: "integrations",
     title: "Import from Notion",
     body: "I'd like to move my workspace over from Notion without copying pages by hand.",
@@ -593,6 +622,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900024,
     board: "integrations",
     title: "Obsidian-compatible vault export",
     body: "Export everything as a folder of Markdown files with front matter that Obsidian can open.",
@@ -609,6 +639,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900025,
     board: "integrations",
     title: "Web clipper for Firefox",
     body: "The Chrome clipper is great, but I use Firefox every day.",
@@ -618,6 +649,7 @@ export const DEMO_POSTS: DemoPost[] = [
     recentVotes: 1,
   },
   {
+    id: 900026,
     board: "integrations",
     title: "Zapier integration",
     body: "Create notes from forms, emails and other apps through Zapier.",
@@ -627,6 +659,7 @@ export const DEMO_POSTS: DemoPost[] = [
     timeline: [{ to: "under_review", daysAgo: 15, by: "defne" }],
   },
   {
+    id: 900027,
     board: "integrations",
     title: "Readwise highlights sync",
     body: "Bring my Kindle and article highlights from Readwise into a notebook automatically.",
@@ -640,6 +673,7 @@ export const DEMO_POSTS: DemoPost[] = [
     ],
   },
   {
+    id: 900028,
     board: "integrations",
     title: "Slack: save a message as a note",
     body: "A message action in Slack that saves the message, with a link back, into my inbox notebook.",
@@ -649,6 +683,7 @@ export const DEMO_POSTS: DemoPost[] = [
     recentVotes: 3,
   },
   {
+    id: 900029,
     board: "integrations",
     title: "Embed GitHub issues in a note",
     body: "Paste a GitHub issue link and see its title and status inline.",
