@@ -11,6 +11,7 @@ import {
   uniqueEmail,
   updateCookie,
 } from "../test/app";
+import { startMidWindow } from "../test/clock";
 import { testEnv } from "../test/env";
 
 /** Just the session token: what a browser sends once the cache cookie expired. */
@@ -104,6 +105,7 @@ describe("email-code sign-in", () => {
   });
 
   it("sends one address at most three codes in ten minutes in production", async () => {
+    startMidWindow(10 * 60_000);
     const t = testApp({ ENVIRONMENT: "production" });
     const email = uniqueEmail("limit");
     // A new network each time, so Better Auth's per-IP limit stays out of it.
@@ -123,6 +125,7 @@ describe("email-code sign-in", () => {
   });
 
   it("keeps the last code working when it refuses another", async () => {
+    startMidWindow(10 * 60_000);
     const t = testApp({ ENVIRONMENT: "production" });
     const email = uniqueEmail("latest");
     // A new network each time, so Better Auth's per-IP limit stays out of it.
@@ -142,6 +145,7 @@ describe("email-code sign-in", () => {
   });
 
   it("stops sending codes once the day's email is spent", async () => {
+    startMidWindow(24 * 60 * 60_000);
     const t = testApp({ ENVIRONMENT: "production" });
     const { db, close } = createDb(t.env.HYPERDRIVE.connectionString);
     const today = utcDay(new Date());

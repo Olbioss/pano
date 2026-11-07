@@ -4,6 +4,7 @@ import { emailCounters, invitation, member, user } from "../db/schema";
 import { resetDemo } from "../services/demo-reset";
 import { NOTICE_EMAILS, utcDay } from "../services/email-budget";
 import { ORIGIN, testApp } from "../test/app";
+import { startMidWindow } from "../test/clock";
 import { testDb } from "../test/db";
 import { addToTeam, setupWorkspace } from "../test/fixtures";
 
@@ -213,6 +214,7 @@ describe("POST /api/workspaces/:slug/invitations", () => {
   });
 
   it("draws on the day's email budget in production", async () => {
+    startMidWindow(24 * 60 * 60_000);
     const t = testApp({ ENVIRONMENT: "production" });
     const { owner, slug } = await setupWorkspace(t);
     const today = utcDay(new Date());
@@ -243,6 +245,7 @@ describe("POST /api/workspaces/:slug/invitations", () => {
   });
 
   it("lets one person send ten an hour in production", async () => {
+    startMidWindow(60 * 60_000);
     const t = testApp({ ENVIRONMENT: "production" });
     const { owner, slug } = await setupWorkspace(t);
     for (let i = 0; i < 10; i++) {

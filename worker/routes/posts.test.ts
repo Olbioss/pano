@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { posts } from "../db/schema";
 import { testApp } from "../test/app";
+import { startMidWindow } from "../test/clock";
 import { testDb } from "../test/db";
 import { setupWorkspace, submitPost } from "../test/fixtures";
 
@@ -132,6 +133,7 @@ describe("POST /api/workspaces/:slug/posts", () => {
   });
 
   it("allows five posts an hour per person in production", async () => {
+    startMidWindow(60 * 60_000);
     // Sign in through a dev app: production also limits code requests per IP.
     const dev = testApp();
     const { slug, boards } = await setupWorkspace(dev);
