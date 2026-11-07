@@ -40,7 +40,7 @@ const detail: PostDetail = {
   author: { name: "Ayşe" },
   createdAt: "2026-10-01T00:00:00.000Z",
   body: "",
-  workspace: { slug: "acme", name: "Acme", defaultLocale: "en" },
+  workspace: { slug: "acme", name: "Acme", defaultLocale: "en", isDemo: false },
   canEdit: false,
   isTeam: false,
   pinned: null,

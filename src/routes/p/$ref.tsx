@@ -18,6 +18,8 @@ import { Markdown } from "@/components/markdown";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { CommentThread } from "@/features/comments/comment-thread";
+import { DemoBanner } from "@/features/demo/demo-banner";
+import { GuestLockProvider } from "@/features/demo/guest-lock";
 import { MergePanel } from "@/features/merge/merge-panel";
 import { AuthorName } from "@/features/posts/author-name";
 import { PostEditor } from "@/features/posts/post-editor";
@@ -95,64 +97,69 @@ function PostPage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
-      <Link
-        to="/$ws"
-        params={{ ws: post.workspace.slug }}
-        className="text-muted-foreground text-sm hover:underline"
-      >
-        ← {post.workspace.name}
-      </Link>
-      <article className="paper flex items-start gap-4 p-5 sm:p-6">
-        {signedIn ? (
-          <VoteButton
-            postId={post.id}
-            title={post.title}
-            voted={post.voted}
-            voteCount={post.voteCount}
-          />
-        ) : (
-          <SignInToVote voteCount={post.voteCount} />
-        )}
-        <div className="flex min-w-0 flex-1 flex-col gap-3">
-          {editing ? (
-            <PostEditor post={post} onDone={() => setEditing(false)} />
-          ) : (
-            <>
-              <h1 className="font-bold text-3xl leading-tight">{post.title}</h1>
-              <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
-                <StatusBadge status={post.status} />
-                <span>{post.board.name}</span>
-                <span aria-hidden="true">·</span>
-                <AuthorName author={post.author} />
-                <span aria-hidden="true">·</span>
-                <time dateTime={post.createdAt}>
-                  {format.relativeTime(new Date(post.createdAt), now)}
-                </time>
-              </div>
-              {post.body && <Markdown>{post.body}</Markdown>}
-              {post.canEdit && (
-                <PostActions post={post} onEdit={() => setEditing(true)} />
-              )}
-            </>
-          )}
-        </div>
-      </article>
-      {(signedIn || post.isTeam) && (
-        <div className="paper flex flex-col gap-4 p-5 sm:p-6">
-          {signedIn && <SubscribeButton post={post} />}
-          {post.isTeam && <StatusControl post={post} />}
-          {post.isTeam && (
-            <MergePanel
-              post={post}
-              onMerged={(target) =>
-                navigate({ to: "/p/$ref", params: { ref: target.ref } })
-              }
+      {post.workspace.isDemo && <DemoBanner />}
+      <GuestLockProvider isDemo={post.workspace.isDemo}>
+        <Link
+          to="/$ws"
+          params={{ ws: post.workspace.slug }}
+          className="text-muted-foreground text-sm hover:underline"
+        >
+          ← {post.workspace.name}
+        </Link>
+        <article className="paper flex items-start gap-4 p-5 sm:p-6">
+          {signedIn ? (
+            <VoteButton
+              postId={post.id}
+              title={post.title}
+              voted={post.voted}
+              voteCount={post.voteCount}
             />
+          ) : (
+            <SignInToVote voteCount={post.voteCount} />
           )}
-        </div>
-      )}
-      <StatusTimeline timeline={post.timeline} />
-      <CommentThread post={post} />
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            {editing ? (
+              <PostEditor post={post} onDone={() => setEditing(false)} />
+            ) : (
+              <>
+                <h1 className="font-bold text-3xl leading-tight">
+                  {post.title}
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
+                  <StatusBadge status={post.status} />
+                  <span>{post.board.name}</span>
+                  <span aria-hidden="true">·</span>
+                  <AuthorName author={post.author} />
+                  <span aria-hidden="true">·</span>
+                  <time dateTime={post.createdAt}>
+                    {format.relativeTime(new Date(post.createdAt), now)}
+                  </time>
+                </div>
+                {post.body && <Markdown>{post.body}</Markdown>}
+                {post.canEdit && (
+                  <PostActions post={post} onEdit={() => setEditing(true)} />
+                )}
+              </>
+            )}
+          </div>
+        </article>
+        {(signedIn || post.isTeam) && (
+          <div className="paper flex flex-col gap-4 p-5 sm:p-6">
+            {signedIn && <SubscribeButton post={post} />}
+            {post.isTeam && <StatusControl post={post} />}
+            {post.isTeam && (
+              <MergePanel
+                post={post}
+                onMerged={(target) =>
+                  navigate({ to: "/p/$ref", params: { ref: target.ref } })
+                }
+              />
+            )}
+          </div>
+        )}
+        <StatusTimeline timeline={post.timeline} />
+        <CommentThread post={post} />
+      </GuestLockProvider>
     </main>
   );
 }

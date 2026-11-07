@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronUp } from "lucide-react";
 import { useTranslations } from "use-intl";
 import { Button } from "@/components/ui/button";
+import { useGuestLocked } from "@/features/demo/guest-lock";
 import { useVote } from "./use-vote";
 
 // A tally: the count in tabular figures, so it never shifts as it changes.
@@ -19,9 +20,11 @@ type Props = {
 export function VoteButton({ postId, title, voted, voteCount }: Props) {
   const t = useTranslations("vote");
   const vote = useVote(postId);
+  const locked = useGuestLocked();
   return (
     <Button
       type="button"
+      disabled={locked}
       variant={voted ? "default" : "outline"}
       className={SHAPE}
       aria-pressed={voted}

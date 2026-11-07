@@ -10,6 +10,7 @@ import { cn } from "cn";
 import { useEffect } from "react";
 import { useTranslations } from "use-intl";
 import { DemoBanner } from "@/features/demo/demo-banner";
+import { GuestLockProvider } from "@/features/demo/guest-lock";
 import { useLocaleControls } from "@/i18n/provider";
 import { ApiError } from "@/lib/api";
 import { meQueryOptions } from "@/lib/session";
@@ -54,43 +55,45 @@ function WorkspaceLayout() {
       )}
     >
       {workspace.isDemo && <DemoBanner />}
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-bold text-3xl">{workspace.name}</h1>
-        <nav className="flex gap-4 text-sm">
-          <Link
-            to="/$ws"
-            params={{ ws }}
-            activeOptions={{ exact: true, includeSearch: false }}
-            activeProps={{ className: "font-semibold" }}
-          >
-            {t("requests")}
-          </Link>
-          <Link
-            to="/$ws/roadmap"
-            params={{ ws }}
-            activeProps={{ className: "font-semibold" }}
-          >
-            {t("roadmap")}
-          </Link>
-          <Link
-            to="/$ws/changelog"
-            params={{ ws }}
-            activeProps={{ className: "font-semibold" }}
-          >
-            {t("changelog")}
-          </Link>
-          {onTeam && (
+      <GuestLockProvider isDemo={workspace.isDemo}>
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="font-bold text-3xl">{workspace.name}</h1>
+          <nav className="flex gap-4 text-sm">
             <Link
-              to="/$ws/settings"
+              to="/$ws"
+              params={{ ws }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{ className: "font-semibold" }}
+            >
+              {t("requests")}
+            </Link>
+            <Link
+              to="/$ws/roadmap"
               params={{ ws }}
               activeProps={{ className: "font-semibold" }}
             >
-              {t("settings")}
+              {t("roadmap")}
             </Link>
-          )}
-        </nav>
-      </header>
-      <Outlet />
+            <Link
+              to="/$ws/changelog"
+              params={{ ws }}
+              activeProps={{ className: "font-semibold" }}
+            >
+              {t("changelog")}
+            </Link>
+            {onTeam && (
+              <Link
+                to="/$ws/settings"
+                params={{ ws }}
+                activeProps={{ className: "font-semibold" }}
+              >
+                {t("settings")}
+              </Link>
+            )}
+          </nav>
+        </header>
+        <Outlet />
+      </GuestLockProvider>
     </div>
   );
 }

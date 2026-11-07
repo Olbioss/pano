@@ -33,7 +33,8 @@
     "tooMany": "Buradan çok fazla demo girişi yapıldı. Bir dakika bekleyip tekrar deneyin.",
     "bannerLabel": "Bu demo hakkında",
     "banner": "Inkwell bir demo çalışma alanıdır. Her ziyaretçiye ayrı bir misafir hesabı verilir ve her şey her gece 01:00'de (UTC) sıfırlanır.",
-    "settingsReadOnly": "Demonun ekibindesiniz; ayarları görebilirsiniz ama değiştiremezsiniz. Bunun yerine durumları, birleştirmeyi ve yol haritasını deneyin."
+    "settingsReadOnly": "Demonun ekibindesiniz; ayarları görebilirsiniz ama değiştiremezsiniz. Bunun yerine durumları, birleştirmeyi ve yol haritasını deneyin.",
+    "guestOnly": "Misafir hesaplar yalnızca demoda çalışır."
   },
   "signin": {
     "title": "Pano'ya giriş yapın",

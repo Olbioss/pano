@@ -1,6 +1,7 @@
 import { Bell, BellOff } from "lucide-react";
 import { useTranslations } from "use-intl";
 import { Button } from "@/components/ui/button";
+import { useGuestLocked } from "@/features/demo/guest-lock";
 import type { PostDetail } from "@/shared/posts";
 import { useSubscription } from "./use-subscription";
 
@@ -8,10 +9,12 @@ import { useSubscription } from "./use-subscription";
 export function SubscribeButton({ post }: { post: PostDetail }) {
   const t = useTranslations("subscription");
   const subscription = useSubscription(post.id);
+  const locked = useGuestLocked();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button
         type="button"
+        disabled={locked}
         variant="outline"
         size="sm"
         onClick={() => subscription.mutate(!post.subscribed)}

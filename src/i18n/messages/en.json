@@ -33,7 +33,8 @@
     "tooMany": "Too many demo sign-ins from here. Wait a minute and try again.",
     "bannerLabel": "About this demo",
     "banner": "Inkwell is a demo workspace. Every visitor gets their own guest account, and everything resets at 01:00 UTC each night.",
-    "settingsReadOnly": "You're on the demo's team, so you can see its settings, but they stay as they are. Try statuses, merging and the roadmap instead."
+    "settingsReadOnly": "You're on the demo's team, so you can see its settings, but they stay as they are. Try statuses, merging and the roadmap instead.",
+    "guestOnly": "Guest accounts only work in the demo."
   },
   "signin": {
     "title": "Sign in to Pano",

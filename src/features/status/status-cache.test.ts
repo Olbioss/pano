@@ -32,7 +32,7 @@ const post = (
 const detailOf = (summary: PostSummary): PostDetail => ({
   ...summary,
   body: "A long body.",
-  workspace: { slug: "acme", name: "Acme", defaultLocale: "en" },
+  workspace: { slug: "acme", name: "Acme", defaultLocale: "en", isDemo: false },
   canEdit: true,
   isTeam: true,
   pinned: null,

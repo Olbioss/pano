@@ -23,7 +23,13 @@ export type PostSummary = {
 
 export type PostDetail = PostSummary & {
   body: string;
-  workspace: { slug: string; name: string; defaultLocale: Locale };
+  /** `isDemo`: its page shows the demo's banner, and guest rules apply. */
+  workspace: {
+    slug: string;
+    name: string;
+    defaultLocale: Locale;
+    isDemo: boolean;
+  };
   /** The person asking wrote it or is on the workspace's team. */
   canEdit: boolean;
   /** The person asking is on the workspace's team: they pin, and delete any comment. */

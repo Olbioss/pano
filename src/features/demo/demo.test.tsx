@@ -42,18 +42,65 @@ const demoWorkspace = {
   boards: [{ id: "b1", slug: "features", name: "Features", position: 0 }],
 };
 
+const acmeWorkspace = {
+  id: "org_acme",
+  slug: "acme",
+  name: "Acme",
+  defaultLocale: "en",
+  isDemo: false,
+  boards: [{ id: "b2", slug: "ideas", name: "Ideas", position: 0 }],
+};
+const acmePost = {
+  id: 7,
+  ref: "7-dark-mode",
+  title: "Dark mode",
+  excerpt: "",
+  status: "open",
+  voteCount: 3,
+  commentCount: 0,
+  voted: false,
+  board: { slug: "ideas", name: "Ideas" },
+  author: { name: "Ayşe" },
+  createdAt: "2026-11-01T10:00:00.000Z",
+};
+const demoRequest = {
+  ...acmePost,
+  id: 900001,
+  ref: "900001-dark-mode",
+  board: { slug: "features", name: "Features" },
+};
+/** A request's page, in `workspace`. */
+const detail = (post: typeof acmePost, workspace: typeof acmeWorkspace) => ({
+  ...post,
+  body: "",
+  workspace: {
+    slug: workspace.slug,
+    name: workspace.name,
+    defaultLocale: "en",
+    isDemo: workspace.isDemo,
+  },
+  canEdit: false,
+  isTeam: false,
+  pinned: null,
+  subscribed: false,
+  timeline: [],
+  mergedInto: null,
+});
+
 /**
- * The API behind the landing page and the demo workspace. Signing in to the
- * demo makes later /api/me answers the guest's.
+ * The API behind the landing page, the demo workspace and Acme, a real one.
+ * Signing in to the demo makes later /api/me answers the guest's.
  */
 function fakeServer({
   signedIn = false,
   as = guest,
   demoStatus = 200,
+  meStatus = 200,
 }: {
   signedIn?: boolean;
   as?: typeof guest;
   demoStatus?: number;
+  meStatus?: number;
 } = {}) {
   const demoSignIns: unknown[] = [];
   let user: typeof guest | null = signedIn ? as : null;
@@ -75,6 +122,12 @@ function fakeServer({
         return Response.json({ name: guest.name, team: true });
       }
       if (url.pathname === "/api/me") {
+        if (meStatus !== 200) {
+          return Response.json(
+            { success: false, code: "INTERNAL_ERROR", error: "down" },
+            { status: meStatus }
+          );
+        }
         const workspace =
           user === guest
             ? { id: "org_pano_demo", slug: "demo", name: "Inkwell" }
@@ -90,6 +143,19 @@ function fakeServer({
       }
       if (url.pathname === "/api/workspaces/demo/posts") {
         return ok({ items: [], page: 1, hasMore: false });
+      }
+      if (url.pathname === "/api/workspaces/acme") return ok(acmeWorkspace);
+      if (url.pathname === "/api/workspaces/acme/posts") {
+        return ok({ items: [acmePost], page: 1, hasMore: false });
+      }
+      if (url.pathname === "/api/posts/7") {
+        return ok(detail(acmePost, acmeWorkspace));
+      }
+      if (url.pathname === "/api/posts/900001") {
+        return ok(detail(demoRequest, demoWorkspace));
+      }
+      if (/^\/api\/posts\/\d+\/comments$/.test(url.pathname)) {
+        return ok({ items: [], hasMore: false });
       }
       return Response.json(
         { success: false, code: "NOT_FOUND", error: "Not found" },
@@ -172,6 +238,26 @@ describe("trying the demo", () => {
     expect(screen.queryByRole("button", { name: "Try as team" })).toBeNull();
   });
 
+  it("keeps the demo buttons hidden when Pano can't tell who's signed in", async () => {
+    fakeServer({ meStatus: 500 });
+    renderAt("/");
+    expect(
+      await screen.findByRole("link", {
+        name: "Sign in to start your own board",
+      })
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Try as team" })).toBeNull();
+  });
+
+  it("shows the demo's banner on a demo request's own page", async () => {
+    fakeServer();
+    renderAt("/p/900001-dark-mode");
+    const banner = await screen.findByRole("complementary", {
+      name: "About this demo",
+    });
+    expect(banner.textContent).toContain("resets at 01:00 UTC");
+  });
+
   it("keeps the demo buttons from someone signed in with a real account", async () => {
     fakeServer({
       signedIn: true,
@@ -180,5 +266,47 @@ describe("trying the demo", () => {
     renderAt("/");
     expect(await screen.findByRole("link", { name: "Open Acme" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Try as team" })).toBeNull();
+  });
+});
+
+describe("a demo guest outside the demo", () => {
+  const note = "Guest accounts only work in the demo.";
+  const disabled = (element: HTMLElement) => element.matches(":disabled");
+
+  it("finds a real board's controls disabled, and why", async () => {
+    fakeServer({ signedIn: true });
+    renderAt("/acme");
+    expect(await screen.findByText(note)).toBeTruthy();
+    expect(
+      disabled(
+        await screen.findByRole("button", { name: "Vote for Dark mode" })
+      )
+    ).toBe(true);
+    expect(disabled(screen.getByRole("button", { name: "New request" }))).toBe(
+      true
+    );
+  });
+
+  it("can't vote on, follow or comment on a real request", async () => {
+    fakeServer({ signedIn: true });
+    renderAt("/p/7-dark-mode");
+    expect(await screen.findByText(note)).toBeTruthy();
+    expect(
+      disabled(screen.getByRole("button", { name: "Vote for Dark mode" }))
+    ).toBe(true);
+    expect(disabled(screen.getByRole("button", { name: "Subscribe" }))).toBe(
+      true
+    );
+    expect(disabled(await screen.findByLabelText("Add a comment"))).toBe(true);
+  });
+
+  it("keeps everything in the demo itself", async () => {
+    fakeServer({ signedIn: true });
+    renderAt("/p/900001-dark-mode");
+    expect(
+      disabled(await screen.findByRole("button", { name: "Subscribe" }))
+    ).toBe(false);
+    expect(disabled(await screen.findByLabelText("Add a comment"))).toBe(false);
+    expect(screen.queryByText(note)).toBeNull();
   });
 });

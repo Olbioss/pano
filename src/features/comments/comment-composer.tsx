@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useGuestLocked } from "@/features/demo/guest-lock";
 import { apiErrorKey } from "@/lib/error-text";
 import { meQueryOptions, updateMe } from "@/lib/session";
 import type { CommentView } from "@/shared/comments";
@@ -33,6 +34,7 @@ export function CommentComposer({ parent, onClose }: Props) {
   const tErrors = useTranslations("errors");
   const qc = useQueryClient();
   const { post, viewerName } = useThread();
+  const locked = useGuestLocked();
   const add = useAddComment(post.id);
   const id = useId();
   const [error, setError] = useState<string | null>(null);
@@ -84,70 +86,72 @@ export function CommentComposer({ parent, onClose }: Props) {
 
   return (
     <form
-      className="flex flex-col gap-2"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
         void form.handleSubmit();
       }}
     >
-      {needsName && (
-        <form.Field name="name">
+      {/* A disabled fieldset disables every field and button inside it. */}
+      <fieldset disabled={locked} className="flex flex-col gap-2">
+        {needsName && (
+          <form.Field name="name">
+            {(field) => (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor={`${id}-name`}>{t("nameLabel")}</Label>
+                <Input
+                  id={`${id}-name`}
+                  name={field.name}
+                  autoComplete="name"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                />
+                <p className="text-muted-foreground text-xs">{t("nameHint")}</p>
+                <FieldError errors={field.state.meta.errors} />
+              </div>
+            )}
+          </form.Field>
+        )}
+        <form.Field name="body">
           {(field) => (
             <div className="flex flex-col gap-2">
-              <Label htmlFor={`${id}-name`}>{t("nameLabel")}</Label>
-              <Input
-                id={`${id}-name`}
+              <Label htmlFor={`${id}-body`}>
+                {parent ? t("replyLabel") : t("addLabel")}
+              </Label>
+              <Textarea
+                id={`${id}-body`}
                 name={field.name}
-                autoComplete="name"
+                rows={parent ? 3 : 4}
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
               />
-              <p className="text-muted-foreground text-xs">{t("nameHint")}</p>
+              <p className="text-muted-foreground text-xs">{t("bodyHint")}</p>
               <FieldError errors={field.state.meta.errors} />
             </div>
           )}
         </form.Field>
-      )}
-      <form.Field name="body">
-        {(field) => (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${id}-body`}>
-              {parent ? t("replyLabel") : t("addLabel")}
-            </Label>
-            <Textarea
-              id={`${id}-body`}
-              name={field.name}
-              rows={parent ? 3 : 4}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-            />
-            <p className="text-muted-foreground text-xs">{t("bodyHint")}</p>
-            <FieldError errors={field.state.meta.errors} />
-          </div>
+        {error && (
+          <p className="text-destructive text-sm" role="alert">
+            {error}
+          </p>
         )}
-      </form.Field>
-      {error && (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      )}
-      <div className="flex gap-2">
-        <form.Subscribe selector={(state) => state.isSubmitting}>
-          {(isSubmitting) => (
-            <Button type="submit" size="sm" disabled={isSubmitting}>
-              {parent ? t("submitReply") : t("submit")}
+        <div className="flex gap-2">
+          <form.Subscribe selector={(state) => state.isSubmitting}>
+            {(isSubmitting) => (
+              <Button type="submit" size="sm" disabled={isSubmitting}>
+                {parent ? t("submitReply") : t("submit")}
+              </Button>
+            )}
+          </form.Subscribe>
+          {onClose && (
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+              {t("cancel")}
             </Button>
           )}
-        </form.Subscribe>
-        {onClose && (
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-            {t("cancel")}
-          </Button>
-        )}
-      </div>
+        </div>
+      </fieldset>
     </form>
   );
 }

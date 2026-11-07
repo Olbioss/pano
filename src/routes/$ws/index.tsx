@@ -2,6 +2,7 @@ import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useNow, useTranslations } from "use-intl";
 import { Button } from "@/components/ui/button";
+import { useGuestLocked } from "@/features/demo/guest-lock";
 import { FeedToolbar } from "@/features/feed/feed-toolbar";
 import {
   type FeedSearch,
@@ -28,6 +29,7 @@ function Feed() {
   const t = useTranslations("feed");
   const tWorkspace = useTranslations("workspace");
   const now = useNow({ updateInterval: 60_000 });
+  const locked = useGuestLocked();
   const params = feedParams(search);
   // The URL follows every keystroke; the request waits for a pause in typing.
   const q = useDebouncedValue(params.q, 300);
@@ -63,11 +65,21 @@ function Feed() {
           rawQuery={search.q ?? ""}
           onChange={update}
         />
-        <Button asChild size="sm">
-          <Link to="/$ws/new" params={{ ws }} search={{ board: params.board }}>
+        {locked ? (
+          <Button size="sm" disabled>
             {t("newRequest")}
-          </Link>
-        </Button>
+          </Button>
+        ) : (
+          <Button asChild size="sm">
+            <Link
+              to="/$ws/new"
+              params={{ ws }}
+              search={{ board: params.board }}
+            >
+              {t("newRequest")}
+            </Link>
+          </Button>
+        )}
       </div>
       {feed.isPending ? (
         <p className="text-muted-foreground text-sm">{t("loading")}</p>

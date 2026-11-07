@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormatter, useNow, useTranslations } from "use-intl";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
+import { useGuestLocked } from "@/features/demo/guest-lock";
 import { AuthorName } from "@/features/posts/author-name";
 import { repliesQueryOptions } from "@/lib/comments";
 import { cn } from "@/lib/utils";
@@ -72,11 +73,13 @@ function CommentActions({ comment }: { comment: CommentView }) {
   const [confirming, setConfirming] = useState(false);
   const pinned = post.pinned?.id === comment.id;
   const replying = replyingTo === comment.id;
+  const locked = useGuestLocked();
   return (
     <div className="flex flex-wrap gap-1">
       {viewerName !== null && (
         <Button
           type="button"
+          disabled={locked}
           variant="ghost"
           size="xs"
           aria-expanded={replying}

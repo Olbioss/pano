@@ -113,6 +113,29 @@ describe("demo accounts", () => {
 });
 
 describe("the demo workspace", () => {
+  it("marks its requests' pages as the demo's, and no one else's", async () => {
+    const t = testApp();
+    const { owner, slug, boards } = await setupWorkspace(t);
+    const real = await submitPost(t, owner.cookie, slug, {
+      boardId: boards[0]!.id,
+      title: "Not a demo request",
+    });
+    const workspaceOf = async (id: number) => {
+      const res = await t.client.api.posts[":id"].$get({
+        param: { id: String(id) },
+      });
+      const body = await res.json();
+      if (!body.success) throw new Error(body.error);
+      return body.data.workspace;
+    };
+    expect(await workspaceOf((await demoPost()).id)).toMatchObject({
+      slug: "demo",
+      isDemo: true,
+    });
+    expect(await workspaceOf(real.id)).toMatchObject({ slug, isDemo: false });
+    await t.settle();
+  });
+
   it("keeps its name, language and boards, even for its team", async () => {
     const t = testApp();
     const guest = await t.signInDemo("team");

@@ -39,7 +39,7 @@ const summary = (id: number, title: string, ref: string): PostSummary => ({
 const detailOf = (post: PostSummary): PostDetail => ({
   ...post,
   body: "",
-  workspace: { slug: "acme", name: "Acme", defaultLocale: "en" },
+  workspace: { slug: "acme", name: "Acme", defaultLocale: "en", isDemo: false },
   canEdit: true,
   isTeam: true,
   pinned: null,

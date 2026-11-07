@@ -49,7 +49,7 @@ const summary: PostSummary = {
 const detail: PostDetail = {
   ...summary,
   body: "",
-  workspace: { slug: "acme", name: "Acme", defaultLocale: "en" },
+  workspace: { slug: "acme", name: "Acme", defaultLocale: "en", isDemo: false },
   canEdit: false,
   isTeam: false,
   pinned: null,

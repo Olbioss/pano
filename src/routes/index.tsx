@@ -14,8 +14,9 @@ function Home() {
   const t = useTranslations("home");
   const me = useQuery(meQueryOptions);
   const user = me.data?.user;
-  // Trying the demo signs in as a guest, which would sign a real account out.
-  const showDemo = !me.isPending && (!user || isDemoEmail(user.email));
+  // Trying the demo signs in as a guest, which would sign a real account out:
+  // only an answer that says signed out, or a guest, shows the buttons.
+  const showDemo = me.isSuccess && (!user || isDemoEmail(user.email));
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-20 px-6 py-14 md:py-20">
