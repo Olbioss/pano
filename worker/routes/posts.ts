@@ -21,7 +21,7 @@ import type { Database } from "../db/client";
 import type { AppEnv } from "../env";
 import { AppError } from "../lib/errors";
 import { idParamSchema, validate } from "../lib/validate";
-import { confineDemo } from "../middleware/demo";
+import { capDemo, confineDemo } from "../middleware/demo";
 import { rateLimit } from "../middleware/rate-limit";
 import { readViewerId, requireUser } from "../middleware/session";
 import { changelogOf, dropChangelog } from "../services/changelog";
@@ -65,6 +65,7 @@ export const workspacePostRoutes = new Hono<AppEnv>()
     confineDemo("workspace"),
     validate("json", createPostSchema),
     rateLimit("post", 5, 3600),
+    capDemo("post"),
     async (c) => {
       const { boardId, title, body } = c.req.valid("json");
       const workspace = await findWorkspace(c.var.db, c.req.param("slug"));

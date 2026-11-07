@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, count, eq, gt, sql } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
 import { isDemoEmail } from "@/shared/demo";
 import type { Database } from "../db/client";
-import { organization, posts, workspaceSettings } from "../db/schema";
+import { comments, organization, posts, workspaceSettings } from "../db/schema";
 import { AppError } from "../lib/errors";
+import { DEMO_WORKSPACE_ID } from "../services/demo-reset";
 import type { UserEnv } from "./session";
 import type { TeamEnv } from "./team";
 
@@ -39,6 +40,61 @@ export const confineDemo = (target: Target) =>
     }
     await next();
   });
+
+/** What guests, all together, may add to the demo in an hour. */
+export const DEMO_HOURLY = { post: 30, comment: 60 } as const;
+
+/**
+ * Caps what guests add to the demo in an hour, all of them together; runs
+ * after confineDemo, so a guest's request is in the demo. Each "Try as…"
+ * click makes a new guest with limits of its own, so per-person limits
+ * alone would let a script fill the demo until the nightly reset. It counts
+ * the demo's own rows, and like the other limits it applies in production.
+ */
+export const capDemo = (kind: keyof typeof DEMO_HOURLY) =>
+  createMiddleware<UserEnv>(async (c, next) => {
+    if (
+      c.env.ENVIRONMENT === "production" &&
+      isDemoEmail(c.var.user.email) &&
+      (await addedToDemoLastHour(c.var.db, kind)) >= DEMO_HOURLY[kind]
+    ) {
+      throw new AppError(
+        429,
+        "DEMO_BUSY",
+        "The demo has had a lot of new posts this hour"
+      );
+    }
+    await next();
+  });
+
+async function addedToDemoLastHour(
+  db: Database,
+  kind: keyof typeof DEMO_HOURLY
+) {
+  const since = sql`now() - interval '1 hour'`;
+  const [row] =
+    kind === "post"
+      ? await db
+          .select({ n: count() })
+          .from(posts)
+          .where(
+            and(
+              eq(posts.organizationId, DEMO_WORKSPACE_ID),
+              gt(posts.createdAt, since)
+            )
+          )
+      : await db
+          .select({ n: count() })
+          .from(comments)
+          .innerJoin(posts, eq(posts.id, comments.postId))
+          .where(
+            and(
+              eq(posts.organizationId, DEMO_WORKSPACE_ID),
+              gt(comments.createdAt, since)
+            )
+          );
+  return row?.n ?? 0;
+}
 
 /**
  * The demo workspace's name, language and boards stay as the nightly reset

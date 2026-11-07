@@ -234,6 +234,7 @@
     "POST_MERGED": "This request was merged into another one.",
     "DEMO_ONLY": "Demo accounts work only in the demo workspace.",
     "DEMO_READ_ONLY": "In the demo, settings and other people's posts stay as they are. Everything else is yours to try.",
+    "DEMO_BUSY": "The demo has had a lot of new posts this hour. Try again later.",
     "NETWORK": "Couldn't reach Pano. Check your connection and try again.",
     "CODE_LIMIT": "Too many codes went to this address. Try again in a few minutes.",
     "EMAIL_BUDGET": "Pano has sent all the email it can today. Try again tomorrow.",

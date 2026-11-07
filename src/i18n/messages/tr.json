@@ -234,6 +234,7 @@
     "POST_MERGED": "Bu istek başka bir istekle birleştirildi.",
     "DEMO_ONLY": "Demo hesapları yalnızca demo çalışma alanında kullanılabilir.",
     "DEMO_READ_ONLY": "Demoda ayarlar ve başkalarının yazdıkları değiştirilemez. Geri kalan her şeyi deneyebilirsiniz.",
+    "DEMO_BUSY": "Demoya bu saat çok sayıda yeni gönderi eklendi. Daha sonra tekrar deneyin.",
     "NETWORK": "Pano'ya ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin.",
     "CODE_LIMIT": "Bu adrese çok fazla kod gönderildi. Birkaç dakika sonra tekrar deneyin.",
     "EMAIL_BUDGET": "Pano bugün gönderebileceği tüm e-postaları gönderdi. Yarın tekrar deneyin.",

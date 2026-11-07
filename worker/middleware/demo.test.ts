@@ -276,3 +276,101 @@ describe("the demo workspace", () => {
     await t.settle();
   });
 });
+
+describe("guests together", () => {
+  it("add at most 30 requests to the demo in an hour, in production", async () => {
+    const dev = testApp();
+    const prod = testApp({ ENVIRONMENT: "production" });
+    const guest = await dev.signInDemo("member");
+    const person = await dev.signIn();
+    const { boardId } = await demoPost();
+    // What 29 other guests left in the last hour.
+    await db.insert(posts).values(
+      Array.from({ length: 29 }, (_, i) => ({
+        organizationId: DEMO_WORKSPACE_ID,
+        boardId,
+        title: `Busy hour ${i}`,
+        searchConfig: "english" as const,
+      }))
+    );
+    const create = (t: TestApp, cookie: string) =>
+      t.client.api.workspaces[":slug"].posts.$post(
+        {
+          param: { slug: "demo" },
+          json: { boardId, title: "One more", body: "" },
+        },
+        { headers: { cookie } }
+      );
+    try {
+      expect((await create(prod, guest.cookie)).status).toBe(201);
+      const refused = await create(prod, guest.cookie);
+      expect(refused.status).toBe(429);
+      expect(await codeOf(refused)).toBe("DEMO_BUSY");
+      // A real account isn't a guest, and outside production nothing counts.
+      expect((await create(prod, person.cookie)).status).toBe(201);
+      expect((await create(dev, guest.cookie)).status).toBe(201);
+    } finally {
+      await resetDemo(db);
+      await dev.settle();
+      await prod.settle();
+    }
+  });
+
+  it("count only the last hour's requests", async () => {
+    const dev = testApp();
+    const prod = testApp({ ENVIRONMENT: "production" });
+    const guest = await dev.signInDemo("member");
+    const { boardId } = await demoPost();
+    // A busy hour that ended a minute ago.
+    await db.insert(posts).values(
+      Array.from({ length: 30 }, (_, i) => ({
+        organizationId: DEMO_WORKSPACE_ID,
+        boardId,
+        title: `Earlier ${i}`,
+        searchConfig: "english" as const,
+        createdAt: new Date(Date.now() - 61 * 60_000),
+      }))
+    );
+    try {
+      const res = await prod.client.api.workspaces[":slug"].posts.$post(
+        {
+          param: { slug: "demo" },
+          json: { boardId, title: "A fresh hour", body: "" },
+        },
+        { headers: { cookie: guest.cookie } }
+      );
+      expect(res.status).toBe(201);
+    } finally {
+      await resetDemo(db);
+      await dev.settle();
+      await prod.settle();
+    }
+  });
+
+  it("add at most 60 comments to the demo in an hour, in production", async () => {
+    const dev = testApp();
+    const prod = testApp({ ENVIRONMENT: "production" });
+    const guest = await dev.signInDemo("member");
+    const { id: postId } = await demoPost();
+    await db
+      .insert(comments)
+      .values(
+        Array.from({ length: 59 }, (_, i) => ({ postId, body: `Busy ${i}` }))
+      );
+    const send = () =>
+      prod.client.api.posts[":id"].comments.$post(
+        { param: { id: String(postId) }, json: { body: "Me too" } },
+        { headers: { cookie: guest.cookie } }
+      );
+    try {
+      expect((await send()).status).toBe(201);
+      const refused = await send();
+      expect(refused.status).toBe(429);
+      expect(await codeOf(refused)).toBe("DEMO_BUSY");
+    } finally {
+      await resetDemo(db);
+      await dev.settle();
+      await prod.settle();
+    }
+  });
+});

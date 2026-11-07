@@ -15,6 +15,7 @@ export type ApiErrorCode =
   | "POST_MERGED"
   | "DEMO_ONLY"
   | "DEMO_READ_ONLY"
+  | "DEMO_BUSY"
   | "CODE_LIMIT"
   | "EMAIL_BUDGET"
   | "ADMINS_ONLY"
