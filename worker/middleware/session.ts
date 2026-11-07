@@ -1,3 +1,4 @@
+import { getCookieCache, getSessionCookie } from "better-auth/cookies";
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import type { AppEnv, Bindings } from "../env";
@@ -11,17 +12,24 @@ export type UserEnv = {
 };
 
 /**
- * The request's session, or null. Reading it can renew it: a fresh cache
- * cookie after the five-minute one runs out, a later expiry for someone who
- * keeps using the app. Called through auth.api those cookies would be
- * dropped, so they're passed on to this response.
+ * The request's session, or null. Without a session cookie it's null at
+ * once, and a valid five-minute cache cookie answers by itself: neither
+ * builds Better Auth. Otherwise Better Auth reads it, which can renew it: a
+ * fresh cache cookie, a later expiry for someone who keeps using the app.
+ * Called through auth.api those cookies would be dropped, so they're passed
+ * on to this response.
  */
 export async function readSession(
-  c: Pick<Context<AppEnv>, "req" | "header"> & {
+  c: Pick<Context<AppEnv>, "req" | "header" | "env"> & {
     var: Pick<AppEnv["Variables"], "auth">;
   }
 ) {
-  const { headers, response } = await c.var.auth.api.getSession({
+  const token = getSessionCookie(c.req.raw.headers);
+  // No session cookie: signed out, without building Better Auth.
+  if (!token) return null;
+  const cached = await cachedSession(c.req.raw.headers, token, c.env);
+  if (cached) return cached;
+  const { headers, response } = await c.var.auth().api.getSession({
     headers: c.req.raw.headers,
     returnHeaders: true,
   });
@@ -29,6 +37,27 @@ export async function readSession(
     c.header("set-cookie", cookie, { append: true });
   }
   return response;
+}
+
+/**
+ * The session from Better Auth's five-minute cache cookie, checked the way
+ * Better Auth checks it: signed with the secret, not expired, and for the
+ * token this request carries. null sends the request through Better Auth.
+ */
+async function cachedSession(
+  headers: Headers,
+  signedToken: string,
+  env: Pick<Bindings, "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL">
+) {
+  const cache = await getCookieCache(headers, {
+    secret: env.BETTER_AUTH_SECRET,
+    isSecure: env.BETTER_AUTH_URL.startsWith("https://"),
+  });
+  if (!cache) return null;
+  const value = decodeURIComponent(signedToken);
+  const dot = value.lastIndexOf(".");
+  if (dot === -1 || value.slice(0, dot) !== cache.session.token) return null;
+  return cache;
 }
 
 /** Answers 401 unless the request carries a valid session; sets c.var.user. */

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
+import { LinearRouter } from "hono/router/linear-router";
 import type { ErrorResponse } from "@/shared/envelope";
 import type { AppEnv } from "./env";
 import { handleError, handleNotFound } from "./lib/errors";
@@ -29,7 +30,10 @@ export type AppDeps = { mailer?: AppMailer };
  * code (cron triggers, HTMLRewriter) belongs in index.ts.
  */
 export function createApp(deps: AppDeps = {}) {
-  const app = new Hono<AppEnv>()
+  // The default router compiles every route into one regular expression on
+  // the first request, which each cold Worker pays for. LinearRouter does no
+  // work up front and checks the routes in order, cheap at this size.
+  const app = new Hono<AppEnv>({ router: new LinearRouter() })
     .basePath("/api")
     // Refuses cross-site form posts. JSON requests already need a CORS
     // preflight, which a foreign site can't pass.
@@ -46,7 +50,7 @@ export function createApp(deps: AppDeps = {}) {
     // Better Auth answers its own routes in its own JSON. The browser calls
     // them through Better Auth's client, not through `unwrap`.
     .on(["GET", "POST"], "/auth/*", async (c) => {
-      const res = await c.var.auth.handler(c.req.raw);
+      const res = await c.var.auth().handler(c.req.raw);
       // A refused code wasn't sent: say which limit stopped it.
       if (c.var.mail.refused) {
         return c.json<ErrorResponse>(

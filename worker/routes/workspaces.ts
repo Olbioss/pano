@@ -161,7 +161,7 @@ export const workspaceRoutes = new Hono<AppEnv>()
       const { name, slug, defaultLocale } = c.req.valid("json");
       const org = await createOrganization(
         c.var.db,
-        c.var.auth,
+        c.var.auth(),
         c.req.raw.headers,
         name,
         slug

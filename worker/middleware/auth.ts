@@ -1,11 +1,13 @@
 import { createMiddleware } from "hono/factory";
-import { createAuth } from "../auth";
+import { type Auth, createAuth } from "../auth";
 import type { AppEnv } from "../env";
 import type { CodeMailer } from "../mail/mailer";
 import { claimCodeForAddress, claimDailyEmail } from "../services/email-budget";
 
 /**
- * Builds Better Auth for this request; runs after withMailer.
+ * Supplies Better Auth for this request, built the first time something
+ * asks for it: building it is most of a cold request's CPU, and signed-out
+ * visitors never need it. Runs after withMailer.
  *
  * In production a code first takes its place in two limits: three per
  * address in ten minutes, and the day's email budget. It claims before
@@ -39,9 +41,10 @@ export const withAuth = createMiddleware<AppEnv>(async (c, next) => {
     },
   };
   c.set("mail", mail);
-  c.set(
-    "auth",
-    createAuth({ db: c.var.db, env: c.env, mailer: codes, claimCode })
-  );
+  let auth: Auth | undefined;
+  c.set("auth", () => {
+    auth ??= createAuth({ db: c.var.db, env: c.env, mailer: codes, claimCode });
+    return auth;
+  });
   await next();
 });

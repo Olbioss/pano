@@ -121,7 +121,7 @@ export const workspaceInvitationRoutes = new Hono<AppEnv>()
       const workspace = c.var.workspace;
       await refuseFullTeam(c.var.db, workspace.id);
       await claimEmail(c.var.db, c.env);
-      const id = await invite(c.var.auth, c.var.db, c.req.raw.headers, {
+      const id = await invite(c.var.auth(), c.var.db, c.req.raw.headers, {
         organizationId: workspace.id,
         email: email.toLowerCase(),
         role,
@@ -157,7 +157,7 @@ export const workspaceInvitationRoutes = new Hono<AppEnv>()
         c.req.param("id")
       );
       await claimEmail(c.var.db, c.env);
-      const id = await invite(c.var.auth, c.var.db, c.req.raw.headers, {
+      const id = await invite(c.var.auth(), c.var.db, c.req.raw.headers, {
         organizationId: workspace.id,
         email: pending.email,
         role: pending.role,
@@ -191,7 +191,7 @@ export const workspaceInvitationRoutes = new Hono<AppEnv>()
         c.req.param("id")
       );
       try {
-        await c.var.auth.api.cancelInvitation({
+        await c.var.auth().api.cancelInvitation({
           body: { invitationId: pending.id },
           headers: c.req.raw.headers,
         });
@@ -256,7 +256,7 @@ export const invitationRoutes = new Hono<AppEnv>()
       throw alreadyOnTeam();
     }
     try {
-      await c.var.auth.api.acceptInvitation({
+      await c.var.auth().api.acceptInvitation({
         body: { invitationId: row.id },
         headers: c.req.raw.headers,
       });

@@ -51,7 +51,7 @@ export const meRoutes = new Hono<AppEnv>()
     const name = cleanDisplayName(c.req.valid("json").name);
     // Through Better Auth, so the session's cached copy of the user is
     // rewritten too; its cookie goes back with this response.
-    const { headers } = await c.var.auth.api.updateUser({
+    const { headers } = await c.var.auth().api.updateUser({
       body: { name },
       headers: c.req.raw.headers,
       returnHeaders: true,

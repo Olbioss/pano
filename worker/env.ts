@@ -39,7 +39,8 @@ export type AppEnv = {
   Bindings: Bindings;
   Variables: {
     db: Database;
-    auth: Auth;
+    /** Better Auth for this request, built the first time it's asked for. */
+    auth: () => Auth;
     /** Sign-in codes and invitations go out through this. */
     mailer: AppMailer;
     /**

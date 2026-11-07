@@ -1,6 +1,8 @@
-import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+// The minimal build leaves out Kysely and its SQLite dialects: Pano reaches
+// Postgres through Drizzle, and the Worker stays about 0.5 MB smaller.
+import { betterAuth } from "better-auth/minimal";
 import { emailOTP, organization } from "better-auth/plugins";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
