@@ -146,6 +146,27 @@ describe("signing up again", () => {
     await t.settle();
   });
 
+  it("answers the same, name and all, whether or not the address has an account", async () => {
+    const t = testApp();
+    const { email } = await t.signIn();
+    const signUp = async (address: string) => {
+      const res = await t.post("/api/auth/sign-up/email", {
+        email: address,
+        password: PASSWORD,
+        name: "  Bob   Smith ",
+      });
+      return (await res.json()) as { user: Record<string, unknown> };
+    };
+
+    const existing = await signUp(email);
+    const created = await signUp(uniqueEmail());
+    expect(existing.user.name).toBe(created.user.name);
+    expect(Object.keys(existing.user).sort()).toEqual(
+      Object.keys(created.user).sort()
+    );
+    await t.settle();
+  });
+
   it("leaves an existing account's password alone", async () => {
     const t = testApp();
     const { email, password } = await t.signUpConfirmed();

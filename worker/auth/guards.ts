@@ -118,6 +118,12 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
     await refuseBreached(parsed.data.password);
     await claim(email);
     await deleteUnconfirmed(db, email);
+    // Sign-up asks no name; the submit form does later. Better Auth echoes
+    // the name raw when the address has an account and tidied when it
+    // doesn't, so a name sent anyway would say which it is.
+    return {
+      context: { body: { ...(body as object), name: "" } },
+    };
   }
 
   /**
@@ -162,7 +168,7 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
       if (ctx.path === "/email-otp/send-verification-otp") {
         await beforeSignInCode(ctx.body);
       } else if (ctx.path === "/sign-up/email") {
-        await beforeSignUp(ctx.body);
+        return await beforeSignUp(ctx.body);
       } else if (ctx.path === "/email-otp/verify-email") {
         await beforeConfirm(ctx.body);
       } else if (ctx.path === "/email-otp/request-password-reset") {
