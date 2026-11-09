@@ -5,3 +5,7 @@
 BETTER_AUTH_SECRET=replace-me
 BETTER_AUTH_URL=http://localhost:5173
 ENVIRONMENT=development
+# GitHub sign-in, optional: an OAuth app whose callback URL is
+# http://localhost:5173/api/auth/callback/github. Without both, it's off.
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=

@@ -5,7 +5,8 @@ discuss in threads; teams move requests across a public roadmap. English and
 Turkish.
 
 Live: <https://pano.olbios88.workers.dev>. "Try as team" and "Try as member"
-open a demo workspace with your own guest account.
+open a demo workspace with your own guest account. People sign in with an
+emailed code, a password, a passkey or GitHub.
 
 Design: [docs/superpowers/specs/2026-10-16-pano-design.md](docs/superpowers/specs/2026-10-16-pano-design.md)
 
@@ -75,10 +76,19 @@ otherwise.
 
   In local dev, `curl 'http://localhost:5173/cdn-cgi/handler/scheduled?cron=*/5+*+*+*+*'`
   (or `cron=0+1+*+*+*`) runs one, and emails print in the terminal.
-- `worker/auth.ts`: Better Auth, with email-code sign-in and workspaces as
-  organizations. Its routes under `/api/auth/*` answer in Better Auth's JSON,
-  so the browser calls them through `authClient`. In local dev, sign-in codes
-  print in the terminal running `bun run dev`.
+- `worker/auth/`: Better Auth, with workspaces as organizations. Its routes
+  under `/api/auth/*` answer in Better Auth's JSON, so the browser calls them
+  through `authClient`. In local dev, codes print in the terminal running
+  `bun run dev`.
+  - `index.ts`: email codes; passwords, confirmed by a code before they work;
+    GitHub, when its secrets are set; the rate limits.
+  - `password.ts`: PBKDF2 hashing (Better Auth's scrypt costs more CPU than
+    the free plan gives a request) and the leaked-password check.
+  - `guards.ts`: Pano's rules around Better Auth's routes: email limits,
+    unconfirmed sign-ups, the pause after ten wrong passwords, demo guests,
+    and the recent sign-in that adding a way to sign in needs.
+  - `passkeys.ts`: the passkey plugin, imported only for
+    `/api/auth/passkey/*`, so other requests start without its 650 KB.
 - `worker/services/`: the queries behind the routes. `votes.ts` locks the
   post row and writes the state the person asked for, so the count moves
   only by the rows that changed. `comments.ts` takes the same lock and
@@ -129,7 +139,8 @@ server that is already running. Its setup migrates the database in
 
 `E2E_BASE_URL=https://pano.olbios88.workers.dev bun run e2e` runs the same
 tests against the live site, in its demo workspace; they delete what they
-create.
+create. The password and passkey tests make accounts, so they skip the live
+site.
 
 ## Deploying
 
@@ -151,6 +162,14 @@ on free plans. One-time setup:
 
    In Brevo, also turn off blocking of unknown IP addresses for the key:
    Workers send from changing addresses.
+
+   For GitHub sign-in, create an OAuth app under GitHub → Settings →
+   Developer settings → OAuth Apps, with the homepage
+   `https://pano.olbios88.workers.dev` and the callback URL
+   `https://pano.olbios88.workers.dev/api/auth/callback/github`, then set
+   `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` the same way. Without both,
+   GitHub sign-in stays off and its buttons are hidden. Passkeys need no
+   setup: they belong to the host in `BETTER_AUTH_URL`.
 5. Keep the direct connection string in `.env` as `NEON_DATABASE_URL`, then
    `bun run db:migrate:prod`. `DATABASE_URL` stays on your local database,
    so the everyday `bun run db:migrate` can't reach production.
