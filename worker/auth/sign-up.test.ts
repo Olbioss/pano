@@ -174,6 +174,9 @@ describe("codes and routes", () => {
     "/api/auth/forget-password/email-otp",
     "/api/auth/email-otp/request-email-change",
     "/api/auth/send-verification-email",
+    // With a stolen session it would test passwords at speed, outside the
+    // per-address pause, and lead around the fresh-session rule.
+    "/api/auth/verify-password",
   ])("closes %s, which Pano doesn't use", async (path) => {
     const t = testApp();
     const res = await t.post(path, { email: uniqueEmail() });

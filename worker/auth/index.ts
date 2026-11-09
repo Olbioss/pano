@@ -114,6 +114,10 @@ export function createAuth({
       "/email-otp/change-email",
       "/send-verification-email",
       "/verify-email",
+      // Tests a password against a session's account. With a stolen session
+      // it would let someone guess at speed, outside the per-address pause,
+      // then sign in fresh past the 24-hour rule.
+      "/verify-password",
     ],
     user: {
       // A GitHub account whose email GitHub hasn't verified doesn't get a
