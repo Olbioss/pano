@@ -5,6 +5,7 @@ import {
 } from "better-auth/api";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { isSessionFresh } from "@/shared/account";
 import { isDemoEmail } from "@/shared/demo";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/shared/password";
 import type { Database } from "../db/client";
@@ -178,6 +179,10 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
         };
       } else if (ctx.path === "/sign-in/email") {
         await beforePasswordSignIn(ctx.body);
+      } else if (ctx.path === "/link-social") {
+        const session = await getSessionFromCtx(ctx);
+        await refuseDemo(session);
+        refuseStale(session);
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
@@ -199,6 +204,19 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
       }
     }),
   };
+}
+
+/**
+ * Adding a way to sign in needs a recent session. Better Auth checks this
+ * itself for passkeys and for disconnecting; this covers connecting GitHub.
+ */
+function refuseStale(session: { session: { createdAt: Date } } | null) {
+  if (session && !isSessionFresh(session.session.createdAt)) {
+    throw new APIError("FORBIDDEN", {
+      code: "SESSION_NOT_FRESH",
+      message: "Sign in again to add a way to sign in",
+    });
+  }
 }
 
 /** Demo accounts can't add or change a way to sign in. */

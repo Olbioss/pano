@@ -20,7 +20,14 @@ import { hashPassword, verifyPassword } from "./password";
 
 export type AuthDeps = {
   db: Database;
-  env: Pick<Bindings, "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "ENVIRONMENT">;
+  env: Pick<
+    Bindings,
+    | "BETTER_AUTH_SECRET"
+    | "BETTER_AUTH_URL"
+    | "ENVIRONMENT"
+    | "GITHUB_CLIENT_ID"
+    | "GITHUB_CLIENT_SECRET"
+  >;
   mailer: CodeMailer;
   /**
    * Takes a code email's place in Pano's limits before Better Auth makes
@@ -68,6 +75,32 @@ export function createAuth({
     },
     // Entering the confirmation code signs the person in.
     emailVerification: { autoSignInAfterVerification: true },
+    // GitHub sign-in, when both of its secrets are set. Its name (or login)
+    // becomes the display name of an account it creates.
+    socialProviders:
+      env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+        ? {
+            github: {
+              clientId: env.GITHUB_CLIENT_ID,
+              clientSecret: env.GITHUB_CLIENT_SECRET,
+            },
+          }
+        : {},
+    account: {
+      accountLinking: {
+        // A GitHub sign-in joins the account with the same email only when
+        // GitHub has verified that email (GitHub isn't a trusted provider)
+        // and the Pano account's address is confirmed (Better Auth's
+        // default), so an unconfirmed sign-up can't collect a GitHub link.
+        enabled: true,
+        // Connecting GitHub from the account page works even when GitHub's
+        // address differs: the person is signed in, in a recent session.
+        allowDifferentEmails: true,
+        // Email codes always work, so GitHub can go even when it's the only
+        // linked sign-in.
+        allowUnlinkingAll: true,
+      },
+    },
     // Routes Pano doesn't use. Confirmation codes are checked only through
     // /email-otp/verify-email, where Pano's guard sees the password.
     disabledPaths: [
@@ -78,6 +111,19 @@ export function createAuth({
       "/send-verification-email",
       "/verify-email",
     ],
+    user: {
+      // A GitHub account whose email GitHub hasn't verified doesn't get a
+      // Pano account: anyone can type any address into GitHub.
+      async validateUserInfo({ user, source }) {
+        if (
+          source.action === "create-user" &&
+          source.oauth?.providerId === "github" &&
+          !user.emailVerified
+        ) {
+          return { error: "github_email_unverified" };
+        }
+      },
+    },
     databaseHooks: {
       user: {
         create: {
