@@ -1,5 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { type Auth, createAuth } from "../auth";
+import { isBreached } from "../auth/password";
 import type { AppEnv } from "../env";
 import type { CodeMailer } from "../mail/mailer";
 import { claimCodeForAddress, claimDailyEmail } from "../services/email-budget";
@@ -9,10 +10,12 @@ import { claimCodeForAddress, claimDailyEmail } from "../services/email-budget";
  * asks for it: building it is most of a cold request's CPU, and signed-out
  * visitors never need it. Runs after withMailer.
  *
- * In production a code first takes its place in two limits: three per
- * address in ten minutes, and the day's email budget. It claims before
- * Better Auth makes the code, so a refused request leaves the last code
- * sent working, and the /auth route says which limit refused it.
+ * In production a code email (sign-in, confirmation or reset) first takes
+ * its place in two limits: three per address in ten minutes, and the day's
+ * email budget. It claims before Better Auth makes the code, so a refused
+ * request leaves the last code sent working, and the /auth route says which
+ * limit refused it. New passwords are checked against Have I Been Pwned in
+ * production only, so development and tests never call it.
  */
 export const withAuth = createMiddleware<AppEnv>(async (c, next) => {
   const mail: AppEnv["Variables"]["mail"] = { failed: false };
@@ -43,7 +46,13 @@ export const withAuth = createMiddleware<AppEnv>(async (c, next) => {
   c.set("mail", mail);
   let auth: Auth | undefined;
   c.set("auth", () => {
-    auth ??= createAuth({ db: c.var.db, env: c.env, mailer: codes, claimCode });
+    auth ??= createAuth({
+      db: c.var.db,
+      env: c.env,
+      mailer: codes,
+      claimCode,
+      checkBreach: c.env.ENVIRONMENT === "production" ? isBreached : undefined,
+    });
     return auth;
   });
   await next();

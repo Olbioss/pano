@@ -3,6 +3,7 @@ import type { DemoRole } from "@/shared/demo";
 import { createApp } from "../app";
 import type { Bindings } from "../env";
 import type {
+  CodeKind,
   CodeMessage,
   InvitationNotice,
   Mailer,
@@ -93,18 +94,69 @@ export function testApp(overrides: Partial<Bindings> = {}) {
       headers
     );
 
-  function lastCode(email: string) {
-    const message = mail.sent.findLast((sent) => sent.to === email);
-    if (!message) throw new Error(`no code was sent to ${email}`);
+  function lastCode(email: string, kind?: CodeKind) {
+    const message = mail.sent.findLast(
+      (sent) => sent.to === email && (!kind || sent.kind === kind)
+    );
+    if (!message) throw new Error(`no ${kind ?? ""} code was sent to ${email}`);
     return message.code;
   }
 
-  async function signIn(email = uniqueEmail()) {
-    await sendCode(email);
-    const res = await post("/api/auth/sign-in/email-otp", {
+  /** Password sign-up: the account waits for its confirmation code. */
+  const signUp = (
+    email: string,
+    password: string,
+    headers: Record<string, string> = {}
+  ) => post("/api/auth/sign-up/email", { email, password, name: "" }, headers);
+
+  /** Enters a confirmation code, with the password the sign-up page holds. */
+  const confirm = (
+    email: string,
+    otp: string,
+    password?: string,
+    headers: Record<string, string> = {}
+  ) =>
+    post("/api/auth/email-otp/verify-email", { email, otp, password }, headers);
+
+  const signInWithPassword = (
+    email: string,
+    password: string,
+    headers: Record<string, string> = {}
+  ) => post("/api/auth/sign-in/email", { email, password }, headers);
+
+  /**
+   * A confirmed password account, signed in: its email and cookie.
+   * `headers`: a production test gives its own client address.
+   */
+  async function signUpConfirmed(
+    email = uniqueEmail(),
+    password = "correct horse battery",
+    headers: Record<string, string> = {}
+  ) {
+    const res = await signUp(email, password, headers);
+    if (!res.ok) throw new Error(`sign-up failed with ${res.status}`);
+    const confirmed = await confirm(
       email,
-      otp: lastCode(email),
-    });
+      lastCode(email, "confirm"),
+      password,
+      headers
+    );
+    if (!confirmed.ok)
+      throw new Error(`confirming failed with ${confirmed.status}`);
+    return { email, password, cookie: cookieFrom(confirmed) };
+  }
+
+  /** `headers`: a production test gives its own client address. */
+  async function signIn(
+    email = uniqueEmail(),
+    headers: Record<string, string> = {}
+  ) {
+    await sendCode(email, headers);
+    const res = await post(
+      "/api/auth/sign-in/email-otp",
+      { email, otp: lastCode(email) },
+      headers
+    );
     if (!res.ok) throw new Error(`sign-in failed with ${res.status}`);
     return { email, cookie: cookieFrom(res) };
   }
@@ -130,6 +182,10 @@ export function testApp(overrides: Partial<Bindings> = {}) {
     lastCode,
     signIn,
     signInDemo,
+    signUp,
+    confirm,
+    signInWithPassword,
+    signUpConfirmed,
     mail,
     settle: base.settle,
   };

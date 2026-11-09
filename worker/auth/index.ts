@@ -1,12 +1,11 @@
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError, createAuthMiddleware } from "better-auth/api";
 // The minimal build leaves out Kysely and its SQLite dialects: Pano reaches
 // Postgres through Drizzle, and the Worker stays about 0.5 MB smaller.
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP, organization } from "better-auth/plugins";
 import { and, eq } from "drizzle-orm";
-import { z } from "zod";
 import { isDemoEmail } from "@/shared/demo";
+import { PASSWORD_MAX, PASSWORD_MIN } from "@/shared/password";
 import { INVITATION_DAYS, PENDING_INVITATIONS, TEAM_SIZE } from "@/shared/team";
 import type { Database } from "../db/client";
 import * as schema from "../db/schema";
@@ -14,17 +13,21 @@ import { demoSignIn } from "../demo/sign-in";
 import type { Bindings } from "../env";
 import { cleanDisplayName } from "../lib/display-name";
 import { localeFromHeaders } from "../lib/request-locale";
-import type { CodeMailer } from "../mail/mailer";
+import type { CodeKind, CodeMailer } from "../mail/mailer";
+import { authGuards } from "./guards";
+import { hashPassword, verifyPassword } from "./password";
 
 export type AuthDeps = {
   db: Database;
   env: Pick<Bindings, "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "ENVIRONMENT">;
   mailer: CodeMailer;
   /**
-   * Takes a sign-in code's place in Pano's limits before Better Auth makes
+   * Takes a code email's place in Pano's limits before Better Auth makes
    * the code; false refuses it.
    */
   claimCode?: (email: string) => Promise<boolean>;
+  /** Whether a new password is on a leaked-password list (production). */
+  checkBreach?: (password: string) => Promise<boolean>;
 };
 
 /**
@@ -32,10 +35,19 @@ export type AuthDeps = {
  * request's own database client (a Worker can't share sockets across
  * requests); building it costs about 0.3 ms.
  *
- * Sign-in is email codes only. Password hashing doesn't fit the Workers free
- * plan's 10 ms of CPU per request; a code is cheap to create and check.
+ * People sign in with an email code or a password. A password account
+ * confirms its address with a code before the password works. Passwords are
+ * hashed with PBKDF2 (./password.ts): Better Auth's scrypt costs more CPU
+ * than the Workers free plan gives a request.
  */
-export function createAuth({ db, env, mailer, claimCode }: AuthDeps) {
+export function createAuth({
+  db,
+  env,
+  mailer,
+  claimCode,
+  checkBreach,
+}: AuthDeps) {
+  const guards = authGuards({ db, claimCode, checkBreach });
   return betterAuth({
     appName: "Pano",
     baseURL: env.BETTER_AUTH_URL,
@@ -43,30 +55,28 @@ export function createAuth({ db, env, mailer, claimCode }: AuthDeps) {
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [env.BETTER_AUTH_URL],
     database: drizzleAdapter(db, { provider: "pg", schema }),
-    hooks: {
-      // A code takes its place in Pano's limits before Better Auth stores
-      // it, so a refused request leaves the last code sent working. Better
-      // Auth's per-IP limit has already run by then.
-      before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path !== "/email-otp/send-verification-otp" || !claimCode) {
-          return;
-        }
-        const { email, type } = (ctx.body ?? {}) as {
-          email?: unknown;
-          type?: unknown;
-        };
-        // Better Auth refuses a bad address, and mails no code for the rest.
-        if (
-          typeof email !== "string" ||
-          type !== "sign-in" ||
-          isDemoEmail(email) ||
-          !z.email().safeParse(email).success
-        ) {
-          return;
-        }
-        if (!(await claimCode(email))) throw new APIError("TOO_MANY_REQUESTS");
-      }),
+    hooks: guards,
+    emailAndPassword: {
+      enabled: true,
+      // Until its code is entered, a new account's password can't sign in.
+      requireEmailVerification: true,
+      minPasswordLength: PASSWORD_MIN,
+      maxPasswordLength: PASSWORD_MAX,
+      revokeSessionsOnPasswordReset: true,
+      password: { hash: hashPassword, verify: verifyPassword },
     },
+    // Entering the confirmation code signs the person in.
+    emailVerification: { autoSignInAfterVerification: true },
+    // Routes Pano doesn't use. Confirmation codes are checked only through
+    // /email-otp/verify-email, where Pano's guard sees the password.
+    disabledPaths: [
+      "/email-otp/check-verification-otp",
+      "/forget-password/email-otp",
+      "/email-otp/request-email-change",
+      "/email-otp/change-email",
+      "/send-verification-email",
+      "/verify-email",
+    ],
     databaseHooks: {
       user: {
         create: {
@@ -98,6 +108,9 @@ export function createAuth({ db, env, mailer, claimCode }: AuthDeps) {
       customRules: {
         "/email-otp/send-verification-otp": { window: 60, max: 3 },
         "/sign-in/email-otp": { window: 60, max: 10 },
+        "/sign-up/email": { window: 60, max: 3 },
+        "/sign-in/email": { window: 60, max: 5 },
+        "/email-otp/verify-email": { window: 60, max: 10 },
         // Each demo sign-in makes an account, until the nightly reset.
         "/demo/sign-in": { window: 60, max: 5 },
       },
@@ -109,13 +122,19 @@ export function createAuth({ db, env, mailer, claimCode }: AuthDeps) {
     plugins: [
       emailOTP({
         storeOTP: "hashed",
+        // A password sign-up gets its confirmation code from here. So does
+        // a sign-up with an address that already has an account: Better
+        // Auth answers it like any other, and the code signs its owner in.
+        sendVerificationOnSignUp: true,
         async sendVerificationOTP({ email, otp, type }, ctx) {
           // Demo addresses can't receive mail: nobody signs in to them.
-          if (type !== "sign-in" || isDemoEmail(email)) return;
+          if (isDemoEmail(email)) return;
+          const kind = await codeKind(db, type, email);
+          if (!kind) return;
           await mailer.sendCode({
             to: email,
             code: otp,
-            kind: "sign-in",
+            kind,
             locale: localeFromHeaders(new Headers(ctx?.headers)),
           });
         },
@@ -150,3 +169,23 @@ export function createAuth({ db, env, mailer, claimCode }: AuthDeps) {
 }
 
 export type Auth = ReturnType<typeof createAuth>;
+
+/**
+ * Which email a code goes in. A confirmation code for an address that is
+ * already confirmed came from a sign-up with an existing account's address.
+ */
+async function codeKind(
+  db: Database,
+  type: "sign-in" | "email-verification" | "forget-password" | "change-email",
+  email: string
+): Promise<CodeKind | null> {
+  if (type === "sign-in") return "sign-in";
+  if (type === "forget-password") return "reset";
+  if (type !== "email-verification") return null;
+  const [found] = await db
+    .select({ confirmed: schema.user.emailVerified })
+    .from(schema.user)
+    .where(eq(schema.user.email, email.toLowerCase()))
+    .limit(1);
+  return found?.confirmed ? "existing-account" : "confirm";
+}
