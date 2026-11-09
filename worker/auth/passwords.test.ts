@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createApp } from "../app";
+import type { CodeKind } from "../mail/mailer";
 import { WRONG_PASSWORDS_PER_HOUR } from "../services/password-attempts";
-import { cookieFrom, testApp, uniqueEmail } from "../test/app";
+import { cookieFrom, ORIGIN, testApp, uniqueEmail } from "../test/app";
 import { startMidWindow } from "../test/clock";
+import { testEnv } from "../test/env";
 
 /** A client address of its own: no other test file uses 10.82.x.x. */
 const ip = () => ({
@@ -79,6 +82,49 @@ describe("forgot password", () => {
     expect(unknown.status).toBe(known.status);
     expect(await unknown.json()).toEqual(await known.json());
     expect(t.mail.sent.filter((sent) => sent.kind === "reset")).toHaveLength(1);
+    await t.settle();
+  });
+
+  it("answers without waiting for the email, so how long it takes doesn't say whether the address has an account", async () => {
+    const t = testApp();
+    const { email } = await t.signUpConfirmed();
+    // A mailer whose sends finish only when the test says so.
+    const sent: CodeKind[] = [];
+    let release = () => {};
+    const app = createApp({
+      mailer: {
+        sendCode: (message) =>
+          new Promise<void>((resolve) => {
+            sent.push(message.kind);
+            release = resolve;
+          }),
+        async sendInvitation() {},
+      },
+    });
+    const { env, ctx, settle } = testEnv();
+    const answer = Promise.resolve(
+      app.request(
+        "/api/auth/email-otp/request-password-reset",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", origin: ORIGIN },
+          body: JSON.stringify({ email }),
+        },
+        env,
+        ctx
+      )
+    );
+    const first = await Promise.race([
+      answer.then(() => "answered"),
+      new Promise((resolve) => setTimeout(() => resolve("waiting"), 1000)),
+    ]);
+    release();
+    const res = await answer;
+    await settle();
+
+    expect(first).toBe("answered");
+    expect(res.status).toBe(200);
+    expect(sent).toEqual(["reset"]);
     await t.settle();
   });
 

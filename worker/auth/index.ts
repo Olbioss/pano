@@ -37,6 +37,8 @@ export type AuthDeps = {
   claimCode?: (email: string) => Promise<boolean>;
   /** Whether a new password is on a leaked-password list (production). */
   checkBreach?: (password: string) => Promise<boolean>;
+  /** Runs a task after the answer has gone (the Worker's waitUntil). */
+  background?: (task: Promise<unknown>) => void;
   /** The passkey plugin, on the requests that need it (see ./passkeys.ts). */
   passkeys?: ReturnType<typeof passkeyPlugin>;
 };
@@ -57,6 +59,7 @@ export function createAuth({
   mailer,
   claimCode,
   checkBreach,
+  background,
   passkeys,
 }: AuthDeps) {
   const guards = authGuards({ db, claimCode, checkBreach });
@@ -195,12 +198,25 @@ export function createAuth({
           if (isDemoEmail(email)) return;
           const kind = await codeKind(db, type, email);
           if (!kind) return;
-          await mailer.sendCode({
+          const sending = mailer.sendCode({
             to: email,
             code: otp,
             kind,
             locale: localeFromHeaders(new Headers(ctx?.headers)),
           });
+          // Better Auth emails a reset code only to an address that has an
+          // account. Waiting for the send would make those answers slower,
+          // so the reset email goes out after the answer. The page says
+          // "if it has an account" either way, so a failed send isn't news.
+          if (kind === "reset" && background) {
+            background(
+              sending.catch((error) =>
+                console.error("[mail] reset code failed:", error)
+              )
+            );
+            return;
+          }
+          await sending;
         },
       }),
       organization({

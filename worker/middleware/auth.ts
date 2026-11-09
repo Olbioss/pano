@@ -57,6 +57,7 @@ export const withAuth = createMiddleware<AppEnv>(async (c, next) => {
       mailer: codes,
       claimCode,
       checkBreach: c.env.ENVIRONMENT === "production" ? isBreached : undefined,
+      background: (task) => c.executionCtx.waitUntil(task),
       passkeys,
     });
     return auth;
