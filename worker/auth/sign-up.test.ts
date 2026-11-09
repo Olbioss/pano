@@ -146,6 +146,20 @@ describe("signing up again", () => {
     await t.settle();
   });
 
+  it("loses an unconfirmed sign-up's password when the address's owner signs in with a code", async () => {
+    const t = testApp();
+    const email = uniqueEmail();
+    // Someone signs up with another person's address...
+    await t.signUp(email, "an attacker's password");
+    // ...and the owner later signs in with an email code. Better Auth's
+    // revokeUnprovenAccountAccess drops what the unconfirmed sign-up had.
+    await t.signIn(email);
+    expect(
+      (await t.signInWithPassword(email, "an attacker's password")).status
+    ).toBe(401);
+    await t.settle();
+  });
+
   it("answers the same, name and all, whether or not the address has an account", async () => {
     const t = testApp();
     const { email } = await t.signIn();
