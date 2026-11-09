@@ -8,13 +8,13 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { isDemoEmail } from "@/shared/demo";
 import { INVITATION_DAYS, PENDING_INVITATIONS, TEAM_SIZE } from "@/shared/team";
-import type { Database } from "./db/client";
-import * as schema from "./db/schema";
-import { demoSignIn } from "./demo/sign-in";
-import type { Bindings } from "./env";
-import { cleanDisplayName } from "./lib/display-name";
-import { localeFromHeaders } from "./lib/request-locale";
-import type { CodeMailer } from "./mail/mailer";
+import type { Database } from "../db/client";
+import * as schema from "../db/schema";
+import { demoSignIn } from "../demo/sign-in";
+import type { Bindings } from "../env";
+import { cleanDisplayName } from "../lib/display-name";
+import { localeFromHeaders } from "../lib/request-locale";
+import type { CodeMailer } from "../mail/mailer";
 
 export type AuthDeps = {
   db: Database;
