@@ -9,3 +9,6 @@ export const FRESH_SESSION_SECONDS = 24 * 60 * 60;
 export function isSessionFresh(startedAt: string | Date, now = Date.now()) {
   return now - new Date(startedAt).getTime() < FRESH_SESSION_SECONDS * 1000;
 }
+
+/** Passkeys one account can hold. */
+export const PASSKEYS_PER_ACCOUNT = 10;

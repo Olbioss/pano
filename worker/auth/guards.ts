@@ -3,13 +3,13 @@ import {
   createAuthMiddleware,
   getSessionFromCtx,
 } from "better-auth/api";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
-import { isSessionFresh } from "@/shared/account";
+import { isSessionFresh, PASSKEYS_PER_ACCOUNT } from "@/shared/account";
 import { isDemoEmail } from "@/shared/demo";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/shared/password";
 import type { Database } from "../db/client";
-import { account, user } from "../db/schema";
+import { account, passkey, user } from "../db/schema";
 import {
   noteWrongPassword,
   passwordPaused,
@@ -183,6 +183,14 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
         const session = await getSessionFromCtx(ctx);
         await refuseDemo(session);
         refuseStale(session);
+      } else if (
+        ctx.path === "/passkey/generate-register-options" ||
+        ctx.path === "/passkey/verify-registration"
+      ) {
+        // Better Auth checks the session is recent itself.
+        const session = await getSessionFromCtx(ctx);
+        await refuseDemo(session);
+        if (session) await refuseExtraPasskey(db, session.user.id);
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
@@ -215,6 +223,20 @@ function refuseStale(session: { session: { createdAt: Date } } | null) {
     throw new APIError("FORBIDDEN", {
       code: "SESSION_NOT_FRESH",
       message: "Sign in again to add a way to sign in",
+    });
+  }
+}
+
+/** An account holds at most PASSKEYS_PER_ACCOUNT passkeys. */
+async function refuseExtraPasskey(db: Database, userId: string) {
+  const [row] = await db
+    .select({ passkeys: count() })
+    .from(passkey)
+    .where(eq(passkey.userId, userId));
+  if ((row?.passkeys ?? 0) >= PASSKEYS_PER_ACCOUNT) {
+    throw new APIError("BAD_REQUEST", {
+      code: "PASSKEY_LIMIT",
+      message: `An account can have ${PASSKEYS_PER_ACCOUNT} passkeys`,
     });
   }
 }

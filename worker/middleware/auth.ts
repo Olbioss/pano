@@ -44,6 +44,11 @@ export const withAuth = createMiddleware<AppEnv>(async (c, next) => {
     },
   };
   c.set("mail", mail);
+  // Loaded only where it's used: see worker/auth/passkeys.ts. Only a
+  // dynamic import keeps it out of every other request's startup.
+  const passkeys = c.req.path.startsWith("/api/auth/passkey/")
+    ? (await import("../auth/passkeys")).passkeyPlugin(c.env)
+    : undefined;
   let auth: Auth | undefined;
   c.set("auth", () => {
     auth ??= createAuth({
@@ -52,6 +57,7 @@ export const withAuth = createMiddleware<AppEnv>(async (c, next) => {
       mailer: codes,
       claimCode,
       checkBreach: c.env.ENVIRONMENT === "production" ? isBreached : undefined,
+      passkeys,
     });
     return auth;
   });

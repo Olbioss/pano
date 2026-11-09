@@ -16,6 +16,7 @@ import { cleanDisplayName } from "../lib/display-name";
 import { localeFromHeaders } from "../lib/request-locale";
 import type { CodeKind, CodeMailer } from "../mail/mailer";
 import { authGuards } from "./guards";
+import type { passkeyPlugin } from "./passkeys";
 import { hashPassword, verifyPassword } from "./password";
 
 export type AuthDeps = {
@@ -36,6 +37,8 @@ export type AuthDeps = {
   claimCode?: (email: string) => Promise<boolean>;
   /** Whether a new password is on a leaked-password list (production). */
   checkBreach?: (password: string) => Promise<boolean>;
+  /** The passkey plugin, on the requests that need it (see ./passkeys.ts). */
+  passkeys?: ReturnType<typeof passkeyPlugin>;
 };
 
 /**
@@ -54,6 +57,7 @@ export function createAuth({
   mailer,
   claimCode,
   checkBreach,
+  passkeys,
 }: AuthDeps) {
   const guards = authGuards({ db, claimCode, checkBreach });
   return betterAuth({
@@ -162,6 +166,11 @@ export function createAuth({
         "/email-otp/verify-email": { window: 60, max: 10 },
         "/email-otp/request-password-reset": { window: 60, max: 3 },
         "/email-otp/reset-password": { window: 60, max: 10 },
+        // The browser's passkey autofill asks for options on every visit
+        // to the sign-in page.
+        "/passkey/generate-authenticate-options": { window: 60, max: 20 },
+        "/passkey/verify-authentication": { window: 60, max: 20 },
+        "/sign-in/social": { window: 60, max: 10 },
         // Each demo sign-in makes an account, until the nightly reset.
         "/demo/sign-in": { window: 60, max: 5 },
       },
@@ -215,6 +224,7 @@ export function createAuth({
         membershipLimit: TEAM_SIZE,
       }),
       demoSignIn({ db }),
+      ...(passkeys ? [passkeys] : []),
     ],
   });
 }

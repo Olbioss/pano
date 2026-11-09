@@ -3,6 +3,7 @@
 // imports this file.
 import { drizzle } from "drizzle-orm/postgres-js";
 import { createAuth } from "./worker/auth";
+import { passkeyPlugin } from "./worker/auth/passkeys";
 import type { Database } from "./worker/db/client";
 import { consoleMailer } from "./worker/mail/mailer";
 
@@ -13,4 +14,5 @@ export const auth = createAuth({
     BETTER_AUTH_URL: "http://localhost:5173",
   },
   mailer: consoleMailer,
+  passkeys: passkeyPlugin({ BETTER_AUTH_URL: "http://localhost:5173" }),
 });
