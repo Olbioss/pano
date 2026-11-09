@@ -3,10 +3,10 @@ import type { DemoRole } from "@/shared/demo";
 import { createApp } from "../app";
 import type { Bindings } from "../env";
 import type {
+  CodeMessage,
   InvitationNotice,
   Mailer,
   ShippedNotice,
-  SignInCode,
 } from "../mail/mailer";
 import { testEnv } from "./env";
 
@@ -15,11 +15,11 @@ export const ORIGIN = "http://localhost";
 
 /** A mailer that keeps what it would have sent, so tests can read it. */
 export function capturingMailer() {
-  const sent: SignInCode[] = [];
+  const sent: CodeMessage[] = [];
   const shipped: ShippedNotice[] = [];
   const invited: InvitationNotice[] = [];
   const mailer: Mailer = {
-    async sendSignInCode(message) {
+    async sendCode(message) {
       sent.push(message);
     },
     async sendShipped(message) {

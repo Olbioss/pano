@@ -202,7 +202,7 @@ describe("email-code sign-in", () => {
   it("tells the person when the code email couldn't be sent", async () => {
     const app = createApp({
       mailer: {
-        async sendSignInCode() {
+        async sendCode() {
           throw new Error("Brevo refused the email: 401 unauthorized");
         },
         async sendInvitation() {},

@@ -1,5 +1,51 @@
 import { describe, expect, it } from "vitest";
-import { invitationEmail, shippedEmail } from "./templates";
+import { LOCALES } from "@/shared/locale";
+import {
+  CODE_KINDS,
+  codeEmail,
+  invitationEmail,
+  shippedEmail,
+} from "./templates";
+
+describe("codeEmail", () => {
+  it.each(
+    CODE_KINDS.flatMap((kind) =>
+      LOCALES.map((locale) => [kind, locale] as const)
+    )
+  )("puts the code in the %s email's subject and body (%s)", (kind, locale) => {
+    const email = codeEmail(kind, "482913", locale);
+    expect(email.subject).toContain("482913");
+    expect(email.text).toContain("482913");
+    expect(email.html).toContain("482913");
+  });
+
+  it("names what each code does", () => {
+    expect(codeEmail("sign-in", "1", "en").subject).toBe(
+      "1 is your Pano sign-in code"
+    );
+    expect(codeEmail("confirm", "1", "en").subject).toBe(
+      "1 confirms your Pano account"
+    );
+    expect(codeEmail("existing-account", "1", "en").subject).toBe(
+      "1 signs you in to Pano"
+    );
+    expect(codeEmail("reset", "1", "tr").subject).toBe(
+      "Pano şifre sıfırlama kodunuz: 1"
+    );
+  });
+
+  it("tells an existing account's owner that their account hasn't changed", () => {
+    const email = codeEmail("existing-account", "1", "en");
+    expect(email.text).toContain("you already have one");
+    expect(email.text).toContain("your account hasn't changed");
+  });
+
+  it("tells a stranger who got a confirmation code that nothing is set up", () => {
+    expect(codeEmail("confirm", "1", "en").text).toContain(
+      "nothing is set up until the code is entered"
+    );
+  });
+});
 
 const notice = {
   locale: "en" as const,

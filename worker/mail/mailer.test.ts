@@ -6,10 +6,11 @@ const accepted = async () => new Response("{}", { status: 201 });
 describe("brevoMailer", () => {
   it("sends the code email through Brevo in the person's language", async () => {
     const send = vi.fn<SendFn>(accepted);
-    await brevoMailer("key-123", "hello@pano.example", send).sendSignInCode({
+    await brevoMailer("key-123", "hello@pano.example", send).sendCode({
       to: "ayse@example.com",
       code: "482913",
       locale: "tr",
+      kind: "sign-in",
     });
 
     expect(send).toHaveBeenCalledOnce();
@@ -29,13 +30,26 @@ describe("brevoMailer", () => {
 
   it("writes English when asked", async () => {
     const send = vi.fn<SendFn>(accepted);
-    await brevoMailer("k", "hello@pano.example", send).sendSignInCode({
+    await brevoMailer("k", "hello@pano.example", send).sendCode({
       to: "a@example.com",
       code: "111222",
       locale: "en",
+      kind: "sign-in",
     });
     const body = JSON.parse(String(send.mock.calls[0]![1].body));
     expect(body.subject).toBe("111222 is your Pano sign-in code");
+  });
+
+  it("sends each kind of code with its own wording", async () => {
+    const send = vi.fn<SendFn>(accepted);
+    await brevoMailer("k", "hello@pano.example", send).sendCode({
+      to: "a@example.com",
+      code: "333444",
+      locale: "en",
+      kind: "reset",
+    });
+    const body = JSON.parse(String(send.mock.calls[0]![1].body));
+    expect(body.subject).toBe("333444 resets your Pano password");
   });
 
   it("sends a Shipped email through Brevo", async () => {
@@ -80,10 +94,11 @@ describe("brevoMailer", () => {
       new Response('{"message":"unauthorized"}', { status: 401 });
     const mailer = brevoMailer("bad", "hello@pano.example", send);
     await expect(
-      mailer.sendSignInCode({
+      mailer.sendCode({
         to: "a@example.com",
         code: "123456",
         locale: "en",
+        kind: "sign-in",
       })
     ).rejects.toThrow(/401/);
   });
@@ -98,10 +113,11 @@ describe("brevoMailer", () => {
       });
     const mailer = brevoMailer("k", "hello@pano.example", send, 20);
     await expect(
-      mailer.sendSignInCode({
+      mailer.sendCode({
         to: "a@example.com",
         code: "123456",
         locale: "en",
+        kind: "sign-in",
       })
     ).rejects.toThrow(/timeout/i);
   });

@@ -12,7 +12,7 @@ export const withMailer = (mailer?: AppMailer) =>
     c.set(
       "mailer",
       mailer ?? {
-        sendSignInCode: (message) => mailerFor(c.env).sendSignInCode(message),
+        sendCode: (message) => mailerFor(c.env).sendCode(message),
         sendInvitation: (message) => mailerFor(c.env).sendInvitation(message),
       }
     );

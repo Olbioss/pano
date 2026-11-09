@@ -1,23 +1,89 @@
 import type { Locale } from "@/shared/locale";
 
+/**
+ * What a code is for:
+ * - `sign-in`: signs in, or creates an account (Sign in with a code)
+ * - `confirm`: confirms a new password account's address
+ * - `existing-account`: someone signed up with an address that already has
+ *   an account; the code signs its owner in
+ * - `reset`: sets a new password
+ */
+export const CODE_KINDS = [
+  "sign-in",
+  "confirm",
+  "existing-account",
+  "reset",
+] as const;
+export type CodeKind = (typeof CODE_KINDS)[number];
+
+type CodeCopy = {
+  subject: (code: string) => string;
+  intro: string;
+  expiry: string;
+};
+
 const copy = {
   en: {
-    subject: (code: string) => `${code} is your Pano sign-in code`,
-    intro: "Use this code to sign in to Pano:",
-    expiry:
-      "It expires in 5 minutes. If you didn't ask for it, you can ignore this email.",
+    "sign-in": {
+      subject: (code) => `${code} is your Pano sign-in code`,
+      intro: "Use this code to sign in to Pano:",
+      expiry:
+        "It expires in 5 minutes. If you didn't ask for it, you can ignore this email.",
+    },
+    confirm: {
+      subject: (code) => `${code} confirms your Pano account`,
+      intro:
+        "Use this code to confirm your email address and finish creating your Pano account:",
+      expiry:
+        "It expires in 5 minutes. If you didn't create a Pano account, you can ignore this email: nothing is set up until the code is entered.",
+    },
+    "existing-account": {
+      subject: (code) => `${code} signs you in to Pano`,
+      intro:
+        "Someone tried to create a Pano account with this address, but you already have one. If it was you, use this code to sign in:",
+      expiry:
+        "It expires in 5 minutes. If it wasn't you, ignore this email: your account hasn't changed.",
+    },
+    reset: {
+      subject: (code) => `${code} resets your Pano password`,
+      intro: "Use this code to choose a new Pano password:",
+      expiry:
+        "It expires in 5 minutes. If you didn't ask for it, ignore this email: your password hasn't changed.",
+    },
   },
   tr: {
-    subject: (code: string) => `Pano giriş kodunuz: ${code}`,
-    intro: "Pano'ya giriş yapmak için bu kodu kullanın:",
-    expiry:
-      "Kod 5 dakika içinde geçersiz olur. Bu kodu siz istemediyseniz bu e-postayı yok sayabilirsiniz.",
+    "sign-in": {
+      subject: (code) => `Pano giriş kodunuz: ${code}`,
+      intro: "Pano'ya giriş yapmak için bu kodu kullanın:",
+      expiry:
+        "Kod 5 dakika içinde geçersiz olur. Bu kodu siz istemediyseniz bu e-postayı yok sayabilirsiniz.",
+    },
+    confirm: {
+      subject: (code) => `Pano hesabınızı onaylama kodu: ${code}`,
+      intro:
+        "E-posta adresinizi onaylayıp Pano hesabınızı oluşturmayı bitirmek için bu kodu kullanın:",
+      expiry:
+        "Kod 5 dakika içinde geçersiz olur. Pano hesabı oluşturmadıysanız bu e-postayı yok sayabilirsiniz: kod girilmeden hiçbir şey kurulmaz.",
+    },
+    "existing-account": {
+      subject: (code) => `Pano'ya giriş kodunuz: ${code}`,
+      intro:
+        "Bu adresle bir Pano hesabı oluşturulmak istendi, ancak zaten bir hesabınız var. Siz istediyseniz giriş yapmak için bu kodu kullanın:",
+      expiry:
+        "Kod 5 dakika içinde geçersiz olur. Siz istemediyseniz bu e-postayı yok sayın: hesabınızda bir değişiklik olmadı.",
+    },
+    reset: {
+      subject: (code) => `Pano şifre sıfırlama kodunuz: ${code}`,
+      intro: "Yeni bir Pano şifresi belirlemek için bu kodu kullanın:",
+      expiry:
+        "Kod 5 dakika içinde geçersiz olur. Bunu siz istemediyseniz bu e-postayı yok sayın: şifreniz değişmedi.",
+    },
   },
-} satisfies Record<Locale, unknown>;
+} satisfies Record<Locale, Record<CodeKind, CodeCopy>>;
 
-/** The sign-in code email. The code is six digits, so it needs no escaping. */
-export function signInCodeEmail(code: string, locale: Locale) {
-  const c = copy[locale];
+/** A code email. The code is six digits, so it needs no escaping. */
+export function codeEmail(kind: CodeKind, code: string, locale: Locale) {
+  const c = copy[locale][kind];
   return {
     subject: c.subject(code),
     text: `${c.intro}\n\n${code}\n\n${c.expiry}`,

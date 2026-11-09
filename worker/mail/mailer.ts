@@ -1,33 +1,39 @@
 import type { Locale } from "@/shared/locale";
 import type { Bindings } from "../env";
 import {
+  type CodeKind,
+  codeEmail,
   type InvitationNotice,
   invitationEmail,
   type ShippedNotice,
   shippedEmail,
-  signInCodeEmail,
 } from "./templates";
 
-export type { InvitationNotice, ShippedNotice } from "./templates";
+export type { CodeKind, InvitationNotice, ShippedNotice } from "./templates";
 
-export type SignInCode = { to: string; code: string; locale: Locale };
+export type CodeMessage = {
+  to: string;
+  code: string;
+  locale: Locale;
+  kind: CodeKind;
+};
 
 export interface Mailer {
-  sendSignInCode(message: SignInCode): Promise<void>;
+  sendCode(message: CodeMessage): Promise<void>;
   sendShipped(message: ShippedNotice): Promise<void>;
   sendInvitation(message: InvitationNotice): Promise<void>;
 }
 
 /** What sign-in needs from a mailer. */
-export type CodeMailer = Pick<Mailer, "sendSignInCode">;
+export type CodeMailer = Pick<Mailer, "sendCode">;
 
-/** What the API's routes send: sign-in codes and invitations. */
-export type AppMailer = Pick<Mailer, "sendSignInCode" | "sendInvitation">;
+/** What the API's routes send: codes and invitations. */
+export type AppMailer = Pick<Mailer, "sendCode" | "sendInvitation">;
 
 /** Local dev: emails go to the terminal instead of an inbox. */
 export const consoleMailer: Mailer = {
-  async sendSignInCode({ to, code }) {
-    console.log(`[mail] sign-in code for ${to}: ${code}`);
+  async sendCode({ to, code, kind }) {
+    console.log(`[mail] ${kind} code for ${to}: ${code}`);
   },
   async sendShipped({ to, title, url }) {
     console.log(`[mail] shipped notice for ${to}: ${title} ${url}`);
@@ -78,8 +84,8 @@ export function brevoMailer(
     }
   }
   return {
-    sendSignInCode: ({ to, code, locale }) =>
-      deliver(to, signInCodeEmail(code, locale)),
+    sendCode: ({ to, code, locale, kind }) =>
+      deliver(to, codeEmail(kind, code, locale)),
     sendShipped: (message) => deliver(message.to, shippedEmail(message)),
     sendInvitation: (message) => deliver(message.to, invitationEmail(message)),
   };

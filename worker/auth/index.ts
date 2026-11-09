@@ -112,9 +112,10 @@ export function createAuth({ db, env, mailer, claimCode }: AuthDeps) {
         async sendVerificationOTP({ email, otp, type }, ctx) {
           // Demo addresses can't receive mail: nobody signs in to them.
           if (type !== "sign-in" || isDemoEmail(email)) return;
-          await mailer.sendSignInCode({
+          await mailer.sendCode({
             to: email,
             code: otp,
+            kind: "sign-in",
             locale: localeFromHeaders(new Headers(ctx?.headers)),
           });
         },

@@ -29,9 +29,9 @@ export const withAuth = createMiddleware<AppEnv>(async (c, next) => {
     return true;
   }
   const codes: CodeMailer = {
-    async sendSignInCode(message) {
+    async sendCode(message) {
       try {
-        await c.var.mailer.sendSignInCode(message);
+        await c.var.mailer.sendCode(message);
       } catch (err) {
         // Better Auth logs the error but still answers 200, so remember it
         // for the /auth route to report.
