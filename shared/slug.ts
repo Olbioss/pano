@@ -37,6 +37,7 @@ export function slugify(input: string): string {
  */
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "about",
+  "account",
   "admin",
   "api",
   "app",
@@ -46,6 +47,7 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "cdn-cgi",
   "demo",
   "docs",
+  "forgot-password",
   "help",
   "invite",
   "login",

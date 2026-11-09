@@ -51,7 +51,36 @@
     "useAnotherEmail": "Başka bir e-posta kullan",
     "codeLimit": "Bu adrese çok fazla kod gönderildi. Birkaç dakika sonra tekrar deneyin.",
     "emailBudget": "Pano bugün gönderebileceği tüm e-postaları gönderdi. Yarın tekrar deneyin.",
-    "useLatestCode": "Bu adrese son on dakikada üç kod gönderildi. En son geleni girin ya da birkaç dakika sonra yeni kod isteyin."
+    "useLatestCode": "Bu adrese son on dakikada üç kod gönderildi. En son geleni girin ya da birkaç dakika sonra yeni kod isteyin.",
+    "passwordLabel": "Şifre",
+    "forgotPassword": "Şifrenizi mi unuttunuz?",
+    "useCode": "Bunun yerine bana kod gönder",
+    "usePassword": "Bunun yerine şifreyle giriş yap",
+    "otherWays": "Ya da",
+    "github": "GitHub ile devam et",
+    "passkey": "Geçiş anahtarıyla giriş yap",
+    "newHere": "Yeni misiniz?",
+    "createAccount": "Hesap oluşturun",
+    "confirmFirst": "Önce e-posta adresinizi onaylayın: gönderdiğimiz kodu girin.",
+    "sendNewCode": "Yeni kod gönder",
+    "newCodeSent": "Yeni bir kod gönderdik.",
+    "confirmSentTo": "{email} adresine bir kod gönderdik. Adresinizi onaylamak için girin.",
+    "confirm": "Onayla",
+    "wrongPassword": "Bu e-posta ve şifre eşleşmiyor.",
+    "notConfirmed": "Bu adres henüz onaylanmadı.",
+    "passwordPaused": "Bu adres için çok fazla yanlış şifre girildi. E-posta koduyla giriş yapın ya da bir saat sonra yeniden deneyin.",
+    "passwordLength": "8 ile 128 karakter arasında olmalı.",
+    "passwordCompromised": "Bu şifre bilinen bir veri sızıntısında yer alıyor. Başka bir şifre seçin.",
+    "demoOnly": "Demo hesapları bunu yapamaz.",
+    "signInAgain": "Güvenliğiniz için önce yeniden giriş yapın.",
+    "passkeyLimit": "10 geçiş anahtarınız var; bir hesapta en fazla bu kadar olabilir. Önce birini kaldırın.",
+    "passwordExists": "Bu hesabın zaten bir şifresi var.",
+    "currentPasswordWrong": "Mevcut şifreniz doğru değil.",
+    "passkeyFailed": "Bu geçiş anahtarı işe yaramadı. Yeniden deneyin ya da başka bir yolla giriş yapın.",
+    "somethingWrong": "Bir şeyler ters gitti. Biraz sonra yeniden deneyin.",
+    "githubNotLinked": "Bu e-postanın, GitHub'ın henüz bağlanamadığı bir Pano hesabı var. E-posta koduyla giriş yapın, ardından hesap sayfanızdan GitHub'ı bağlayın.",
+    "githubUnverified": "GitHub bu hesabın e-posta adresini doğrulamamış. Adresi GitHub'da doğrulayın ya da başka bir yolla giriş yapın.",
+    "githubFailed": "GitHub ile giriş olmadı. Yeniden deneyin ya da başka bir yolla giriş yapın."
   },
   "newWorkspace": {
     "title": "Çalışma alanınızı oluşturun",
@@ -327,5 +356,22 @@
     "join": "{workspace} ekibine katıl",
     "onTeam": "{workspace} ekibindesiniz.",
     "open": "{workspace} panosunu açın"
+  },
+  "signup": {
+    "title": "Pano hesabınızı oluşturun",
+    "intro": "E-postanızı ve bir şifre kullanın. Adresi onaylamak için bir kod göndereceğiz.",
+    "passwordHint": "8 ile 128 karakter arası.",
+    "create": "Hesap oluştur",
+    "haveAccount": "Zaten hesabınız var mı?",
+    "signIn": "Giriş yapın"
+  },
+  "forgot": {
+    "title": "Şifrenizi sıfırlayın",
+    "intro": "E-postanızı girin, yeni bir şifre belirlemeniz için size bir kod gönderelim.",
+    "send": "Kod gönder",
+    "sentTo": "{email} adresinin bir Pano hesabı varsa ona bir kod gönderdik. Kod 5 dakika içinde geçersiz olur.",
+    "newPassword": "Yeni şifre",
+    "reset": "Yeni şifreyi kaydet",
+    "back": "Girişe dön"
   }
 }

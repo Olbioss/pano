@@ -1,214 +1,34 @@
-import { useForm } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  createFileRoute,
-  useNavigate,
-  useRouter,
-} from "@tanstack/react-router";
-import { useState } from "react";
-import { useTranslations } from "use-intl";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
-import { FieldError } from "@/components/field-error";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { authClient } from "@/lib/auth-client";
+import { SignInPage } from "@/features/auth/sign-in-page";
 import { safeRedirect } from "@/lib/redirect";
 import { meQueryOptions } from "@/lib/session";
-import { afterRefusedCode } from "@/lib/sign-in-error";
-import { codeFormSchema, emailFormSchema } from "@/shared/schemas";
 
 export const Route = createFileRoute("/signin")({
   validateSearch: z.object({
     redirect: z.string().optional().catch(undefined),
+    // Set by GitHub sign-in when it came back refused.
+    error: z.string().optional().catch(undefined),
   }),
+  // Someone already signed in moves on, which is also how GitHub sign-in
+  // ends: GitHub sends the browser back here.
+  beforeLoad: async ({ context, search }) => {
+    const me = await context.queryClient
+      .ensureQueryData(meQueryOptions)
+      .catch(() => null);
+    if (!me?.user) return;
+    const target = safeRedirect(search.redirect);
+    if (target) throw redirect({ href: target });
+    const workspace = me.workspaces[0];
+    if (workspace) {
+      throw redirect({ to: "/$ws", params: { ws: workspace.slug } });
+    }
+    throw redirect({ to: "/new-workspace" });
+  },
   component: SignIn,
 });
 
 function SignIn() {
-  const t = useTranslations("signin");
-  const [sent, setSent] = useState<{ email: string; note?: Note } | null>(null);
-  return (
-    <main className="paper mx-6 my-16 flex flex-col gap-6 p-6 sm:mx-auto sm:max-w-sm sm:p-8">
-      <h1 className="font-semibold text-2xl">{t("title")}</h1>
-      {sent === null ? (
-        <EmailStep onSent={(email, note) => setSent({ email, note })} />
-      ) : (
-        <CodeStep
-          email={sent.email}
-          note={sent.note}
-          onBack={() => setSent(null)}
-        />
-      )}
-    </main>
-  );
-}
-
-/** Why the code step asks for a code sent earlier. */
-type Note = "useLatestCode";
-
-function EmailStep({
-  onSent,
-}: {
-  onSent: (email: string, note?: Note) => void;
-}) {
-  const t = useTranslations("signin");
-  const [error, setError] = useState<string | null>(null);
-  const form = useForm({
-    defaultValues: { email: "" },
-    validators: { onSubmit: emailFormSchema },
-    onSubmit: async ({ value }) => {
-      setError(null);
-      const { error: failure } = await authClient.emailOtp.sendVerificationOtp({
-        email: value.email,
-        type: "sign-in",
-      });
-      if (failure) {
-        const next = afterRefusedCode(failure);
-        if (next.step === "code") onSent(value.email, next.note);
-        else setError(t(next.error));
-        return;
-      }
-      onSent(value.email);
-    },
-  });
-
-  return (
-    <form
-      className="flex flex-col gap-4"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
-      <p className="text-muted-foreground text-sm">{t("emailIntro")}</p>
-      <form.Field name="email">
-        {(field) => (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={field.name}>{t("emailLabel")}</Label>
-            <Input
-              id={field.name}
-              name={field.name}
-              type="email"
-              autoComplete="email"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-            />
-            <FieldError errors={field.state.meta.errors} />
-          </div>
-        )}
-      </form.Field>
-      {error && (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      )}
-      <form.Subscribe selector={(state) => state.isSubmitting}>
-        {(isSubmitting) => (
-          <Button type="submit" disabled={isSubmitting}>
-            {t("sendCode")}
-          </Button>
-        )}
-      </form.Subscribe>
-    </form>
-  );
-}
-
-function CodeStep({
-  email,
-  note,
-  onBack,
-}: {
-  email: string;
-  note?: Note;
-  onBack: () => void;
-}) {
-  const t = useTranslations("signin");
-  const search = Route.useSearch();
-  const router = useRouter();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
-  const form = useForm({
-    defaultValues: { code: "" },
-    validators: { onSubmit: codeFormSchema },
-    onSubmit: async ({ value }) => {
-      setError(null);
-      const { error: failure } = await authClient.signIn.emailOtp({
-        email,
-        otp: value.code.trim(),
-      });
-      if (failure) {
-        setError(
-          failure.status === 429 ? t("tooManyAttempts") : t("codeInvalid")
-        );
-        return;
-      }
-      const me = await queryClient.fetchQuery({
-        ...meQueryOptions,
-        staleTime: 0,
-      });
-      const redirect = safeRedirect(search.redirect);
-      const workspace = me.workspaces[0];
-      if (redirect) router.history.push(redirect);
-      else if (workspace) {
-        await navigate({ to: "/$ws", params: { ws: workspace.slug } });
-      } else await navigate({ to: "/new-workspace" });
-    },
-  });
-
-  return (
-    <form
-      className="flex flex-col gap-4"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
-      <p className="text-muted-foreground text-sm">
-        {t("codeSentTo", { email })}
-      </p>
-      {note && (
-        <p className="text-sm" role="status">
-          {t(note)}
-        </p>
-      )}
-      <form.Field name="code">
-        {(field) => (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={field.name}>{t("codeLabel")}</Label>
-            <Input
-              id={field.name}
-              name={field.name}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-            />
-            <FieldError errors={field.state.meta.errors} />
-          </div>
-        )}
-      </form.Field>
-      {error && (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      )}
-      <form.Subscribe selector={(state) => state.isSubmitting}>
-        {(isSubmitting) => (
-          <Button type="submit" disabled={isSubmitting}>
-            {t("verify")}
-          </Button>
-        )}
-      </form.Subscribe>
-      <Button type="button" variant="link" onClick={onBack}>
-        {t("useAnotherEmail")}
-      </Button>
-    </form>
-  );
+  const { redirect, error } = Route.useSearch();
+  return <SignInPage redirect={redirect} error={error} />;
 }

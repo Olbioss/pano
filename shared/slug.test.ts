@@ -20,12 +20,20 @@ describe("slugify", () => {
 });
 
 describe("isReservedSlug", () => {
-  it.each(["api", "signin", "new-workspace", "p", "demo", "pano", "invite"])(
-    "reserves %s",
-    (slug) => {
-      expect(isReservedSlug(slug)).toBe(true);
-    }
-  );
+  it.each([
+    "api",
+    "signin",
+    "signup",
+    "forgot-password",
+    "account",
+    "new-workspace",
+    "p",
+    "demo",
+    "pano",
+    "invite",
+  ])("reserves %s", (slug) => {
+    expect(isReservedSlug(slug)).toBe(true);
+  });
 
   it("leaves ordinary names free", () => {
     expect(isReservedSlug("acme")).toBe(false);

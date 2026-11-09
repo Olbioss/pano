@@ -51,7 +51,36 @@
     "useAnotherEmail": "Use a different email",
     "codeLimit": "Too many codes went to this address. Try again in a few minutes.",
     "emailBudget": "Pano has sent all the email it can today. Try again tomorrow.",
-    "useLatestCode": "That address has had three codes in the last ten minutes. Enter the latest one, or ask for a new code in a few minutes."
+    "useLatestCode": "That address has had three codes in the last ten minutes. Enter the latest one, or ask for a new code in a few minutes.",
+    "passwordLabel": "Password",
+    "forgotPassword": "Forgot password?",
+    "useCode": "Email me a code instead",
+    "usePassword": "Sign in with a password instead",
+    "otherWays": "Or",
+    "github": "Continue with GitHub",
+    "passkey": "Sign in with a passkey",
+    "newHere": "New here?",
+    "createAccount": "Create an account",
+    "confirmFirst": "Confirm your email address first: enter the code we send you.",
+    "sendNewCode": "Send a new code",
+    "newCodeSent": "We sent a new code.",
+    "confirmSentTo": "We sent a code to {email}. Enter it to confirm your address.",
+    "confirm": "Confirm",
+    "wrongPassword": "That email and password don't match.",
+    "notConfirmed": "This address isn't confirmed yet.",
+    "passwordPaused": "Too many wrong passwords for this address. Sign in with an email code, or try again in an hour.",
+    "passwordLength": "Use 8 to 128 characters.",
+    "passwordCompromised": "This password appears in a known data breach. Choose another one.",
+    "demoOnly": "Demo accounts can't do this.",
+    "signInAgain": "For your security, sign in again first.",
+    "passkeyLimit": "You have 10 passkeys, the most an account can have. Remove one first.",
+    "passwordExists": "This account already has a password.",
+    "currentPasswordWrong": "Your current password isn't right.",
+    "passkeyFailed": "That passkey didn't work. Try again, or sign in another way.",
+    "somethingWrong": "Something went wrong. Try again in a moment.",
+    "githubNotLinked": "This email already has a Pano account that GitHub can't join yet. Sign in with an email code, then connect GitHub on your account page.",
+    "githubUnverified": "GitHub hasn't verified this account's email address. Verify it on GitHub, or sign in another way.",
+    "githubFailed": "GitHub sign-in didn't work. Try again, or sign in another way."
   },
   "newWorkspace": {
     "title": "Create your workspace",
@@ -327,5 +356,22 @@
     "join": "Join {workspace}",
     "onTeam": "You're on {workspace}'s team.",
     "open": "Open {workspace}"
+  },
+  "signup": {
+    "title": "Create your Pano account",
+    "intro": "Use your email and a password. We'll send a code to confirm the address.",
+    "passwordHint": "8 to 128 characters.",
+    "create": "Create account",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in"
+  },
+  "forgot": {
+    "title": "Reset your password",
+    "intro": "Enter your email and we'll send you a code to choose a new password.",
+    "send": "Send code",
+    "sentTo": "If {email} has a Pano account, we sent it a code. It expires in 5 minutes.",
+    "newPassword": "New password",
+    "reset": "Set new password",
+    "back": "Back to sign in"
   }
 }
