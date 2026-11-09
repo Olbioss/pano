@@ -111,6 +111,8 @@ export function createAuth({
         "/sign-up/email": { window: 60, max: 3 },
         "/sign-in/email": { window: 60, max: 5 },
         "/email-otp/verify-email": { window: 60, max: 10 },
+        "/email-otp/request-password-reset": { window: 60, max: 3 },
+        "/email-otp/reset-password": { window: 60, max: 10 },
         // Each demo sign-in makes an account, until the nightly reset.
         "/demo/sign-in": { window: 60, max: 5 },
       },

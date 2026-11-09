@@ -56,11 +56,17 @@ export async function claimCodeForAddress(
   return claim(db, await addressKey(email), windowStart, CODES_PER_ADDRESS);
 }
 
-/** The counter key for an address: a hash, never the address itself. */
-export async function addressKey(email: string): Promise<string> {
+/**
+ * The counter key for an address: a hash, never the address itself. `code`
+ * counts its code emails; `password` its wrong passwords.
+ */
+export async function addressKey(
+  email: string,
+  prefix: "code" | "password" = "code"
+): Promise<string> {
   const bytes = new TextEncoder().encode(email.trim().toLowerCase());
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
-  return `code:${Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+  return `${prefix}:${Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /** Drops windows older than two days; the nightly cron calls it. */

@@ -5,6 +5,10 @@ import { isDemoEmail } from "@/shared/demo";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/shared/password";
 import type { Database } from "../db/client";
 import { account, user } from "../db/schema";
+import {
+  noteWrongPassword,
+  passwordPaused,
+} from "../services/password-attempts";
 import { hashPassword, verifyPassword } from "./password";
 
 export type GuardDeps = {
@@ -28,6 +32,10 @@ export type GuardDeps = {
  *   earlier sign-up of the same address that was never confirmed.
  * - Confirming keeps a sign-up's password only when the password comes with
  *   the code (see beforeConfirm).
+ * - Every new password (sign-up, reset, change) is checked for leaks, and
+ *   changing a password signs out the account's other devices.
+ * - Ten wrong passwords for an address in an hour pause password sign-in
+ *   for it until the hour ends.
  */
 export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
   /** The unconfirmed sign-up this request confirms, if it is a confirmation. */
@@ -58,6 +66,37 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
     if (typeof email !== "string" || isDemoEmail(email)) return;
     if (!z.email().safeParse(email).success) return;
     await claim(email);
+  }
+
+  /** Forgot password: the reset code is a code email like any other. */
+  async function beforeResetCode(body: unknown) {
+    const { email } = (body ?? {}) as { email?: unknown };
+    if (typeof email !== "string" || isDemoEmail(email)) return;
+    if (!z.email().safeParse(email).success) return;
+    await claim(email);
+  }
+
+  /** A reset's or a change's new password, checked like a sign-up's. */
+  async function beforeNewPassword(
+    body: unknown,
+    field: "password" | "newPassword"
+  ) {
+    const parsed = newPassword.safeParse(
+      (body as Record<string, unknown> | undefined)?.[field]
+    );
+    if (parsed.success) await refuseBreached(parsed.data);
+  }
+
+  async function beforePasswordSignIn(body: unknown) {
+    const { email } = (body ?? {}) as { email?: unknown };
+    if (typeof email !== "string") return;
+    if (await passwordPaused(db, email)) {
+      throw new APIError("TOO_MANY_REQUESTS", {
+        code: "PASSWORD_PAUSED",
+        message:
+          "Too many wrong passwords for this address. Sign in with an email code.",
+      });
+    }
   }
 
   async function beforeSignUp(body: unknown) {
@@ -121,9 +160,31 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
         await beforeSignUp(ctx.body);
       } else if (ctx.path === "/email-otp/verify-email") {
         await beforeConfirm(ctx.body);
+      } else if (ctx.path === "/email-otp/request-password-reset") {
+        await beforeResetCode(ctx.body);
+      } else if (ctx.path === "/email-otp/reset-password") {
+        await beforeNewPassword(ctx.body, "password");
+      } else if (ctx.path === "/change-password") {
+        await beforeNewPassword(ctx.body, "newPassword");
+        // A changed password signs out every other device, whatever the
+        // request asked for.
+        return {
+          context: { body: { ...(ctx.body ?? {}), revokeOtherSessions: true } },
+        };
+      } else if (ctx.path === "/sign-in/email") {
+        await beforePasswordSignIn(ctx.body);
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
+      const returned = ctx.context.returned;
+      if (
+        ctx.path === "/sign-in/email" &&
+        returned instanceof APIError &&
+        returned.body?.code === "INVALID_EMAIL_OR_PASSWORD"
+      ) {
+        const { email } = ctx.body as { email: string };
+        await noteWrongPassword(db, email);
+      }
       if (
         ctx.path === "/email-otp/verify-email" &&
         !(ctx.context.returned instanceof Error)
@@ -135,10 +196,8 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
   };
 }
 
-const signUpBody = z.object({
-  email: z.email(),
-  password: z.string().min(PASSWORD_MIN).max(PASSWORD_MAX),
-});
+const newPassword = z.string().min(PASSWORD_MIN).max(PASSWORD_MAX);
+const signUpBody = z.object({ email: z.email(), password: newPassword });
 
 let dummy: Promise<string> | undefined;
 /** A hash no password matches, to check against when nothing is waiting. */
