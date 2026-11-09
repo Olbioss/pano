@@ -247,7 +247,10 @@
     "TEAM_FULL": "Ekip dolu: bir çalışma alanında en fazla 50 kişi olabilir.",
     "INVITATION_NOT_FOUND": "Bu davet artık geçerli değil: iptal edilmiş ya da kullanılmış.",
     "INVITATION_EXPIRED": "Bu davetin süresi doldu. Sizi davet eden kişiden yeniden göndermesini isteyin.",
-    "INVITATION_WRONG_ADDRESS": "Bu davet başka bir adres için. Davetin gönderildiği adresle giriş yapın."
+    "INVITATION_WRONG_ADDRESS": "Bu davet başka bir adres için. Davetin gönderildiği adresle giriş yapın.",
+    "SESSION_NOT_FRESH": "Güvenliğiniz için, yeni bir giriş yöntemi eklemeden önce yeniden giriş yapın.",
+    "PASSWORD_EXISTS": "Bu hesabın zaten bir şifresi var. Bunun yerine şifreyi değiştirin.",
+    "PASSWORD_COMPROMISED": "Bu şifre bilinen bir veri sızıntısında yer alıyor. Başka bir şifre seçin."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Küçük harf, rakam ve tek tire kullanın.",

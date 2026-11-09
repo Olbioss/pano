@@ -26,7 +26,10 @@ export type ApiErrorCode =
   | "TEAM_FULL"
   | "INVITATION_NOT_FOUND"
   | "INVITATION_EXPIRED"
-  | "INVITATION_WRONG_ADDRESS";
+  | "INVITATION_WRONG_ADDRESS"
+  | "SESSION_NOT_FRESH"
+  | "PASSWORD_EXISTS"
+  | "PASSWORD_COMPROMISED";
 
 export type SuccessResponse<T> = { success: true; data: T };
 

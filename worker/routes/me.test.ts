@@ -47,8 +47,14 @@ describe("email-code sign-in", () => {
     expect(await me.json()).toEqual({
       success: true,
       data: {
-        user: { id: expect.any(String), email, name: "" },
+        user: {
+          id: expect.any(String),
+          email,
+          name: "",
+          sessionStartedAt: expect.any(String),
+        },
         workspaces: [],
+        signIn: { github: false },
       },
     });
     await t.settle();
@@ -78,7 +84,7 @@ describe("email-code sign-in", () => {
     const me = await t.client.api.me.$get();
     expect(await me.json()).toEqual({
       success: true,
-      data: { user: null, workspaces: [] },
+      data: { user: null, workspaces: [], signIn: { github: false } },
     });
     await t.settle();
   });

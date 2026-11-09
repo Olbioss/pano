@@ -8,7 +8,11 @@ export type SessionUser = { id: string; name: string; email: string };
 
 export type UserEnv = {
   Bindings: Bindings;
-  Variables: AppEnv["Variables"] & { user: SessionUser };
+  Variables: AppEnv["Variables"] & {
+    user: SessionUser;
+    /** When this session signed in, for the fresh-session rule. */
+    sessionStartedAt: Date;
+  };
 };
 
 /**
@@ -60,12 +64,16 @@ async function cachedSession(
   return cache;
 }
 
-/** Answers 401 unless the request carries a valid session; sets c.var.user. */
+/**
+ * Answers 401 unless the request carries a valid session; sets c.var.user
+ * and c.var.sessionStartedAt.
+ */
 export const requireUser = createMiddleware<UserEnv>(async (c, next) => {
   const session = await readSession(c);
   if (!session) throw new AppError(401, "UNAUTHORIZED", "Sign in first");
   const { id, name, email } = session.user;
   c.set("user", { id, name, email });
+  c.set("sessionStartedAt", new Date(session.session.createdAt));
   await next();
 });
 

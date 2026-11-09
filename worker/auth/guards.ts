@@ -1,4 +1,8 @@
-import { APIError, createAuthMiddleware } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { isDemoEmail } from "@/shared/demo";
@@ -165,6 +169,7 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
       } else if (ctx.path === "/email-otp/reset-password") {
         await beforeNewPassword(ctx.body, "password");
       } else if (ctx.path === "/change-password") {
+        await refuseDemo(await getSessionFromCtx(ctx));
         await beforeNewPassword(ctx.body, "newPassword");
         // A changed password signs out every other device, whatever the
         // request asked for.
@@ -194,6 +199,16 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
       }
     }),
   };
+}
+
+/** Demo accounts can't add or change a way to sign in. */
+async function refuseDemo(session: { user: { email: string } } | null) {
+  if (session && isDemoEmail(session.user.email)) {
+    throw new APIError("FORBIDDEN", {
+      code: "DEMO_ONLY",
+      message: "Demo accounts can't add a way to sign in",
+    });
+  }
 }
 
 const newPassword = z.string().min(PASSWORD_MIN).max(PASSWORD_MAX);

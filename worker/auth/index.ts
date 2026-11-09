@@ -4,6 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP, organization } from "better-auth/plugins";
 import { and, eq } from "drizzle-orm";
+import { FRESH_SESSION_SECONDS } from "@/shared/account";
 import { isDemoEmail } from "@/shared/demo";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/shared/password";
 import { INVITATION_DAYS, PENDING_INVITATIONS, TEAM_SIZE } from "@/shared/team";
@@ -99,6 +100,8 @@ export function createAuth({
       // A signed copy of the session in a cookie keeps most requests off the
       // database, and off the Hyperdrive query budget, for five minutes.
       cookieCache: { enabled: true, maxAge: 5 * 60 },
+      // Adding a passkey or disconnecting GitHub needs a session this new.
+      freshAge: FRESH_SESSION_SECONDS,
     },
     rateLimit: {
       enabled: env.ENVIRONMENT === "production",

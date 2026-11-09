@@ -21,6 +21,9 @@ export type Bindings = {
   BREVO_API_KEY?: string;
   /** The sender address Brevo has verified. */
   MAIL_FROM?: string;
+  /** GitHub sign-in, from a GitHub OAuth app; without both it's off. */
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
 };
 
 /** The part of a KV namespace Pano uses. */

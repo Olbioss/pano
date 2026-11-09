@@ -24,8 +24,14 @@ describe("/new-workspace", () => {
   function visit(workspaces: ReturnType<typeof workspace>[]) {
     const queryClient = new QueryClient();
     queryClient.setQueryData(meQueryOptions.queryKey, {
-      user: { id: "u-sam", name: "Sam", email: "sam@studio.dev" },
+      user: {
+        id: "u-sam",
+        name: "Sam",
+        email: "sam@studio.dev",
+        sessionStartedAt: new Date().toISOString(),
+      },
       workspaces,
+      signIn: { github: false },
     });
     return NewWorkspaceRoute.options.beforeLoad?.({
       context: { queryClient },

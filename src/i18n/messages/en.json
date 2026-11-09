@@ -247,7 +247,10 @@
     "TEAM_FULL": "The team is full: a workspace can have 50 people.",
     "INVITATION_NOT_FOUND": "This invitation isn't open any more: it was cancelled or already used.",
     "INVITATION_EXPIRED": "This invitation has expired. Ask whoever invited you to send it again.",
-    "INVITATION_WRONG_ADDRESS": "This invitation is for another address. Sign in with the address it was sent to."
+    "INVITATION_WRONG_ADDRESS": "This invitation is for another address. Sign in with the address it was sent to.",
+    "SESSION_NOT_FRESH": "For your security, sign in again to add a way to sign in.",
+    "PASSWORD_EXISTS": "This account already has a password. Change it instead.",
+    "PASSWORD_COMPROMISED": "This password appears in a known data breach. Choose another one."
   },
   "fieldErrors": {
     "SLUG_FORMAT": "Use lowercase letters, numbers and single hyphens.",
