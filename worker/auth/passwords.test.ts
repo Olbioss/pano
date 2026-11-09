@@ -220,6 +220,28 @@ describe("wrong passwords", () => {
     await t.settle();
   });
 
+  it("lets the owner sign in with the password they reset while paused", async () => {
+    startMidWindow(60 * 60 * 1000);
+    const t = testApp();
+    const { email } = await t.signUpConfirmed();
+    for (let i = 0; i < WRONG_PASSWORDS_PER_HOUR; i++) {
+      await t.signInWithPassword(email, `wrong ${i}`);
+    }
+
+    // The reset proves the address, so the pause no longer applies.
+    await requestReset(t, email);
+    await resetPassword(
+      t,
+      email,
+      t.lastCode(email, "reset"),
+      "a brand new password"
+    );
+    expect(
+      (await t.signInWithPassword(email, "a brand new password")).status
+    ).toBe(200);
+    await t.settle();
+  });
+
   it("pauses an address with no account the same way", async () => {
     startMidWindow(60 * 60 * 1000);
     const t = testApp();

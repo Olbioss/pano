@@ -11,6 +11,7 @@ import { PASSWORD_MAX, PASSWORD_MIN } from "@/shared/password";
 import type { Database } from "../db/client";
 import { account, passkey, user } from "../db/schema";
 import {
+  clearWrongPasswords,
   noteWrongPassword,
   passwordPaused,
 } from "../services/password-attempts";
@@ -40,7 +41,7 @@ export type GuardDeps = {
  * - Every new password (sign-up, reset, change) is checked for leaks, and
  *   changing a password signs out the account's other devices.
  * - Ten wrong passwords for an address in an hour pause password sign-in
- *   for it until the hour ends.
+ *   for it until the hour ends, or until a reset proves the address.
  */
 export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
   /** The unconfirmed sign-up this request confirms, if it is a confirmation. */
@@ -208,6 +209,13 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
       ) {
         const { email } = ctx.body as { email: string };
         await noteWrongPassword(db, email);
+      }
+      if (
+        ctx.path === "/email-otp/reset-password" &&
+        !(returned instanceof Error)
+      ) {
+        const { email } = ctx.body as { email: string };
+        await clearWrongPasswords(db, email);
       }
       if (
         ctx.path === "/email-otp/verify-email" &&

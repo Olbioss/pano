@@ -57,3 +57,13 @@ export async function noteWrongPassword(
       set: { count: sql`${emailCounters.count} + 1` },
     });
 }
+
+/**
+ * Forgets the address's wrong passwords. A reset proves the address, so the
+ * person who just chose a new password isn't paused from using it.
+ */
+export async function clearWrongPasswords(db: Database, email: string) {
+  await db
+    .delete(emailCounters)
+    .where(eq(emailCounters.key, await addressKey(email, "password")));
+}
