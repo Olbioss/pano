@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WsRouteImport } from './routes/$ws'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as NewWorkspaceRouteImport } from './routes/new-workspace'
 import { Route as SigninRouteImport } from './routes/signin'
@@ -31,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
 const WsRoute = WsRouteImport.update({
   id: '/$ws',
   path: '/$ws',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -92,6 +98,7 @@ const PRefRoute = PRefRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$ws': typeof WsRouteWithChildren
+  '/account': typeof AccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$ws': typeof WsRouteWithChildren
+  '/account': typeof AccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/new-workspace': typeof NewWorkspaceRoute
   '/signin': typeof SigninRoute
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$ws'
+    | '/account'
     | '/forgot-password'
     | '/new-workspace'
     | '/signin'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/forgot-password'
     | '/new-workspace'
     | '/signin'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$ws'
+    | '/account'
     | '/forgot-password'
     | '/new-workspace'
     | '/signin'
@@ -184,6 +196,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   WsRoute: typeof WsRouteWithChildren
+  AccountRoute: typeof AccountRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   NewWorkspaceRoute: typeof NewWorkspaceRoute
   SigninRoute: typeof SigninRoute
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/$ws'
       fullPath: '/$ws'
       preLoaderRoute: typeof WsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -309,6 +329,7 @@ const WsRouteWithChildren = WsRoute._addFileChildren(WsRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   WsRoute: WsRouteWithChildren,
+  AccountRoute: AccountRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   NewWorkspaceRoute: NewWorkspaceRoute,
   SigninRoute: SigninRoute,

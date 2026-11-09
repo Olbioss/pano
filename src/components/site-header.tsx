@@ -37,18 +37,25 @@ export function SiteHeader() {
         <LanguageSwitcher />
         {user ? (
           <>
+            {/* Your name, or your email, opens your account page. */}
             {isDemoEmail(user.email) ? (
               // Guests' addresses are made up; their name is what others see.
-              <span className="hidden items-center gap-2 text-sm sm:inline-flex">
+              <Link
+                to="/account"
+                className="hidden items-center gap-2 text-sm hover:underline sm:inline-flex"
+              >
                 <span className="font-medium">{user.name}</span>
                 <span className="rounded-[3px] border border-foreground/30 px-1.5 py-px text-xs">
                   {t("demo")}
                 </span>
-              </span>
+              </Link>
             ) : (
-              <span className="hidden text-muted-foreground text-sm sm:inline">
+              <Link
+                to="/account"
+                className="hidden text-muted-foreground text-sm hover:underline sm:inline"
+              >
                 {user.email}
-              </span>
+              </Link>
             )}
             <Button size="sm" variant="outline" onClick={signOut}>
               {t("signOut")}

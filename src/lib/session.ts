@@ -8,6 +8,11 @@ export const meQueryOptions = queryOptions({
   staleTime: 60_000,
 });
 
+/** A first password for an account made with email codes or GitHub. */
+export async function setFirstPassword(password: string) {
+  return unwrap(await api.me.password.$post({ json: { password } }));
+}
+
 /** Sets the signed-in person's display name. */
 export async function updateMe(name: string) {
   return unwrap(await api.me.$patch({ json: { name } }));
