@@ -15,6 +15,7 @@ import {
   pauseOutboxUntilTomorrow,
   sendQueuedEmails,
 } from "./services/outbox";
+import { deleteStaleSignUps } from "./services/unconfirmed";
 
 /** The triggers in wrangler.jsonc. */
 export const EVERY_FIVE_MINUTES = "*/5 * * * *";
@@ -37,8 +38,9 @@ type CronDeps = {
  *   or once a failed email's next try is due, and puts the flag back up
  *   while a full batch left some behind. Once the day's email is spent, a
  *   third flag keeps it from connecting until the next UTC day.
- * - Every night: reset the demo workspace, prune old email counters, then
- *   send whatever is queued, in case a flag was lost.
+ * - Every night: reset the demo workspace, prune old email counters, delete
+ *   password sign-ups left unconfirmed for a week, then send whatever is
+ *   queued, in case a flag was lost.
  */
 export async function runScheduled(
   cron: string,
@@ -69,6 +71,14 @@ export async function runScheduled(
         await pruneEmailCounters(db);
       } catch (error) {
         console.error("[email] pruning counters failed:", error);
+      }
+      try {
+        const removed = await deleteStaleSignUps(db);
+        if (removed > 0) {
+          console.log(`[auth] removed ${removed} unconfirmed sign-ups`);
+        }
+      } catch (error) {
+        console.error("[auth] removing unconfirmed sign-ups failed:", error);
       }
       const retry = await env.FLAGS.get(OUTBOX_RETRY);
       await sendOutbox(db, env, mailer, send, retry !== null);

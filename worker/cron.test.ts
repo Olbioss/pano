@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
 import { EVERY_FIVE_MINUTES, NIGHTLY, runScheduled } from "./cron";
 import { createDb } from "./db/client";
-import { emailCounters } from "./db/schema";
+import { account, emailCounters, user } from "./db/schema";
 import { changelogKey } from "./services/changelog";
 import type { resetDemo } from "./services/demo-reset";
 import {
@@ -120,6 +120,36 @@ describe("runScheduled", () => {
       .select()
       .from(emailCounters)
       .where(eq(emailCounters.key, "cron-test"));
+    await close();
+    expect(left).toEqual([]);
+  });
+
+  it("deletes week-old unconfirmed sign-ups every night", async () => {
+    const { env } = testEnv();
+    const { db, close } = createDb(env.HYPERDRIVE.connectionString);
+    const id = crypto.randomUUID();
+    await db.insert(user).values({
+      id,
+      name: "",
+      email: `cron-${id}@example.com`,
+      emailVerified: false,
+      createdAt: new Date(Date.now() - 8 * 86_400_000),
+      updatedAt: new Date(),
+    });
+    await db.insert(account).values({
+      id: crypto.randomUUID(),
+      accountId: id,
+      providerId: "credential",
+      userId: id,
+      password: "pbkdf2-sha256$1$c2FsdA$aGFzaA",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await runScheduled(NIGHTLY, env, {
+      send: nothingToSend(),
+      reset: fakeReset(),
+    });
+    const left = await db.select().from(user).where(eq(user.id, id));
     await close();
     expect(left).toEqual([]);
   });
