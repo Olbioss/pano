@@ -16,6 +16,7 @@ export type AuthErrorKey =
   | "passwordExists"
   | "currentPasswordWrong"
   | "passkeyFailed"
+  | "passkeyNotCreated"
   | "somethingWrong";
 
 /**
@@ -27,6 +28,14 @@ export function authErrorKey(failure: {
   status?: number;
   code?: unknown;
 }): AuthErrorKey {
+  // The browser's own passkey step failed before anything reached Pano: it
+  // refused, has no way to make one, or its prompt never opened.
+  if (
+    typeof failure.code === "string" &&
+    (failure.code.startsWith("ERROR_") || failure.code === "UNKNOWN_ERROR")
+  ) {
+    return "passkeyNotCreated";
+  }
   switch (failure.code) {
     case "INVALID_EMAIL_OR_PASSWORD":
       return "wrongPassword";

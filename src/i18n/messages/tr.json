@@ -77,6 +77,7 @@
     "passwordExists": "Bu hesabın zaten bir şifresi var.",
     "currentPasswordWrong": "Mevcut şifreniz doğru değil.",
     "passkeyFailed": "Bu geçiş anahtarı işe yaramadı. Yeniden deneyin ya da başka bir yolla giriş yapın.",
+    "passkeyNotCreated": "Bu tarayıcı geçiş anahtarı oluşturmadı. İstem penceresini kapattıysanız yeniden deneyin. Hiç pencere açılmadıysa bu tarayıcı geçiş anahtarlarını desteklemiyor olabilir: başka bir tarayıcı ya da cihaz deneyin.",
     "somethingWrong": "Bir şeyler ters gitti. Biraz sonra yeniden deneyin.",
     "githubNotLinked": "Bu e-postanın, GitHub'ın henüz bağlanamadığı bir Pano hesabı var. E-posta koduyla giriş yapın, ardından hesap sayfanızdan GitHub'ı bağlayın.",
     "githubUnverified": "GitHub bu hesabın e-posta adresini doğrulamamış. Adresi GitHub'da doğrulayın ya da başka bir yolla giriş yapın.",

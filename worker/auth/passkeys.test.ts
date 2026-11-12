@@ -71,6 +71,20 @@ describe("passkeys", () => {
     await t.settle();
   });
 
+  it("labels the passkey with the account's email, not the device's name", async () => {
+    const t = testApp();
+    const { email, cookie } = await t.signIn();
+    // The app sends the device's name for Pano's own list. The password
+    // manager should still file the passkey under the account.
+    const res = await t.request(
+      "/api/auth/passkey/generate-register-options?name=Chrome%20on%20macOS",
+      { headers: { cookie } }
+    );
+    const options = (await res.json()) as { user: { name: string } };
+    expect(options.user.name).toBe(email);
+    await t.settle();
+  });
+
   it("lists each passkey with its name and when it was added", async () => {
     const t = testApp();
     const { cookie } = await t.signIn();

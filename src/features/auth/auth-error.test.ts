@@ -14,6 +14,8 @@ describe("authErrorKey", () => {
     ["DEMO_ONLY", "demoOnly"],
     ["SESSION_NOT_FRESH", "signInAgain"],
     ["PASSKEY_LIMIT", "passkeyLimit"],
+    ["ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY", "passkeyNotCreated"],
+    ["UNKNOWN_ERROR", "passkeyNotCreated"],
     ["PASSWORD_EXISTS", "passwordExists"],
     ["INVALID_PASSWORD", "currentPasswordWrong"],
   ])("names %s", (code, key) => {

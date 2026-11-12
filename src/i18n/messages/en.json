@@ -77,6 +77,7 @@
     "passwordExists": "This account already has a password.",
     "currentPasswordWrong": "Your current password isn't right.",
     "passkeyFailed": "That passkey didn't work. Try again, or sign in another way.",
+    "passkeyNotCreated": "This browser didn't create a passkey. If you closed its prompt, try again. If no prompt appeared, this browser may not support passkeys: try another browser or device.",
     "somethingWrong": "Something went wrong. Try again in a moment.",
     "githubNotLinked": "This email already has a Pano account that GitHub can't join yet. Sign in with an email code, then connect GitHub on your account page.",
     "githubUnverified": "GitHub hasn't verified this account's email address. Verify it on GitHub, or sign in another way.",

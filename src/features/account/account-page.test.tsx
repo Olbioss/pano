@@ -229,6 +229,22 @@ describe("AccountPage: passkeys", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("says so when the browser doesn't create the passkey", async () => {
+    fakeServer();
+    // What a browser's refusal, or a prompt that never opened, comes back as.
+    auth.addPasskey.mockResolvedValue({
+      data: null,
+      error: { code: "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY", status: 400 },
+    });
+    await renderAccount();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Add a passkey" })
+    );
+    expect(
+      await screen.findByText(/This browser didn't create a passkey/)
+    ).toBeTruthy();
+  });
+
   it("explains the limit of 10", async () => {
     fakeServer();
     auth.addPasskey.mockResolvedValue({

@@ -198,6 +198,12 @@ export function authGuards({ db, claimCode, checkBreach }: GuardDeps) {
         const session = await getSessionFromCtx(ctx);
         await refuseDemo(session);
         if (session) await refuseExtraPasskey(db, session.user.id);
+        // The app sends the device's name ("Chrome on macOS") for Pano's own
+        // list. Better Auth would also make it the passkey's account label,
+        // which a password manager shows; without it, that's the email.
+        if (ctx.path === "/passkey/generate-register-options") {
+          return { context: { query: { ...(ctx.query ?? {}), name: "" } } };
+        }
       }
     }),
     after: createAuthMiddleware(async (ctx) => {
