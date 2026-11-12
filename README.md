@@ -8,6 +8,11 @@ Live: <https://pano.olbios88.workers.dev>. "Try as team" and "Try as member"
 open a demo workspace with your own guest account. People sign in with an
 emailed code, a password, a passkey or GitHub.
 
+Two real boards run on it: Pano's own at
+[/pano](https://pano.olbios88.workers.dev/pano), and the Turkish board of
+[Rezerve](https://github.com/Olbioss/rezerve), a booking app for local
+businesses, at [/rezerve](https://pano.olbios88.workers.dev/rezerve).
+
 Design: [docs/superpowers/specs/2026-10-16-pano-design.md](docs/superpowers/specs/2026-10-16-pano-design.md)
 
 ## Stack
@@ -55,7 +60,7 @@ otherwise.
 | `bun run check` / `check:fix` | Biome lint and format |
 | `bun run test` | Vitest; migrates `pano_test` first |
 | `bun run e2e` | Playwright against the production build in workerd (see below) |
-| `bun run seed` | Rebuilds the demo workspace in `DATABASE_URL`; with `PANO_OWNER_EMAIL`, also makes `/pano` |
+| `bun run seed` | Rebuilds the demo workspace in `DATABASE_URL`; with `PANO_OWNER_EMAIL`, also makes `/pano` and `/rezerve` |
 | `bun run deploy` | Builds and deploys the Worker (see Deploying) |
 | `bun run db:generate` / `db:migrate` | drizzle-kit against `DATABASE_URL` |
 | `bun run cf-typegen` | Regenerates `worker-configuration.d.ts` after `wrangler.jsonc` changes |
@@ -175,7 +180,7 @@ on free plans. One-time setup:
    so the everyday `bun run db:migrate` can't reach production.
 6. `DATABASE_URL="$NEON_URL" PANO_OWNER_EMAIL=you@example.com bun run seed`
    builds the demo and makes `/pano`, owned by whoever signs in with that
-   address.
+   address, and `/rezerve`, with the same person on its team as an admin.
 7. For deploys from GitHub: a Cloudflare API token from the "Edit Cloudflare
    Workers" template, limited to your account, and a GitHub environment
    named `production`, limited to `main`, holding `CLOUDFLARE_API_TOKEN`

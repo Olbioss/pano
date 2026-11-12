@@ -50,12 +50,12 @@ describe("workspaceSlugSchema", () => {
 
 describe("createWorkspaceSchema", () => {
   it("accepts a Turkish workspace", () => {
-    const input = { name: "Rezerve", slug: "rezerve", defaultLocale: "tr" };
+    const input = { name: "Berber", slug: "berber", defaultLocale: "tr" };
     expect(createWorkspaceSchema.safeParse(input).success).toBe(true);
   });
 
   it("refuses an unsupported language", () => {
-    const input = { name: "Rezerve", slug: "rezerve", defaultLocale: "de" };
+    const input = { name: "Berber", slug: "berber", defaultLocale: "de" };
     expect(createWorkspaceSchema.safeParse(input).success).toBe(false);
   });
 });

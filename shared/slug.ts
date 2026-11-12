@@ -33,7 +33,8 @@ export function slugify(input: string): string {
 
 /**
  * Top-level paths the app uses, plus names that would read as Pano's own. A
- * workspace can't take them. The seed makes `demo` and `pano` itself.
+ * workspace can't take them. The seed makes `demo`, `pano` and `rezerve`
+ * itself.
  */
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "about",
@@ -58,6 +59,7 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "p",
   "pano",
   "pricing",
+  "rezerve",
   "settings",
   "sign-in",
   "sign-up",
